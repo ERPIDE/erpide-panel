@@ -52,6 +52,7 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState("2026-03-09");
   const [endDate, setEndDate] = useState("2026-03-30");
   const [selectedClient, setSelectedClient] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showReport, setShowReport] = useState(false);
 
   const filteredTasks = useMemo(() => {
@@ -61,10 +62,16 @@ export default function ReportsPage() {
       const end = new Date(endDate);
       const inRange = taskDate >= start && taskDate <= end;
 
-      if (selectedClient === "all") return inRange;
-      return inRange && task.client === selectedClient;
+      if (!inRange) return false;
+      if (selectedClient !== "all" && task.client !== selectedClient) return false;
+      if (statusFilter !== "all" && task.status !== statusFilter) return false;
+      return true;
     });
-  }, [startDate, endDate, selectedClient]);
+  }, [startDate, endDate, selectedClient, statusFilter]);
+
+  const pdfTasks = useMemo(() => {
+    return filteredTasks.filter((t) => t.status === "done");
+  }, [filteredTasks]);
 
   const stats = useMemo(() => {
     const total = filteredTasks.length;
@@ -113,7 +120,7 @@ export default function ReportsPage() {
           Rapor Yapılandırması
         </h2>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Start Date */}
           <div>
             <label className="block text-xs text-gray-400 mb-1.5">Başlangıç Tarihi</label>
@@ -150,6 +157,25 @@ export default function ReportsPage() {
                     {opt.label}
                   </option>
                 ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1.5">Durum</label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 transition appearance-none [color-scheme:dark]"
+              >
+                <option value="all" className="bg-[#111118] text-white">Tüm Durumlar</option>
+                <option value="done" className="bg-[#111118] text-white">Tamamlanan</option>
+                <option value="in_progress" className="bg-[#111118] text-white">Devam Eden</option>
+                <option value="todo" className="bg-[#111118] text-white">Bekleyen</option>
+                <option value="review" className="bg-[#111118] text-white">İncelemede</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
             </div>
@@ -236,7 +262,11 @@ export default function ReportsPage() {
                     </div>
                   `);
 
-                  filteredTasks.forEach((task, i) => {
+                  const tasksForPdf = filteredTasks.filter(t => t.status === "done");
+                  if (tasksForPdf.length === 0) {
+                    win.document.write('<p style="text-align:center;color:#999;padding:30px;">Seçilen tarih aralığında tamamlanmış görev bulunamadı.</p>');
+                  }
+                  tasksForPdf.forEach((task, i) => {
                     const devComments = task.comments.filter(c => c.authorRole === "developer");
                     const devComment = devComments.length > 0 ? devComments[devComments.length - 1] : null;
                     const statusBadge = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";

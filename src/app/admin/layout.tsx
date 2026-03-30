@@ -7,6 +7,7 @@ import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, X, ChevronRight
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -34,8 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0d0d14] border-r border-white/5 flex flex-col transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-6 border-b border-white/5">
-          <Link href="/admin/dashboard" className="text-xl font-bold gradient-text">ERPIDE</Link>
-          <p className="text-xs text-gray-500 mt-1">Yönetim Paneli</p>
+          <Link href="/admin/dashboard"><Logo size="small" /></Link>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
