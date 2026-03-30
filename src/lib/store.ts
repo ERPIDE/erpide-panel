@@ -1,5 +1,34 @@
 // Shared task store — will be replaced with real DB later
 
+// ── User types ──────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: "admin" | "developer";
+}
+
+export interface CustomerUser {
+  id: string;
+  code: string;
+  name: string;
+  password: string;
+  project: string;
+  contactEmail: string;
+  contactPhone?: string;
+}
+
+export const initialAdmins: AdminUser[] = [
+  { id: "a1", name: "Ali Murat El", email: "admin@erpide.com", password: "erpide2024", role: "admin" },
+];
+
+export const initialCustomers: CustomerUser[] = [
+  { id: "c1", code: "SIRMERSAN", name: "Sirmersan", password: "sirmersan2024", project: "CANIAS", contactEmail: "info@sirmersan.com" },
+  { id: "c2", code: "ATM", name: "ATM Constructor", password: "atm2024", project: "1C ERP", contactEmail: "info@atmconstructor.kz" },
+];
+
 export type Priority = "critical" | "high" | "medium" | "low";
 export type Status = "todo" | "in_progress" | "review" | "done";
 export type Label = "bug" | "feature" | "improvement" | "docs" | "urgent";

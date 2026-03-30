@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, ListTodo, FileText, Settings, LogOut,
+  LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, X, ChevronRight
 } from "lucide-react";
 
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
   { href: "/admin/reports", label: "Raporlar", icon: FileText },
+  { href: "/admin/users", label: "Kullanıcılar", icon: Users },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
