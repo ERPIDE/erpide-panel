@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import Logo from "./Logo";
 
 const links = [
   { href: "/", label: "Ana Sayfa" },
@@ -21,7 +22,7 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-black/60 border-b border-white/5"
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/"><img src="/logo.png" alt="ERPIDE" className="h-10" /></Link>
+        <Link href="/"><Logo size="small" /></Link>
 
         <div className="hidden md:flex items-center gap-8">
           {links.map((l) => (

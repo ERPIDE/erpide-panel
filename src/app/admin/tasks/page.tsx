@@ -1,121 +1,745 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, CheckCircle2, Circle, Clock } from "lucide-react";
+import {
+  Search,
+  CheckCircle2,
+  Circle,
+  Clock,
+  Eye,
+  Plus,
+  X,
+  MessageSquare,
+  Paperclip,
+  Upload,
+  AlertTriangle,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  MinusCircle,
+  Flame,
+  ChevronDown,
+  CalendarDays,
+  User,
+  Tag,
+  FileText,
+  StickyNote,
+  Filter,
+  BarChart3,
+  ListTodo,
+} from "lucide-react";
+import {
+  Task,
+  Status,
+  Priority,
+  Label,
+  Comment,
+  initialTasks,
+  priorityConfig,
+  statusConfig,
+  labelConfig,
+} from "@/lib/store";
 
-type Task = { id: number; title: string; project: string; label: string; status: "todo" | "in_progress" | "done"; deadline?: string };
+/* ─── constants ─── */
+const statuses: Status[] = ["todo", "in_progress", "review", "done"];
+const priorities: Priority[] = ["critical", "high", "medium", "low"];
+const labels: Label[] = ["bug", "feature", "improvement", "docs", "urgent"];
+const projects = ["CANIAS", "1C ERP"] as const;
 
-const initTasks: Task[] = [
-  { id: 1, title: "SIRPRD05: Parti numarasi detay ve performans", project: "CANIAS", label: "bug", status: "todo" },
-  { id: 2, title: "DSG Malzeme karti parti numarasi kurgusu", project: "CANIAS", label: "feature", status: "todo" },
-  { id: 3, title: "SIRSTOK2: CREATEVARCOLUMNS hizlandirma", project: "CANIAS", label: "improvement", status: "todo" },
-  { id: 4, title: "Kayit anahtarlari revizesi - Bordro", project: "CANIAS", label: "improvement", status: "todo" },
-  { id: 5, title: "SALT01: Irsaliye cift rezervasyon", project: "CANIAS", label: "bug", status: "todo" },
-  { id: 6, title: "SALT04: Iskonto 611.01.001 hesap", project: "CANIAS", label: "feature", status: "todo" },
-  { id: 7, title: "Kalem bazli tevkifat muhasebe fisi", project: "CANIAS", label: "bug", status: "todo" },
-  { id: 8, title: "SIRPRD02: Performans iyilestirme", project: "CANIAS", label: "improvement", status: "todo" },
-  { id: 9, title: "FINT64: KDV listesi hatali rakamlar", project: "CANIAS", label: "bug", status: "todo" },
-  { id: 10, title: "ACTT09: Karlilik analiz raporu", project: "CANIAS", label: "feature", status: "todo" },
-  { id: 11, title: "Ithalat masraf dagilimi web servisi", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 12, title: "Belgesiz stok dusum web servisi", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 13, title: "Uretim asamasi stok rapor ekrani", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 14, title: "PT numarasina gore PITI otomatik", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 15, title: "Banka odemelerinde bagimsiz avans", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 16, title: "Banka komisyon masraf servisi", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 17, title: "Odeme talebine otomatik nakit akisi", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 18, title: "Sabit kiymet faydali omur girisleri", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 19, title: "Sabit kiymet ilk tahakkuk belgeleri", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 20, title: "Idareten stok artirim PT eslemesi", project: "1C ERP", label: "improvement", status: "todo", deadline: "30 Nisan" },
-  { id: 21, title: "HFE Holu Hata Talep Listesi", project: "1C ERP", label: "bug", status: "todo", deadline: "30 Nisan" },
-  { id: 22, title: "Odeme Talepleri Raporu ATM logo", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 23, title: "2024-2025 devir acilis bakiyeleri", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 24, title: "Recete PT numaralari FIFO otomatik", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 25, title: "Odeme talepleri workflow onay", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 26, title: "Fason sureci test", project: "1C ERP", label: "improvement", status: "todo", deadline: "30 Nisan" },
-  { id: 27, title: "Hol bazli karlilik raporu", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-  { id: 28, title: "Kar ve Zarar raporu", project: "1C ERP", label: "feature", status: "todo", deadline: "30 Nisan" },
-];
-
-const labelCfg: Record<string, { color: string; bg: string }> = {
-  bug: { color: "text-red-400", bg: "bg-red-500/10" },
-  feature: { color: "text-green-400", bg: "bg-green-500/10" },
-  improvement: { color: "text-yellow-400", bg: "bg-yellow-500/10" },
+const statusIcons: Record<Status, typeof Circle> = {
+  todo: Circle,
+  in_progress: Clock,
+  review: Eye,
+  done: CheckCircle2,
 };
 
-const statusCfg = {
-  todo: { icon: Circle, color: "text-gray-400", label: "Bekliyor" },
-  in_progress: { icon: Clock, color: "text-yellow-400", label: "Devam Ediyor" },
-  done: { icon: CheckCircle2, color: "text-green-400", label: "Tamamlandi" },
+const priorityIcons: Record<Priority, typeof Flame> = {
+  critical: Flame,
+  high: ArrowUpCircle,
+  medium: MinusCircle,
+  low: ArrowDownCircle,
 };
 
+const roleBadge: Record<string, { label: string; color: string; bg: string }> = {
+  admin: { label: "Admin", color: "text-purple-400", bg: "bg-purple-500/10" },
+  customer: { label: "Müşteri", color: "text-cyan-400", bg: "bg-cyan-500/10" },
+  developer: { label: "Geliştirici", color: "text-green-400", bg: "bg-green-500/10" },
+};
+
+const clientMap: Record<string, string> = {
+  CANIAS: "Sirmersan",
+  "1C ERP": "ATM Constructor",
+};
+
+function isOverdue(deadline?: string): boolean {
+  if (!deadline) return false;
+  return new Date(deadline) < new Date();
+}
+
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function todayISO(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+/* ─── main component ─── */
 export default function TasksPage() {
-  const [tasks, setTasks] = useState(initTasks);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // filters
   const [search, setSearch] = useState("");
   const [fProject, setFProject] = useState("all");
   const [fStatus, setFStatus] = useState("all");
+  const [fPriority, setFPriority] = useState("all");
+  const [fLabel, setFLabel] = useState("all");
 
-  const filtered = tasks.filter((t) => {
-    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (fProject !== "all" && t.project !== fProject) return false;
-    if (fStatus !== "all" && t.status !== fStatus) return false;
-    return true;
+  // comment form
+  const [commentText, setCommentText] = useState("");
+
+  // create form
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    project: "CANIAS" as string,
+    label: "feature" as Label,
+    priority: "medium" as Priority,
+    deadline: "",
   });
 
-  const cycle = (id: number) => setTasks(p => p.map(t => t.id !== id ? t : {
-    ...t, status: (["todo", "in_progress", "done"] as const)[(["todo", "in_progress", "done"].indexOf(t.status) + 1) % 3]
-  }));
+  /* ─── derived ─── */
+  const filtered = useMemo(() => {
+    return tasks.filter((t) => {
+      if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (fProject !== "all" && t.project !== fProject) return false;
+      if (fStatus !== "all" && t.status !== fStatus) return false;
+      if (fPriority !== "all" && t.priority !== fPriority) return false;
+      if (fLabel !== "all" && t.label !== fLabel) return false;
+      return true;
+    });
+  }, [tasks, search, fProject, fStatus, fPriority, fLabel]);
 
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const byStatus: Record<Status, number> = { todo: 0, in_progress: 0, review: 0, done: 0 };
+    let overdue = 0;
+    tasks.forEach((t) => {
+      byStatus[t.status]++;
+      if (t.status !== "done" && isOverdue(t.deadline)) overdue++;
+    });
+    return { total, byStatus, overdue };
+  }, [tasks]);
+
+  /* keep selectedTask in sync with tasks array */
+  const activeTask = useMemo(() => {
+    if (!selectedTask) return null;
+    return tasks.find((t) => t.id === selectedTask.id) ?? null;
+  }, [tasks, selectedTask]);
+
+  /* ─── actions ─── */
+  function cycleStatus(id: number) {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id !== id ? t : { ...t, status: statuses[(statuses.indexOf(t.status) + 1) % statuses.length] }
+      )
+    );
+  }
+
+  function setTaskStatus(id: number, status: Status) {
+    setTasks((prev) => prev.map((t) => (t.id !== id ? t : { ...t, status })));
+  }
+
+  function setTaskPriority(id: number, priority: Priority) {
+    setTasks((prev) => prev.map((t) => (t.id !== id ? t : { ...t, priority })));
+  }
+
+  function addComment(taskId: number) {
+    if (!commentText.trim()) return;
+    const comment: Comment = {
+      id: `c-${Date.now()}`,
+      author: "Admin",
+      authorRole: "admin",
+      text: commentText.trim(),
+      date: todayISO(),
+    };
+    setTasks((prev) =>
+      prev.map((t) => (t.id !== taskId ? t : { ...t, comments: [...t.comments, comment] }))
+    );
+    setCommentText("");
+  }
+
+  function createTask() {
+    if (!newTask.title.trim()) return;
+    const task: Task = {
+      id: Math.max(0, ...tasks.map((t) => t.id)) + 1,
+      title: newTask.title.trim(),
+      description: newTask.description.trim(),
+      project: newTask.project,
+      client: clientMap[newTask.project] ?? "",
+      label: newTask.label,
+      status: "todo",
+      priority: newTask.priority,
+      deadline: newTask.deadline || undefined,
+      createdAt: todayISO(),
+      createdBy: "Admin",
+      comments: [],
+      attachments: [],
+    };
+    setTasks((prev) => [task, ...prev]);
+    setNewTask({ title: "", description: "", project: "CANIAS", label: "feature", priority: "medium", deadline: "" });
+    setShowCreateModal(false);
+  }
+
+  /* ─── render ─── */
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div className="max-w-[1440px] mx-auto space-y-6">
+      {/* ══════ Stats Bar ══════ */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[
+          { label: "Toplam", value: stats.total, icon: ListTodo, color: "text-white", bg: "bg-white/5" },
+          { label: statusConfig.todo.label, value: stats.byStatus.todo, icon: Circle, color: statusConfig.todo.color, bg: statusConfig.todo.bg },
+          { label: statusConfig.in_progress.label, value: stats.byStatus.in_progress, icon: Clock, color: statusConfig.in_progress.color, bg: statusConfig.in_progress.bg },
+          { label: statusConfig.review.label, value: stats.byStatus.review, icon: Eye, color: statusConfig.review.color, bg: statusConfig.review.bg },
+          { label: statusConfig.done.label, value: stats.byStatus.done, icon: CheckCircle2, color: statusConfig.done.color, bg: statusConfig.done.bg },
+          { label: "Gecikmiş", value: stats.overdue, icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
+        ].map((s) => (
+          <div key={s.label} className={`flex items-center gap-3 p-3.5 rounded-xl bg-[#111118] border border-white/5`}>
+            <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center shrink-0`}>
+              <s.icon size={18} className={s.color} />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-white leading-none">{s.value}</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ══════ Toolbar ══════ */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        {/* search */}
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input placeholder="Task ara..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
+          <input
+            placeholder="Görev ara..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
+          />
         </div>
-        <select value={fProject} onChange={(e) => setFProject(e.target.value)}
-          className="px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm">
-          <option value="all">Tum Projeler</option>
-          <option value="CANIAS">CANIAS ERP</option>
-          <option value="1C ERP">1C ERP</option>
-        </select>
-        <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
-          className="px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm">
-          <option value="all">Tum Durumlar</option>
-          <option value="todo">Bekliyor</option>
-          <option value="in_progress">Devam Ediyor</option>
-          <option value="done">Tamamlandi</option>
-        </select>
+        {/* filters */}
+        <div className="flex flex-wrap gap-2">
+          <select value={fProject} onChange={(e) => setFProject(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tüm Projeler</option>
+            {projects.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tüm Durumlar</option>
+            {statuses.map((s) => <option key={s} value={s}>{statusConfig[s].label}</option>)}
+          </select>
+          <select value={fPriority} onChange={(e) => setFPriority(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tüm Öncelikler</option>
+            {priorities.map((p) => <option key={p} value={p}>{priorityConfig[p].label}</option>)}
+          </select>
+          <select value={fLabel} onChange={(e) => setFLabel(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tüm Etiketler</option>
+            {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
+          </select>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
+          >
+            <Plus size={16} /> Yeni Görev
+          </button>
+        </div>
       </div>
-      <div className="space-y-2">
-        <AnimatePresence>
+
+      {/* ══════ Results count ══════ */}
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <Filter size={12} />
+        <span>{filtered.length} görev listeleniyor</span>
+        {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all") && (
+          <button
+            onClick={() => { setSearch(""); setFProject("all"); setFStatus("all"); setFPriority("all"); setFLabel("all"); }}
+            className="text-blue-400 hover:text-blue-300 transition ml-1"
+          >
+            Filtreleri temizle
+          </button>
+        )}
+      </div>
+
+      {/* ══════ Task List ══════ */}
+      <div className="space-y-1.5">
+        <AnimatePresence mode="popLayout">
           {filtered.map((t) => {
-            const sc = statusCfg[t.status];
-            const lc = labelCfg[t.label] || labelCfg.feature;
+            const sc = statusConfig[t.status];
+            const lc = labelConfig[t.label];
+            const pc = priorityConfig[t.priority];
+            const StatusIcon = statusIcons[t.status];
+            const PriorityIcon = priorityIcons[t.priority];
+            const overdue = t.status !== "done" && isOverdue(t.deadline);
+
             return (
-              <motion.div key={t.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex items-center gap-4 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/20 transition">
-                <button onClick={() => cycle(t.id)} className="shrink-0">
-                  <sc.icon size={20} className={sc.color} />
+              <motion.div
+                key={t.id}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => setSelectedTask(t)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/20 cursor-pointer transition group"
+              >
+                {/* status icon - clickable to cycle */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); cycleStatus(t.id); }}
+                  className="shrink-0 hover:scale-110 transition-transform"
+                  title={`Durum: ${sc.label}`}
+                >
+                  <StatusIcon size={20} className={`${sc.color} transition-colors`} />
                 </button>
+
+                {/* main content */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${t.status === "done" ? "text-gray-500 line-through" : "text-white"}`}>{t.title}</p>
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{t.project}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${lc.bg} ${lc.color}`}>{t.label}</span>
-                    {t.deadline && <span className="text-xs text-gray-500">{t.deadline}</span>}
+                  <p className={`text-sm font-medium truncate ${t.status === "done" ? "text-gray-500 line-through" : "text-white group-hover:text-blue-100"} transition`}>
+                    {t.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {/* project */}
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
+                      {t.project}
+                    </span>
+                    {/* label */}
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${lc.bg} ${lc.color}`}>
+                      {lc.label}
+                    </span>
+                    {/* priority */}
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${pc.bg} ${pc.color} flex items-center gap-1`}>
+                      <PriorityIcon size={10} />
+                      {pc.label}
+                    </span>
+                    {/* deadline */}
+                    {t.deadline && (
+                      <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-red-400 font-medium" : "text-gray-500"}`}>
+                        <CalendarDays size={10} />
+                        {formatDate(t.deadline)}
+                        {overdue && <AlertTriangle size={10} className="text-red-400" />}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-lg hidden sm:block ${
-                  t.status === "done" ? "bg-green-500/10 text-green-400" :
-                  t.status === "in_progress" ? "bg-yellow-500/10 text-yellow-400" :
-                  "bg-gray-500/10 text-gray-400"
-                }`}>{sc.label}</span>
+
+                {/* right side */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* comment count */}
+                  {t.comments.length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <MessageSquare size={12} />
+                      {t.comments.length}
+                    </span>
+                  )}
+                  {/* attachments count */}
+                  {t.attachments.length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <Paperclip size={12} />
+                      {t.attachments.length}
+                    </span>
+                  )}
+                  {/* status badge */}
+                  <span className={`text-[11px] px-2.5 py-1 rounded-lg hidden sm:block ${sc.bg} ${sc.color} font-medium`}>
+                    {sc.label}
+                  </span>
+                </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-20 text-gray-500">
+            <ListTodo size={40} className="mx-auto mb-3 opacity-30" />
+            <p className="text-sm">Görev bulunamadı</p>
+          </div>
+        )}
       </div>
+
+      {/* ══════ Task Detail Slide-Over ══════ */}
+      <AnimatePresence>
+        {activeTask && (
+          <>
+            {/* backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setSelectedTask(null); setCommentText(""); }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            {/* panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 h-full w-full max-w-2xl bg-[#0a0a12] border-l border-white/10 z-50 overflow-y-auto"
+            >
+              <div className="p-6 space-y-6">
+                {/* header */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
+                        {activeTask.project}
+                      </span>
+                      <span className="text-[11px] text-gray-600">#{activeTask.id}</span>
+                      <span className="text-[11px] text-gray-600">|</span>
+                      <span className="text-[11px] text-gray-500">{activeTask.client}</span>
+                    </div>
+                    <h2 className="text-lg font-semibold text-white leading-snug">{activeTask.title}</h2>
+                  </div>
+                  <button
+                    onClick={() => { setSelectedTask(null); setCommentText(""); }}
+                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition shrink-0"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* meta grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {/* status */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Durum</p>
+                    <span className={`text-sm font-medium ${statusConfig[activeTask.status].color}`}>
+                      {statusConfig[activeTask.status].label}
+                    </span>
+                  </div>
+                  {/* priority */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Öncelik</p>
+                    <span className={`text-sm font-medium ${priorityConfig[activeTask.priority].color}`}>
+                      {priorityConfig[activeTask.priority].label}
+                    </span>
+                  </div>
+                  {/* label */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Etiket</p>
+                    <span className={`text-sm font-medium ${labelConfig[activeTask.label].color}`}>
+                      {labelConfig[activeTask.label].label}
+                    </span>
+                  </div>
+                  {/* deadline */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Son Tarih</p>
+                    <span className={`text-sm font-medium ${activeTask.deadline ? (isOverdue(activeTask.deadline) && activeTask.status !== "done" ? "text-red-400" : "text-white") : "text-gray-600"}`}>
+                      {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemiş"}
+                    </span>
+                  </div>
+                  {/* created */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oluşturulma</p>
+                    <span className="text-sm text-white">{formatDate(activeTask.createdAt)}</span>
+                  </div>
+                  {/* created by */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oluşturan</p>
+                    <span className="text-sm text-white">{activeTask.createdBy}</span>
+                  </div>
+                </div>
+
+                {/* description */}
+                <div className="p-4 rounded-xl bg-[#111118] border border-white/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText size={14} className="text-gray-500" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Açıklama</p>
+                  </div>
+                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {activeTask.description || "Açıklama eklenmemiş."}
+                  </p>
+                </div>
+
+                {/* dev note */}
+                <div className="p-4 rounded-xl bg-[#111118] border border-white/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <StickyNote size={14} className="text-yellow-500/60" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Geliştirici Notu</p>
+                  </div>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${activeTask.devNote ? "text-yellow-200/80" : "text-gray-600 italic"}`}>
+                    {activeTask.devNote || "Henüz geliştirici notu yok."}
+                  </p>
+                </div>
+
+                {/* status change buttons */}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Durum Değiştir</p>
+                  <div className="flex flex-wrap gap-2">
+                    {statuses.map((s) => {
+                      const cfg = statusConfig[s];
+                      const Icon = statusIcons[s];
+                      const active = activeTask.status === s;
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => setTaskStatus(activeTask.id, s)}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition ${
+                            active
+                              ? `${cfg.bg} ${cfg.color} border-current`
+                              : "bg-[#111118] text-gray-400 border-white/5 hover:border-white/20 hover:text-white"
+                          }`}
+                        >
+                          <Icon size={14} />
+                          {cfg.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* priority change */}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Öncelik Değiştir</p>
+                  <div className="flex flex-wrap gap-2">
+                    {priorities.map((p) => {
+                      const cfg = priorityConfig[p];
+                      const Icon = priorityIcons[p];
+                      const active = activeTask.priority === p;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setTaskPriority(activeTask.id, p)}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition ${
+                            active
+                              ? `${cfg.bg} ${cfg.color} border-current`
+                              : "bg-[#111118] text-gray-400 border-white/5 hover:border-white/20 hover:text-white"
+                          }`}
+                        >
+                          <Icon size={14} />
+                          {cfg.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* comments */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <MessageSquare size={14} className="text-gray-500" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">
+                      Yorumlar ({activeTask.comments.length})
+                    </p>
+                  </div>
+
+                  {activeTask.comments.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {activeTask.comments.map((c) => {
+                        const badge = roleBadge[c.authorRole] ?? roleBadge.customer;
+                        return (
+                          <div key={c.id} className="p-3.5 rounded-xl bg-[#111118] border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                <User size={12} className="text-gray-400" />
+                              </div>
+                              <span className="text-sm font-medium text-white">{c.author}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.bg} ${badge.color} font-medium`}>
+                                {badge.label}
+                              </span>
+                              <span className="text-[10px] text-gray-600 ml-auto">{formatDate(c.date)}</span>
+                            </div>
+                            <p className="text-sm text-gray-300 leading-relaxed pl-8">{c.text}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* add comment */}
+                  <div className="flex gap-2">
+                    <textarea
+                      placeholder="Yorum ekle..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      rows={2}
+                      className="flex-1 p-3 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none resize-none transition"
+                    />
+                    <button
+                      onClick={() => addComment(activeTask.id)}
+                      disabled={!commentText.trim()}
+                      className="self-end px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition"
+                    >
+                      Gönder
+                    </button>
+                  </div>
+                </div>
+
+                {/* attachments */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Paperclip size={14} className="text-gray-500" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">
+                      Ekler ({activeTask.attachments.length})
+                    </p>
+                  </div>
+
+                  {activeTask.attachments.length > 0 ? (
+                    <div className="space-y-2 mb-3">
+                      {activeTask.attachments.map((a) => (
+                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#111118] border border-white/5">
+                          <Paperclip size={14} className="text-gray-500 shrink-0" />
+                          <span className="text-sm text-white truncate flex-1">{a.name}</span>
+                          <span className="text-[10px] text-gray-500">{a.type}</span>
+                          <span className="text-[10px] text-gray-600">{formatDate(a.date)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 mb-3 italic">Henüz ek dosya yok.</p>
+                  )}
+
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm transition">
+                    <Upload size={14} />
+                    Dosya Yükle
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ Create Task Modal ══════ */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <>
+            {/* backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            {/* modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-lg bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                {/* header */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Yeni Görev Oluştur</h3>
+                  <button onClick={() => setShowCreateModal(false)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* form */}
+                <div className="space-y-4">
+                  {/* title */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Başlık</label>
+                    <input
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                      placeholder="Görev başlığı..."
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
+                    />
+                  </div>
+
+                  {/* description */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Açıklama</label>
+                    <textarea
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      placeholder="Detaylı açıklama..."
+                      rows={3}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none resize-none transition"
+                    />
+                  </div>
+
+                  {/* project + client */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Proje</label>
+                      <select
+                        value={newTask.project}
+                        onChange={(e) => setNewTask({ ...newTask, project: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
+                      >
+                        {projects.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Müşteri</label>
+                      <input
+                        value={clientMap[newTask.project] ?? ""}
+                        readOnly
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-gray-400 text-sm cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* label + priority + deadline */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Etiket</label>
+                      <select
+                        value={newTask.label}
+                        onChange={(e) => setNewTask({ ...newTask, label: e.target.value as Label })}
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
+                      >
+                        {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Öncelik</label>
+                      <select
+                        value={newTask.priority}
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Priority })}
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
+                      >
+                        {priorities.map((p) => <option key={p} value={p}>{priorityConfig[p].label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Son Tarih</label>
+                      <input
+                        type="date"
+                        value={newTask.deadline}
+                        onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition [color-scheme:dark]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* actions */}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={createTask}
+                    disabled={!newTask.title.trim()}
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition"
+                  >
+                    Oluştur
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

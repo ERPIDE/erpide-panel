@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Mail, Phone, MapPin } from "lucide-react";
+import Logo from "./Logo";
 
 export default function Footer() {
   return (
@@ -9,7 +10,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-10">
           {/* Brand */}
           <div>
-            <Link href="/"><img src="/logo.png" alt="ERPIDE" className="h-10" /></Link>
+            <Link href="/"><Logo size="small" /></Link>
             <p className="text-gray-500 text-sm mt-3 leading-relaxed">
               Kurumsal ERP çözümleri ve yazılım danışmanlığı. Türkiye ve Kazakistan&apos;da hizmet veriyoruz.
             </p>
