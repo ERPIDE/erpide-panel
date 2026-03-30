@@ -179,16 +179,100 @@ export default function ReportsPage() {
             className="space-y-4"
           >
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 print:hidden">
               <button
-                onClick={() => alert("PDF indirme işlemi başlatılıyor...")}
+                onClick={() => {
+                  const printArea = document.getElementById("report-printable");
+                  if (!printArea) return;
+                  const win = window.open("", "_blank");
+                  if (!win) return;
+                  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>ERPIDE Rapor - ${clientLabel}</title><style>
+                    @page { margin: 20mm 15mm; }
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; background: #fff; font-size: 11pt; line-height: 1.6; }
+                    .report-header { text-align: center; border-bottom: 2px solid #1a1a1a; padding-bottom: 15px; margin-bottom: 20px; }
+                    .report-header h1 { font-size: 14pt; font-weight: bold; letter-spacing: 2px; margin-bottom: 2px; }
+                    .report-header .logo-text { font-size: 22pt; font-weight: bold; letter-spacing: 4px; }
+                    .report-header .logo-text span { color: #3b82f6; }
+                    .report-header .tagline { font-size: 7pt; letter-spacing: 3px; color: #666; text-transform: uppercase; }
+                    .report-header .subtitle { font-size: 12pt; margin-top: 8px; }
+                    .report-header .date-range { font-size: 9pt; color: #666; margin-top: 3px; }
+                    .stats-row { display: flex; gap: 15px; margin: 15px 0; }
+                    .stat-box { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 10px; text-align: center; }
+                    .stat-box .val { font-size: 18pt; font-weight: bold; }
+                    .stat-box .lbl { font-size: 8pt; color: #666; }
+                    .task-item { border: 1px solid #eee; border-radius: 6px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
+                    .task-item h3 { font-size: 11pt; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+                    .task-item .field { margin-bottom: 4px; font-size: 10pt; }
+                    .task-item .field .label { font-weight: 600; color: #444; }
+                    .task-item .dev-note { background: #f0f7ff; border-left: 3px solid #3b82f6; padding: 8px 10px; margin-top: 6px; font-size: 9pt; border-radius: 3px; }
+                    .badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 8pt; font-weight: 600; }
+                    .badge-done { background: #dcfce7; color: #166534; }
+                    .badge-progress { background: #fef9c3; color: #854d0e; }
+                    .badge-todo { background: #f3f4f6; color: #4b5563; }
+                    .badge-review { background: #dbeafe; color: #1e40af; }
+                    .badge-critical { background: #fee2e2; color: #991b1b; }
+                    .badge-high { background: #ffedd5; color: #9a3412; }
+                    .badge-medium { background: #fef9c3; color: #854d0e; }
+                    .badge-low { background: #f3f4f6; color: #4b5563; }
+                    .report-footer { text-align: center; border-top: 2px solid #1a1a1a; padding-top: 10px; margin-top: 25px; font-size: 8pt; color: #666; }
+                  </style></head><body>`);
+
+                  const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
+                  const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
+
+                  win.document.write(`
+                    <div class="report-header">
+                      <div class="logo-text">ERP<span>IDE</span></div>
+                      <div class="tagline">ERP Çözümleri Hakkında Her Şey</div>
+                      <div class="subtitle">Haftalık Geliştirme Dökümanı</div>
+                      <div class="date-range">${formatDateTR(startDate)} — ${formatDateTR(endDate)} | ${clientLabel}</div>
+                    </div>
+                    <div class="stats-row">
+                      <div class="stat-box"><div class="val">${stats.total}</div><div class="lbl">Toplam</div></div>
+                      <div class="stat-box"><div class="val" style="color:#16a34a">${stats.completed}</div><div class="lbl">Tamamlanan</div></div>
+                      <div class="stat-box"><div class="val" style="color:#ca8a04">${stats.inProgress}</div><div class="lbl">Devam Eden</div></div>
+                      <div class="stat-box"><div class="val" style="color:#6b7280">${stats.waiting}</div><div class="lbl">Bekleyen</div></div>
+                    </div>
+                  `);
+
+                  filteredTasks.forEach((task, i) => {
+                    const devComments = task.comments.filter(c => c.authorRole === "developer");
+                    const devComment = devComments.length > 0 ? devComments[devComments.length - 1] : null;
+                    const statusBadge = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";
+                    const priorityBadge = `badge-${task.priority}`;
+
+                    win.document.write(`
+                      <div class="task-item">
+                        <h3>Sorun ${i + 1}: ${task.title}</h3>
+                        <div class="field"><span class="label">Açıklama:</span> ${task.description}</div>
+                        <div class="field"><span class="label">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+                        <div class="field">
+                          <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
+                          &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
+                        </div>
+                        ${devComment ? `<div class="dev-note"><strong>Geliştirmeci Notu:</strong> ${devComment.text}</div>` : ""}
+                      </div>
+                    `);
+                  });
+
+                  win.document.write(`
+                    <div class="report-footer">
+                      <strong>ERPIDE YAZILIM A.Ş.</strong><br>
+                      info@erpide.com — 0554 694 34 09<br>
+                      www.erpide.com
+                    </div>
+                  </body></html>`);
+                  win.document.close();
+                  setTimeout(() => win.print(), 500);
+                }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/10 text-blue-400 text-sm hover:bg-blue-600/20 transition border border-blue-500/10"
               >
                 <FileDown size={15} />
-                PDF İndir
+                PDF İndir / Yazdır
               </button>
               <button
-                onClick={() => alert("Müşteriye email gönderildi")}
+                onClick={() => alert("Email gönderme özelliği yakında aktif olacak.\ninfo@erpide.com adresine bildirim gönderilecek.")}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/10 text-purple-400 text-sm hover:bg-purple-600/20 transition border border-purple-500/10"
               >
                 <Send size={15} />
