@@ -1,14 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Plug } from "lucide-react";
 
 const services = [
-  { icon: Settings, title: "CANIAS ERP Danismanligi", desc: "TROIA diliyle ozel gelistirme, modul entegrasyonu, performans optimizasyonu ve raporlama cozumleri." },
-  { icon: Database, title: "1C ERP Cozumleri", desc: "1C:ERP kurulum, lokalizasyon, muhasebe entegrasyonu, web servis gelistirme ve ACC senkronizasyonu." },
-  { icon: Code2, title: "Ozel Yazilim Gelistirme", desc: "Python, Node.js, React ile ozel otomasyon, bot gelistirme ve API entegrasyon cozumleri." },
-  { icon: Rocket, title: "Dijital Donusum", desc: "Is sureclerinizi dijitallestirin. Verimlilik artisi ve maliyet optimizasyonu saglayalim." },
-  { icon: Headset, title: "7/24 Bakim ve Destek", desc: "Kesintisiz teknik destek, proaktif izleme, hizli mudahale ve duzeltici aksiyonlar." },
-  { icon: GraduationCap, title: "Egitim ve Danismanlik", desc: "Son kullanici egitimleri, surec danismanligi ve teknik dokumantasyon hizmetleri." },
+  { icon: Settings, title: "CANIAS ERP Danışmanlığı", desc: "TROIA diliyle özel geliştirme, modül entegrasyonu, performans optimizasyonu ve raporlama çözümleri." },
+  { icon: Database, title: "1C ERP Çözümleri", desc: "1C:ERP kurulum, lokalizasyon, muhasebe entegrasyonu, web servis geliştirme ve ACC senkronizasyonu." },
+  { icon: Code2, title: "Özel Yazılım Geliştirme", desc: "Python, Node.js, React ile özel otomasyon, bot geliştirme ve API entegrasyon çözümleri." },
+  { icon: Globe, title: "Web Sitesi Geliştirme", desc: "Kurumsal web siteleri, e-ticaret platformları, müşteri panelleri ve yönetim dashboardları." },
+  { icon: Smartphone, title: "Mobil Uygulama", desc: "iOS ve Android için native ve cross-platform mobil uygulama geliştirme çözümleri." },
+  { icon: Plug, title: "API Entegrasyonları", desc: "Üçüncü parti sistemlerle REST/SOAP API entegrasyonu, veri senkronizasyonu ve otomasyon." },
+  { icon: Rocket, title: "Dijital Dönüşüm", desc: "İş süreçlerinizi dijitalleştirin. Verimlilik artışı ve maliyet optimizasyonu sağlayalım." },
+  { icon: Headset, title: "7/24 Bakım ve Destek", desc: "Kesintisiz teknik destek, proaktif izleme, hızlı müdahale ve düzeltici aksiyonlar." },
+  { icon: GraduationCap, title: "Eğitim ve Danışmanlık", desc: "Son kullanıcı eğitimleri, süreç danışmanlığı ve teknik dokümantasyon hizmetleri." },
 ];
 
 export default function Services() {
@@ -22,10 +25,10 @@ export default function Services() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Cozumlerimiz</span>
+            <span className="gradient-text">Çözümlerimiz</span>
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Isletmenizin ihtiyaclarina ozel, uctan uca ERP ve yazilim cozumleri sunuyoruz.
+            İşletmenizin ihtiyaçlarına özel, uçtan uca ERP ve yazılım çözümleri sunuyoruz.
           </p>
         </motion.div>
 

@@ -1,9 +1,25 @@
 "use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Lock } from "lucide-react";
+import { LayoutDashboard, Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === "admin@erpide.com" && password === "erpide2024") {
+      router.push("/admin/dashboard");
+    } else {
+      setError("Hatalı email veya şifre!");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <motion.div
@@ -11,19 +27,26 @@ export default function AdminPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full p-8 rounded-2xl bg-[#111118] border border-white/5 text-center"
       >
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mb-6">
-          <LayoutDashboard size={32} className="text-white" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">ERPIDE Yonetim Paneli</h1>
-        <p className="text-gray-400 text-sm mb-6">Proje yonetimi, task takibi ve raporlama</p>
-        <div className="space-y-3">
-          <input placeholder="Email" type="email" className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
-          <input placeholder="Sifre" type="password" className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
-          <button className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition">
-            <Lock size={16} /> Giris Yap
+        <img src="/logo.png" alt="ERPIDE" className="h-16 mx-auto mb-6" />
+        <h1 className="text-2xl font-bold mb-2">Yönetim Paneli</h1>
+        <p className="text-gray-400 text-sm mb-6">Proje yönetimi, task takibi ve raporlama</p>
+
+        {error && (
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-red-500/10 text-red-400 text-sm">
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-3">
+          <input placeholder="Email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }}
+            className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
+          <input placeholder="Şifre" type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }}
+            className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
+          <button type="submit" className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition">
+            <Lock size={16} /> Giriş Yap
           </button>
-        </div>
-        <Link href="/" className="inline-block mt-4 text-sm text-gray-500 hover:text-white transition">← Ana Sayfaya Don</Link>
+        </form>
+        <Link href="/" className="inline-block mt-4 text-sm text-gray-500 hover:text-white transition">&larr; Ana Sayfaya Dön</Link>
       </motion.div>
     </div>
   );

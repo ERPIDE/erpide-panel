@@ -21,8 +21,8 @@ export default function CTA() {
           viewport={{ once: true }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Dijital Donusum Yolculugunuza{" "}
-          <span className="gradient-text">Baslayin</span>
+          Dijital Dönüşüm Yolculuğunuza{" "}
+          <span className="gradient-text">Başlayın</span>
         </motion.h2>
 
         <motion.p
@@ -32,8 +32,8 @@ export default function CTA() {
           transition={{ delay: 0.1 }}
           className="text-lg text-gray-400 mb-10 max-w-2xl mx-auto"
         >
-          Isletmenizi bir sonraki seviyeye tasimak icin hemen iletisime gecin.
-          Uzman ekibimiz sizin icin en uygun cozumu tasarlasin.
+          İşletmenizi bir sonraki seviyeye taşımak için hemen iletişime geçin.
+          Uzman ekibimiz sizin için en uygun çözümü tasarlasın.
         </motion.p>
 
         <motion.div
@@ -47,7 +47,7 @@ export default function CTA() {
             href="/iletisim"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-lg"
           >
-            Ucretsiz Danismanlik Alin <ArrowRight size={20} />
+            Ücretsiz Danışmanlık Alın <ArrowRight size={20} />
           </Link>
           <a
             href="tel:05546943409"

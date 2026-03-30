@@ -5,12 +5,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const services = [
-  { icon: Settings, title: "CANIAS ERP Danismanligi", desc: "TROIA dilinde ozel gelistirme, modul entegrasyonu, raporlama ve performans optimizasyonu. CANIAS is sureci yonetimi ve ozellestirme.", features: ["TROIA ile ozel modul gelistirme", "Performans optimizasyonu (N+1 sorgu cozumu)", "Ozel raporlama ve analiz ekranlari", "Is sureci otomasyonu"] },
-  { icon: Database, title: "1C ERP Cozumleri", desc: "1C:ERP kurulum, lokalizasyon (Turkiye/Kazakistan), muhasebe entegrasyonu ve web servis gelistirme.", features: ["1C:ERP ve 1C:Accounting entegrasyonu", "Kazakistan/Turkiye lokalizasyonu", "Web servis gelistirme (REST/SOAP)", "Muhasebe sablonu modelleme"] },
-  { icon: Code2, title: "Ozel Yazilim Gelistirme", desc: "Python, Node.js, React ile ozel otomasyon cozumleri, bot gelistirme ve API entegrasyonu.", features: ["Python otomasyon botlari", "Chrome extension gelistirme", "REST API entegrasyonlari", "Ozel panel ve dashboard"] },
-  { icon: Rocket, title: "Dijital Donusum Danismanligi", desc: "Is sureci analizi, teknoloji secimi, yol haritasi olusturma ve degisim yonetimi.", features: ["Mevcut surec analizi", "Teknoloji yol haritasi", "Degisim yonetimi", "ROI analizi ve raporlama"] },
-  { icon: Headset, title: "7/24 Bakim ve Destek", desc: "Proaktif izleme, hata tespit ve giderme, guncellemeler ve performans raporlari.", features: ["Kesintisiz teknik destek", "Proaktif sistem izleme", "Haftalik performans raporlari", "Hizli mudahale garantisi"] },
-  { icon: GraduationCap, title: "Egitim ve Danismanlik", desc: "Son kullanici egitimleri, yonetici briefingleri ve teknik dokumantasyon.", features: ["Son kullanici egitimleri", "Yonetici bilgilendirme", "Teknik dokumantasyon", "Video egitim icerikleri"] },
+  { icon: Settings, title: "CANIAS ERP Danışmanlığı", desc: "TROIA dilinde özel geliştirme, modül entegrasyonu, raporlama ve performans optimizasyonu. CANIAS iş süreci yönetimi ve özelleştirme.", features: ["TROIA ile özel modül geliştirme", "Performans optimizasyonu (N+1 sorgu çözümü)", "Özel raporlama ve analiz ekranları", "İş süreci otomasyonu"] },
+  { icon: Database, title: "1C ERP Çözümleri", desc: "1C:ERP kurulum, lokalizasyon (Türkiye/Kazakistan), muhasebe entegrasyonu ve web servis geliştirme.", features: ["1C:ERP ve 1C:Accounting entegrasyonu", "Kazakistan/Türkiye lokalizasyonu", "Web servis geliştirme (REST/SOAP)", "Muhasebe şablonu modelleme"] },
+  { icon: Code2, title: "Özel Yazılım Geliştirme", desc: "Python, Node.js, React ile özel otomasyon çözümleri, bot geliştirme ve API entegrasyonu.", features: ["Python otomasyon botları", "Chrome extension geliştirme", "REST API entegrasyonları", "Özel panel ve dashboard"] },
+  { icon: Rocket, title: "Dijital Dönüşüm Danışmanlığı", desc: "İş süreci analizi, teknoloji seçimi, yol haritası oluşturma ve değişim yönetimi.", features: ["Mevcut süreç analizi", "Teknoloji yol haritası", "Değişim yönetimi", "ROI analizi ve raporlama"] },
+  { icon: Headset, title: "7/24 Bakım ve Destek", desc: "Proaktif izleme, hata tespit ve giderme, güncellemeler ve performans raporları.", features: ["Kesintisiz teknik destek", "Proaktif sistem izleme", "Haftalık performans raporları", "Hızlı müdahale garantisi"] },
+  { icon: GraduationCap, title: "Eğitim ve Danışmanlık", desc: "Son kullanıcı eğitimleri, yönetici briefingleri ve teknik dokümantasyon.", features: ["Son kullanıcı eğitimleri", "Yönetici bilgilendirme", "Teknik dokümantasyon", "Video eğitim içerikleri"] },
 ];
 
 export default function HizmetlerPage() {
@@ -21,7 +21,7 @@ export default function HizmetlerPage() {
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
             <h1 className="text-4xl md:text-6xl font-bold mb-4"><span className="gradient-text">Hizmetlerimiz</span></h1>
-            <p className="text-gray-400 max-w-2xl mx-auto">Isletmenizin ihtiyaclarina ozel, uctan uca cozumler sunuyoruz.</p>
+            <p className="text-gray-400 max-w-2xl mx-auto">İşletmenizin ihtiyaçlarına özel, uçtan uca çözümler sunuyoruz.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-8">

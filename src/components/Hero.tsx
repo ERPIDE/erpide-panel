@@ -56,9 +56,9 @@ export default function Hero() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
-            Isletmenizi{" "}
-            <span className="gradient-text">Gelecege</span>{" "}
-            Tasiyoruz
+            İşletmenizi{" "}
+            <span className="gradient-text">Geleceğe</span>{" "}
+            Taşıyoruz
           </h1>
         </motion.div>
 
@@ -68,8 +68,8 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-10"
         >
-          CANIAS ERP, 1C ERP ve ozel yazilim cozumleriyle isletmenizi dijital caga hazirliyoruz.
-          Turkiye ve Kazakistan&apos;da guvenilir cozum ortaginiz.
+          CANIAS ERP, 1C ERP ve özel yazılım çözümleriyle işletmenizi dijital çağa hazırlıyoruz.
+          Turkiye ve Kazakistan&apos;da güvenilir çözüm ortağınız.
         </motion.p>
 
         <motion.div
@@ -82,13 +82,13 @@ export default function Hero() {
             href="/hizmetler"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-lg"
           >
-            Hizmetlerimizi Inceleyin <ArrowRight size={20} />
+            Hizmetlerimizi İnceleyin <ArrowRight size={20} />
           </Link>
           <Link
             href="/iletisim"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition text-lg"
           >
-            <Phone size={20} /> Bize Ulasin
+            <Phone size={20} /> Bize Ulaşın
           </Link>
         </motion.div>
 
@@ -99,8 +99,8 @@ export default function Hero() {
           className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/5"
         >
           <AnimatedStat value={150} suffix="+" label="Tamamlanan Proje" />
-          <AnimatedStat value={12} suffix="+" label="Yillik Deneyim" />
-          <AnimatedStat value={50} suffix="+" label="Mutlu Musteri" />
+          <AnimatedStat value={12} suffix="+" label="Yıllık Deneyim" />
+          <AnimatedStat value={50} suffix="+" label="Mutlu Müşteri" />
           <AnimatedStat value={7} suffix="/24" label="Destek" />
         </motion.div>
       </div>

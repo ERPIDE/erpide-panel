@@ -10,7 +10,7 @@ import {
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/tasks", label: "Task Yonetimi", icon: ListTodo },
+  { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
   { href: "/admin/reports", label: "Raporlar", icon: FileText },
 ];
 
@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0d0d14] border-r border-white/5 flex flex-col transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-6 border-b border-white/5">
           <Link href="/admin/dashboard" className="text-xl font-bold gradient-text">ERPIDE</Link>
-          <p className="text-xs text-gray-500 mt-1">Yonetim Paneli</p>
+          <p className="text-xs text-gray-500 mt-1">Yönetim Paneli</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-4 border-t border-white/5">
           <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-500 hover:text-red-400 transition">
-            <LogOut size={18} /> Cikis
+            <LogOut size={18} /> Çıkış
           </Link>
         </div>
       </aside>

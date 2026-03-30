@@ -2,12 +2,12 @@
 import { motion } from "framer-motion";
 
 const steps = [
-  { n: "01", title: "Ihtiyac Analizi", desc: "Mevcut is sureclerinizi detayli analiz ediyoruz." },
-  { n: "02", title: "Cozum Tasarimi", desc: "Firmaniza ozel mimari ve cozum tasarliyoruz." },
-  { n: "03", title: "Gelistirme", desc: "Uzman ekibimiz kodlama ve entegrasyonu gerceklestiriyor." },
-  { n: "04", title: "Test ve Kalite", desc: "Kapsamli test sureciyle kaliteyi garanti ediyoruz." },
-  { n: "05", title: "Devreye Alma", desc: "Sorunsuz gecis icin kademeli devreye alma yapiyoruz." },
-  { n: "06", title: "Destek", desc: "Surekli destek ve optimizasyonla yaninizda oluyoruz." },
+  { n: "01", title: "İhtiyaç Analizi", desc: "Mevcut iş süreçlerinizi detaylı analiz ediyoruz." },
+  { n: "02", title: "Çözüm Tasarımı", desc: "Firmanıza özel mimari ve çözüm tasarlıyoruz." },
+  { n: "03", title: "Geliştirme", desc: "Uzman ekibimiz kodlama ve entegrasyonu gerçekleştiriyor." },
+  { n: "04", title: "Test ve Kalite", desc: "Kapsamlı test süreciyle kaliteyi garanti ediyoruz." },
+  { n: "05", title: "Devreye Alma", desc: "Sorunsuz geçiş için kademeli devreye alma yapıyoruz." },
+  { n: "06", title: "Destek", desc: "Sürekli destek ve optimizasyonla yanınızda oluyoruz." },
 ];
 
 export default function Process() {
@@ -21,7 +21,7 @@ export default function Process() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Basarili Proje Sureci</span>
+            <span className="gradient-text">Başarılı Proje Süreci</span>
           </h2>
         </motion.div>
 

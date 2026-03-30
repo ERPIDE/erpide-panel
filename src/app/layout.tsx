@@ -5,12 +5,12 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ERPIDE - Kurumsal ERP Cozumleri ve Yazilim Danismanligi",
-  description: "ERPIDE Yazilim A.S. - CANIAS ERP, 1C ERP, ozel yazilim gelistirme, otomasyon ve dijital donusum cozumleri.",
-  keywords: ["ERP", "CANIAS", "1C ERP", "yazilim danismanligi", "dijital donusum"],
+  title: "ERPIDE - Kurumsal ERP Çözümleri ve Yazılım Danışmanlığı",
+  description: "ERPIDE Yazılım A.Ş. - CANIAS ERP, 1C ERP, özel yazılım geliştirme, otomasyon ve dijital dönüşüm çözümleri.",
+  keywords: ["ERP", "CANIAS", "1C ERP", "yazılım danışmanlığı", "dijital dönüşüm"],
   openGraph: {
-    title: "ERPIDE - Kurumsal ERP Cozumleri",
-    description: "Isletmenizi dijital caga tasiyoruz.",
+    title: "ERPIDE - Kurumsal ERP Çözümleri",
+    description: "İşletmenizi dijital çağa taşıyoruz.",
     url: "https://www.erpide.com",
     siteName: "ERPIDE",
     type: "website",

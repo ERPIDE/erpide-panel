@@ -5,27 +5,27 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const values = [
-  { icon: Target, title: "Uzmanlik", desc: "CANIAS ve 1C ERP alaninda derin teknik bilgi ve deneyim." },
-  { icon: Shield, title: "Guvenilirlik", desc: "Projelerimizi zamaninda ve kaliteli teslim ediyoruz." },
-  { icon: Lightbulb, title: "Yenilikcilik", desc: "En guncel teknolojilerle yenilikci cozumler uretiyoruz." },
-  { icon: Users, title: "Musteri Odaklilik", desc: "Her musterimizin ihtiyacina ozel yaklasim sunuyoruz." },
+  { icon: Target, title: "Uzmanlık", desc: "CANIAS ve 1C ERP alanında derin teknik bilgi ve deneyim." },
+  { icon: Shield, title: "Güvenilirlik", desc: "Projelerimizi zamanında ve kaliteli teslim ediyoruz." },
+  { icon: Lightbulb, title: "Yenilikçilik", desc: "En güncel teknolojilerle yenilikçi çözümler üretiyoruz." },
+  { icon: Users, title: "Müşteri Odaklılık", desc: "Her müşterimizin ihtiyacına özel yaklaşım sunuyoruz." },
 ];
 
 const team = [
-  { name: "Ali Murat El", role: "Kurucu & CEO", desc: "ERP ve yazilim gelistirme alaninda 12+ yil deneyim." },
-  { name: "Kidemli Danismanlar", role: "ERP Danismanligi", desc: "CANIAS ve 1C platformlarinda uzman kadro." },
-  { name: "Gelistirme Ekibi", role: "Yazilim Gelistirme", desc: "Full-stack gelistirme ve otomasyon uzmanlari." },
-  { name: "Proje Ekibi", role: "Proje Yonetimi", desc: "Profesyonel proje yonetimi ve koordinasyon." },
+  { name: "Ali Murat El", role: "Kurucu & CEO", desc: "ERP ve yazılım geliştirme alanında 12+ yıl deneyim." },
+  { name: "Kıdemli Danışmanlar", role: "ERP Danışmanlığı", desc: "CANIAS ve 1C platformlarında uzman kadro." },
+  { name: "Geliştirme Ekibi", role: "Yazılım Geliştirme", desc: "Full-stack geliştirme ve otomasyon uzmanları." },
+  { name: "Proje Ekibi", role: "Proje Yönetimi", desc: "Profesyonel proje yönetimi ve koordinasyon." },
 ];
 
-export default function HakkimizdaPage() {
+export default function HakkımızdaPage() {
   return (
     <>
       <Navbar />
       <main className="pt-24 pb-16 px-6 min-h-screen">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4"><span className="gradient-text">Hakkimizda</span></h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4"><span className="gradient-text">Hakkımızda</span></h1>
           </motion.div>
 
           {/* Story */}
@@ -36,15 +36,15 @@ export default function HakkimizdaPage() {
             className="max-w-3xl mx-auto text-center mb-20"
           >
             <p className="text-lg text-gray-300 leading-relaxed">
-              ERPIDE YAZILIM A.S. olarak, isletmelerin dijital donusum yolculugunda guvenilir cozum ortagi olmayi hedefliyoruz.
-              CANIAS ERP ve 1C ERP alaninda uzman kadromuzla Turkiye ve Kazakistan&apos;da hizmet veriyoruz.
-              Ozel yazilim gelistirme, otomasyon ve entegrasyon cozumleriyle musterilerimizin verimliligini en ust duzeye cikartiyoruz.
+              ERPIDE YAZILIM A.Ş. olarak, işletmelerin dijital dönüşüm yolculuğunda güvenilir çözüm ortağı olmayı hedefliyoruz.
+              CANIAS ERP ve 1C ERP alanında uzman kadromuzla Türkiye ve Kazakistan&apos;da hizmet veriyoruz.
+              Özel yazılım geliştirme, otomasyon ve entegrasyon çözümleriyle müşterilerimizin verimliliğini en üst düzeye çıkartıyoruz.
             </p>
           </motion.div>
 
           {/* Values */}
           <div className="mb-20">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">Degerlerimiz</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">Değerlerimiz</h2>
             <div className="grid md:grid-cols-4 gap-6">
               {values.map((v, i) => (
                 <motion.div

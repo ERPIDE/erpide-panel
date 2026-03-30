@@ -15,9 +15,9 @@ export default function Clients() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Guvendikleri</span>
+            <span className="gradient-text">Güvendikleri</span>
           </h2>
-          <p className="text-gray-400">Turkiye ve Kazakistan&apos;da oncu firmalarin cozum ortagi</p>
+          <p className="text-gray-400">Turkiye ve Kazakistan&apos;da öncü firmaların çözüm ortağı</p>
         </motion.div>
 
         {/* Client logos */}
@@ -45,10 +45,10 @@ export default function Clients() {
         >
           <Quote size={40} className="text-blue-500/30 mx-auto mb-4" />
           <p className="text-lg text-gray-300 italic leading-relaxed mb-4">
-            &quot;ERPIDE ile ERP sureclerimizi tamamen donusturduk. Profesyonel ekip ve kesintisiz destek
-            ile is sureclerimiz cok daha verimli hale geldi.&quot;
+            &quot;ERPIDE ile ERP süreçlerimizi tamamen dönüştürdük. Profesyonel ekip ve kesintisiz destek
+            ile iş süreçlerimiz çok daha verimli hale geldi.&quot;
           </p>
-          <p className="text-sm text-gray-500">— Operasyon Muduru, Uretim Sektoru</p>
+          <p className="text-sm text-gray-500">— Operasyon Müdürü, Üretim Sektörü</p>
         </motion.div>
       </div>
     </section>
