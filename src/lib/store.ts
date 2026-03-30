@@ -51,6 +51,7 @@ export interface Attachment {
 
 export interface Task {
   id: number;
+  repo?: string;
   title: string;
   description: string;
   project: string;
@@ -62,6 +63,8 @@ export interface Task {
   createdAt: string;
   createdBy: string;
   devNote?: string;
+  url?: string;
+  commentsCount?: number;
   comments: Comment[];
   attachments: Attachment[];
 }

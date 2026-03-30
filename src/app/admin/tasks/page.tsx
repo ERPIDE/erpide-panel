@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -26,6 +26,7 @@ import {
   Filter,
   BarChart3,
   ListTodo,
+  Loader2,
 } from "lucide-react";
 import {
   Task,
@@ -33,7 +34,6 @@ import {
   Priority,
   Label,
   Comment,
-  initialTasks,
   priorityConfig,
   statusConfig,
   labelConfig,
@@ -61,8 +61,8 @@ const priorityIcons: Record<Priority, typeof Flame> = {
 
 const roleBadge: Record<string, { label: string; color: string; bg: string }> = {
   admin: { label: "Admin", color: "text-purple-400", bg: "bg-purple-500/10" },
-  customer: { label: "Müşteri", color: "text-cyan-400", bg: "bg-cyan-500/10" },
-  developer: { label: "Geliştirici", color: "text-green-400", bg: "bg-green-500/10" },
+  customer: { label: "Musteri", color: "text-cyan-400", bg: "bg-cyan-500/10" },
+  developer: { label: "Gelistirici", color: "text-green-400", bg: "bg-green-500/10" },
 };
 
 const clientMap: Record<string, string> = {
@@ -85,7 +85,8 @@ function todayISO(): string {
 
 /* ─── main component ─── */
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -96,10 +97,14 @@ export default function TasksPage() {
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
 
-  // comment form
+  // comment state
   const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentPosting, setCommentPosting] = useState(false);
 
   // create form
+  const [creating, setCreating] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -108,6 +113,109 @@ export default function TasksPage() {
     priority: "medium" as Priority,
     deadline: "",
   });
+
+  /* ─── fetch tasks on mount ─── */
+  async function fetchTasks() {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/tasks");
+      if (!res.ok) throw new Error("Failed to fetch tasks");
+      const data: Task[] = await res.json();
+      setTasks(data);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  /* ─── fetch comments when task detail opens ─── */
+  async function fetchComments(task: Task) {
+    if (!task.repo) {
+      setComments(task.comments ?? []);
+      return;
+    }
+    try {
+      setCommentsLoading(true);
+      const res = await fetch(`/api/tasks/comments?repo=${encodeURIComponent(task.repo)}&issue=${task.id}`);
+      if (!res.ok) throw new Error("Failed to fetch comments");
+      const data: Comment[] = await res.json();
+      setComments(data);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+      setComments(task.comments ?? []);
+    } finally {
+      setCommentsLoading(false);
+    }
+  }
+
+  function openTaskDetail(task: Task) {
+    setSelectedTask(task);
+    setCommentText("");
+    setComments([]);
+    fetchComments(task);
+  }
+
+  /* ─── post comment ─── */
+  async function addComment(task: Task) {
+    if (!commentText.trim() || !task.repo) return;
+    try {
+      setCommentPosting(true);
+      const res = await fetch("/api/tasks/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repo: task.repo,
+          issueNumber: task.id,
+          comment: commentText.trim(),
+          author: "ERPIDE Admin",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to post comment");
+      setCommentText("");
+      // refresh comments
+      await fetchComments(task);
+    } catch (err) {
+      console.error("Error posting comment:", err);
+    } finally {
+      setCommentPosting(false);
+    }
+  }
+
+  /* ─── create task ─── */
+  async function createTask() {
+    if (!newTask.title.trim()) return;
+    try {
+      setCreating(true);
+      const body = {
+        title: newTask.title.trim(),
+        description: newTask.description.trim(),
+        project: newTask.project,
+        client: clientMap[newTask.project] ?? "",
+        label: newTask.label,
+        priority: newTask.priority,
+        deadline: newTask.deadline || undefined,
+      };
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Failed to create task");
+      setNewTask({ title: "", description: "", project: "CANIAS", label: "feature", priority: "medium", deadline: "" });
+      setShowCreateModal(false);
+      // refresh the list
+      await fetchTasks();
+    } catch (err) {
+      console.error("Error creating task:", err);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   /* ─── derived ─── */
   const filtered = useMemo(() => {
@@ -138,64 +246,26 @@ export default function TasksPage() {
     return tasks.find((t) => t.id === selectedTask.id) ?? null;
   }, [tasks, selectedTask]);
 
-  /* ─── actions ─── */
-  function cycleStatus(id: number) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id !== id ? t : { ...t, status: statuses[(statuses.indexOf(t.status) + 1) % statuses.length] }
-      )
+  /* ─── loading spinner ─── */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Loader2 size={40} className="text-blue-500 animate-spin" />
+          <p className="text-sm text-gray-400">Gorevler yukleniyor...</p>
+        </motion.div>
+      </div>
     );
-  }
-
-  function setTaskStatus(id: number, status: Status) {
-    setTasks((prev) => prev.map((t) => (t.id !== id ? t : { ...t, status })));
-  }
-
-  function setTaskPriority(id: number, priority: Priority) {
-    setTasks((prev) => prev.map((t) => (t.id !== id ? t : { ...t, priority })));
-  }
-
-  function addComment(taskId: number) {
-    if (!commentText.trim()) return;
-    const comment: Comment = {
-      id: `c-${Date.now()}`,
-      author: "Admin",
-      authorRole: "admin",
-      text: commentText.trim(),
-      date: todayISO(),
-    };
-    setTasks((prev) =>
-      prev.map((t) => (t.id !== taskId ? t : { ...t, comments: [...t.comments, comment] }))
-    );
-    setCommentText("");
-  }
-
-  function createTask() {
-    if (!newTask.title.trim()) return;
-    const task: Task = {
-      id: Math.max(0, ...tasks.map((t) => t.id)) + 1,
-      title: newTask.title.trim(),
-      description: newTask.description.trim(),
-      project: newTask.project,
-      client: clientMap[newTask.project] ?? "",
-      label: newTask.label,
-      status: "todo",
-      priority: newTask.priority,
-      deadline: newTask.deadline || undefined,
-      createdAt: todayISO(),
-      createdBy: "Admin",
-      comments: [],
-      attachments: [],
-    };
-    setTasks((prev) => [task, ...prev]);
-    setNewTask({ title: "", description: "", project: "CANIAS", label: "feature", priority: "medium", deadline: "" });
-    setShowCreateModal(false);
   }
 
   /* ─── render ─── */
   return (
     <div className="max-w-[1440px] mx-auto space-y-6">
-      {/* ══════ Stats Bar ══════ */}
+      {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: "Toplam", value: stats.total, icon: ListTodo, color: "text-white", bg: "bg-white/5" },
@@ -203,7 +273,7 @@ export default function TasksPage() {
           { label: statusConfig.in_progress.label, value: stats.byStatus.in_progress, icon: Clock, color: statusConfig.in_progress.color, bg: statusConfig.in_progress.bg },
           { label: statusConfig.review.label, value: stats.byStatus.review, icon: Eye, color: statusConfig.review.color, bg: statusConfig.review.bg },
           { label: statusConfig.done.label, value: stats.byStatus.done, icon: CheckCircle2, color: statusConfig.done.color, bg: statusConfig.done.bg },
-          { label: "Gecikmiş", value: stats.overdue, icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
+          { label: "Gecikmis", value: stats.overdue, icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
         ].map((s) => (
           <div key={s.label} className={`flex items-center gap-3 p-3.5 rounded-xl bg-[#111118] border border-white/5`}>
             <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center shrink-0`}>
@@ -217,13 +287,13 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {/* ══════ Toolbar ══════ */}
+      {/* Toolbar */}
       <div className="flex flex-col lg:flex-row gap-3">
         {/* search */}
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
-            placeholder="Görev ara..."
+            placeholder="Gorev ara..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
@@ -232,34 +302,34 @@ export default function TasksPage() {
         {/* filters */}
         <div className="flex flex-wrap gap-2">
           <select value={fProject} onChange={(e) => setFProject(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="all">Tüm Projeler</option>
+            <option value="all">Tum Projeler</option>
             {projects.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="all">Tüm Durumlar</option>
+            <option value="all">Tum Durumlar</option>
             {statuses.map((s) => <option key={s} value={s}>{statusConfig[s].label}</option>)}
           </select>
           <select value={fPriority} onChange={(e) => setFPriority(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="all">Tüm Öncelikler</option>
+            <option value="all">Tum Oncelikler</option>
             {priorities.map((p) => <option key={p} value={p}>{priorityConfig[p].label}</option>)}
           </select>
           <select value={fLabel} onChange={(e) => setFLabel(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="all">Tüm Etiketler</option>
+            <option value="all">Tum Etiketler</option>
             {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
           </select>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
           >
-            <Plus size={16} /> Yeni Görev
+            <Plus size={16} /> Yeni Gorev
           </button>
         </div>
       </div>
 
-      {/* ══════ Results count ══════ */}
+      {/* Results count */}
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
-        <span>{filtered.length} görev listeleniyor</span>
+        <span>{filtered.length} gorev listeleniyor</span>
         {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all") && (
           <button
             onClick={() => { setSearch(""); setFProject("all"); setFStatus("all"); setFPriority("all"); setFLabel("all"); }}
@@ -270,7 +340,7 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* ══════ Task List ══════ */}
+      {/* Task List */}
       <div className="space-y-1.5">
         <AnimatePresence mode="popLayout">
           {filtered.map((t) => {
@@ -289,17 +359,13 @@ export default function TasksPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.15 }}
-                onClick={() => setSelectedTask(t)}
+                onClick={() => openTaskDetail(t)}
                 className="flex items-center gap-3 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/20 cursor-pointer transition group"
               >
-                {/* status icon - clickable to cycle */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); cycleStatus(t.id); }}
-                  className="shrink-0 hover:scale-110 transition-transform"
-                  title={`Durum: ${sc.label}`}
-                >
+                {/* status icon (read-only) */}
+                <div className="shrink-0" title={`Durum: ${sc.label}`}>
                   <StatusIcon size={20} className={`${sc.color} transition-colors`} />
-                </button>
+                </div>
 
                 {/* main content */}
                 <div className="flex-1 min-w-0">
@@ -334,14 +400,14 @@ export default function TasksPage() {
                 {/* right side */}
                 <div className="flex items-center gap-3 shrink-0">
                   {/* comment count */}
-                  {t.comments.length > 0 && (
+                  {(t.commentsCount ?? t.comments?.length ?? 0) > 0 && (
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <MessageSquare size={12} />
-                      {t.comments.length}
+                      {t.commentsCount ?? t.comments?.length ?? 0}
                     </span>
                   )}
                   {/* attachments count */}
-                  {t.attachments.length > 0 && (
+                  {(t.attachments?.length ?? 0) > 0 && (
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <Paperclip size={12} />
                       {t.attachments.length}
@@ -360,12 +426,12 @@ export default function TasksPage() {
         {filtered.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <ListTodo size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Görev bulunamadı</p>
+            <p className="text-sm">Gorev bulunamadi</p>
           </div>
         )}
       </div>
 
-      {/* ══════ Task Detail Slide-Over ══════ */}
+      {/* Task Detail Slide-Over */}
       <AnimatePresence>
         {activeTask && (
           <>
@@ -374,7 +440,7 @@ export default function TasksPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedTask(null); setCommentText(""); }}
+              onClick={() => { setSelectedTask(null); setCommentText(""); setComments([]); }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
             {/* panel */}
@@ -400,7 +466,7 @@ export default function TasksPage() {
                     <h2 className="text-lg font-semibold text-white leading-snug">{activeTask.title}</h2>
                   </div>
                   <button
-                    onClick={() => { setSelectedTask(null); setCommentText(""); }}
+                    onClick={() => { setSelectedTask(null); setCommentText(""); setComments([]); }}
                     className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition shrink-0"
                   >
                     <X size={20} />
@@ -418,7 +484,7 @@ export default function TasksPage() {
                   </div>
                   {/* priority */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Öncelik</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oncelik</p>
                     <span className={`text-sm font-medium ${priorityConfig[activeTask.priority].color}`}>
                       {priorityConfig[activeTask.priority].label}
                     </span>
@@ -434,17 +500,17 @@ export default function TasksPage() {
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
                     <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Son Tarih</p>
                     <span className={`text-sm font-medium ${activeTask.deadline ? (isOverdue(activeTask.deadline) && activeTask.status !== "done" ? "text-red-400" : "text-white") : "text-gray-600"}`}>
-                      {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemiş"}
+                      {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemis"}
                     </span>
                   </div>
                   {/* created */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oluşturulma</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Olusturulma</p>
                     <span className="text-sm text-white">{formatDate(activeTask.createdAt)}</span>
                   </div>
                   {/* created by */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oluşturan</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Olusturan</p>
                     <span className="text-sm text-white">{activeTask.createdBy}</span>
                   </div>
                 </div>
@@ -453,10 +519,10 @@ export default function TasksPage() {
                 <div className="p-4 rounded-xl bg-[#111118] border border-white/5">
                   <div className="flex items-center gap-2 mb-2">
                     <FileText size={14} className="text-gray-500" />
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Açıklama</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Aciklama</p>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-                    {activeTask.description || "Açıklama eklenmemiş."}
+                    {activeTask.description || "Aciklama eklenmemis."}
                   </p>
                 </div>
 
@@ -464,60 +530,58 @@ export default function TasksPage() {
                 <div className="p-4 rounded-xl bg-[#111118] border border-white/5">
                   <div className="flex items-center gap-2 mb-2">
                     <StickyNote size={14} className="text-yellow-500/60" />
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Geliştirici Notu</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Gelistirici Notu</p>
                   </div>
                   <p className={`text-sm leading-relaxed whitespace-pre-wrap ${activeTask.devNote ? "text-yellow-200/80" : "text-gray-600 italic"}`}>
-                    {activeTask.devNote || "Henüz geliştirici notu yok."}
+                    {activeTask.devNote || "Henuz gelistirici notu yok."}
                   </p>
                 </div>
 
-                {/* status change buttons */}
+                {/* status display (read-only) */}
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Durum Değiştir</p>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Durum</p>
                   <div className="flex flex-wrap gap-2">
                     {statuses.map((s) => {
                       const cfg = statusConfig[s];
                       const Icon = statusIcons[s];
                       const active = activeTask.status === s;
                       return (
-                        <button
+                        <div
                           key={s}
-                          onClick={() => setTaskStatus(activeTask.id, s)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition ${
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border ${
                             active
                               ? `${cfg.bg} ${cfg.color} border-current`
-                              : "bg-[#111118] text-gray-400 border-white/5 hover:border-white/20 hover:text-white"
+                              : "bg-[#111118] text-gray-600 border-white/5"
                           }`}
                         >
                           <Icon size={14} />
                           {cfg.label}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* priority change */}
+                {/* priority display (read-only) */}
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Öncelik Değiştir</p>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Oncelik</p>
                   <div className="flex flex-wrap gap-2">
                     {priorities.map((p) => {
                       const cfg = priorityConfig[p];
                       const Icon = priorityIcons[p];
                       const active = activeTask.priority === p;
                       return (
-                        <button
+                        <div
                           key={p}
-                          onClick={() => setTaskPriority(activeTask.id, p)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition ${
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border ${
                             active
                               ? `${cfg.bg} ${cfg.color} border-current`
-                              : "bg-[#111118] text-gray-400 border-white/5 hover:border-white/20 hover:text-white"
+                              : "bg-[#111118] text-gray-600 border-white/5"
                           }`}
                         >
                           <Icon size={14} />
                           {cfg.label}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -528,13 +592,18 @@ export default function TasksPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <MessageSquare size={14} className="text-gray-500" />
                     <p className="text-[10px] uppercase tracking-wider text-gray-500">
-                      Yorumlar ({activeTask.comments.length})
+                      Yorumlar ({comments.length})
                     </p>
+                    {commentsLoading && <Loader2 size={12} className="text-blue-400 animate-spin" />}
                   </div>
 
-                  {activeTask.comments.length > 0 && (
+                  {commentsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 size={20} className="text-blue-400 animate-spin" />
+                    </div>
+                  ) : comments.length > 0 ? (
                     <div className="space-y-3 mb-4">
-                      {activeTask.comments.map((c) => {
+                      {comments.map((c) => {
                         const badge = roleBadge[c.authorRole] ?? roleBadge.customer;
                         return (
                           <div key={c.id} className="p-3.5 rounded-xl bg-[#111118] border border-white/5">
@@ -553,6 +622,8 @@ export default function TasksPage() {
                         );
                       })}
                     </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 mb-4 italic">Henuz yorum yok.</p>
                   )}
 
                   {/* add comment */}
@@ -565,11 +636,12 @@ export default function TasksPage() {
                       className="flex-1 p-3 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none resize-none transition"
                     />
                     <button
-                      onClick={() => addComment(activeTask.id)}
-                      disabled={!commentText.trim()}
-                      className="self-end px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition"
+                      onClick={() => addComment(activeTask)}
+                      disabled={!commentText.trim() || commentPosting}
+                      className="self-end px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
                     >
-                      Gönder
+                      {commentPosting && <Loader2 size={14} className="animate-spin" />}
+                      Gonder
                     </button>
                   </div>
                 </div>
@@ -579,11 +651,11 @@ export default function TasksPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <Paperclip size={14} className="text-gray-500" />
                     <p className="text-[10px] uppercase tracking-wider text-gray-500">
-                      Ekler ({activeTask.attachments.length})
+                      Ekler ({activeTask.attachments?.length ?? 0})
                     </p>
                   </div>
 
-                  {activeTask.attachments.length > 0 ? (
+                  {(activeTask.attachments?.length ?? 0) > 0 ? (
                     <div className="space-y-2 mb-3">
                       {activeTask.attachments.map((a) => (
                         <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#111118] border border-white/5">
@@ -595,21 +667,35 @@ export default function TasksPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-600 mb-3 italic">Henüz ek dosya yok.</p>
+                    <p className="text-xs text-gray-600 mb-3 italic">Henuz ek dosya yok.</p>
                   )}
 
                   <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm transition">
                     <Upload size={14} />
-                    Dosya Yükle
+                    Dosya Yukle
                   </button>
                 </div>
+
+                {/* GitHub link */}
+                {activeTask.url && (
+                  <div className="pt-2 border-t border-white/5">
+                    <a
+                      href={activeTask.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300 transition"
+                    >
+                      GitHub Issue &rarr;
+                    </a>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* ══════ Create Task Modal ══════ */}
+      {/* Create Task Modal */}
       <AnimatePresence>
         {showCreateModal && (
           <>
@@ -632,7 +718,7 @@ export default function TasksPage() {
               <div className="w-full max-w-lg bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 {/* header */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">Yeni Görev Oluştur</h3>
+                  <h3 className="text-lg font-semibold text-white">Yeni Gorev Olustur</h3>
                   <button onClick={() => setShowCreateModal(false)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition">
                     <X size={18} />
                   </button>
@@ -642,22 +728,22 @@ export default function TasksPage() {
                 <div className="space-y-4">
                   {/* title */}
                   <div>
-                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Başlık</label>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Baslik</label>
                     <input
                       value={newTask.title}
                       onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                      placeholder="Görev başlığı..."
+                      placeholder="Gorev basligi..."
                       className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
                     />
                   </div>
 
                   {/* description */}
                   <div>
-                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Açıklama</label>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Aciklama</label>
                     <textarea
                       value={newTask.description}
                       onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                      placeholder="Detaylı açıklama..."
+                      placeholder="Detayli aciklama..."
                       rows={3}
                       className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none resize-none transition"
                     />
@@ -676,7 +762,7 @@ export default function TasksPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Müşteri</label>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri</label>
                       <input
                         value={clientMap[newTask.project] ?? ""}
                         readOnly
@@ -698,7 +784,7 @@ export default function TasksPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Öncelik</label>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Oncelik</label>
                       <select
                         value={newTask.priority}
                         onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Priority })}
@@ -725,14 +811,15 @@ export default function TasksPage() {
                     onClick={() => setShowCreateModal(false)}
                     className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition"
                   >
-                    İptal
+                    Iptal
                   </button>
                   <button
                     onClick={createTask}
-                    disabled={!newTask.title.trim()}
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition"
+                    disabled={!newTask.title.trim() || creating}
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
                   >
-                    Oluştur
+                    {creating && <Loader2 size={14} className="animate-spin" />}
+                    Olustur
                   </button>
                 </div>
               </div>

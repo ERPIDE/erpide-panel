@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -16,8 +16,9 @@ import {
   ChevronDown,
   FileDown,
   Send,
+  Loader2,
 } from "lucide-react";
-import { Task, initialTasks, statusConfig, priorityConfig, labelConfig } from "@/lib/store";
+import { Task, statusConfig, priorityConfig, labelConfig } from "@/lib/store";
 import Logo from "@/components/Logo";
 
 interface PastReport {
@@ -30,33 +31,45 @@ interface PastReport {
 const pastReports: PastReport[] = [
   {
     id: "pr1",
-    title: "Sirmersan Haftalık Döküm",
+    title: "Sirmersan Haftal\u0131k D\u00F6k\u00FCm",
     dateRange: "09.03.2026 - 28.03.2026",
     status: "sent",
   },
   {
     id: "pr2",
-    title: "ATM Constructor Aylık Rapor",
+    title: "ATM Constructor Ayl\u0131k Rapor",
     dateRange: "Mart 2026",
     status: "sent",
   },
 ];
 
 const clientOptions = [
-  { value: "all", label: "Tüm Müşteriler", project: "" },
-  { value: "Sirmersan", label: "Sirmersan — CANIAS", project: "CANIAS" },
-  { value: "ATM Constructor", label: "ATM Constructor — 1C ERP", project: "1C ERP" },
+  { value: "all", label: "T\u00FCm M\u00FC\u015Fteriler", project: "" },
+  { value: "Sirmersan", label: "Sirmersan \u2014 CANIAS", project: "CANIAS" },
+  { value: "ATM Constructor", label: "ATM Constructor \u2014 1C ERP", project: "1C ERP" },
 ];
 
 export default function ReportsPage() {
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("2026-03-09");
   const [endDate, setEndDate] = useState("2026-03-30");
   const [selectedClient, setSelectedClient] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showReport, setShowReport] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((res) => res.json())
+      .then((data: Task[]) => {
+        setAllTasks(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const filteredTasks = useMemo(() => {
-    return initialTasks.filter((task) => {
+    return allTasks.filter((task) => {
       const taskDate = new Date(task.createdAt);
       const start = new Date(startDate);
       const end = new Date(endDate);
@@ -67,7 +80,7 @@ export default function ReportsPage() {
       if (statusFilter !== "all" && task.status !== statusFilter) return false;
       return true;
     });
-  }, [startDate, endDate, selectedClient, statusFilter]);
+  }, [allTasks, startDate, endDate, selectedClient, statusFilter]);
 
   const pdfTasks = useMemo(() => {
     return filteredTasks.filter((t) => t.status === "done");
@@ -81,7 +94,7 @@ export default function ReportsPage() {
     return { total, completed, inProgress, waiting };
   }, [filteredTasks]);
 
-  const clientLabel = clientOptions.find((c) => c.value === selectedClient)?.label ?? "Tüm Müşteriler";
+  const clientLabel = clientOptions.find((c) => c.value === selectedClient)?.label ?? "T\u00FCm M\u00FC\u015Fteriler";
 
   const formatDateTR = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -98,13 +111,24 @@ export default function ReportsPage() {
     return devComments[devComments.length - 1];
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={36} className="text-blue-400 animate-spin" />
+          <p className="text-sm text-gray-500">Veriler yukleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Page Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-white">Raporlar</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Haftalık geliştirme dökümanları ve proje raporları oluşturun
+          Haftal\u0131k geli\u015Ftirme d\u00F6k\u00FCmanlar\u0131 ve proje raporlar\u0131 olu\u015Fturun
         </p>
       </motion.div>
 
@@ -117,13 +141,13 @@ export default function ReportsPage() {
       >
         <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
           <Filter size={18} className="text-blue-400" />
-          Rapor Yapılandırması
+          Rapor Yap\u0131land\u0131rmas\u0131
         </h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Start Date */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Başlangıç Tarihi</label>
+            <label className="block text-xs text-gray-400 mb-1.5">Ba\u015Flang\u0131\u00E7 Tarihi</label>
             <input
               type="date"
               value={startDate}
@@ -134,7 +158,7 @@ export default function ReportsPage() {
 
           {/* End Date */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Bitiş Tarihi</label>
+            <label className="block text-xs text-gray-400 mb-1.5">Biti\u015F Tarihi</label>
             <input
               type="date"
               value={endDate}
@@ -145,7 +169,7 @@ export default function ReportsPage() {
 
           {/* Client Filter */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Müşteri / Proje</label>
+            <label className="block text-xs text-gray-400 mb-1.5">M\u00FC\u015Fteri / Proje</label>
             <div className="relative">
               <select
                 value={selectedClient}
@@ -171,11 +195,11 @@ export default function ReportsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 transition appearance-none [color-scheme:dark]"
               >
-                <option value="all" className="bg-[#111118] text-white">Tüm Durumlar</option>
+                <option value="all" className="bg-[#111118] text-white">T\u00FCm Durumlar</option>
                 <option value="done" className="bg-[#111118] text-white">Tamamlanan</option>
                 <option value="in_progress" className="bg-[#111118] text-white">Devam Eden</option>
                 <option value="todo" className="bg-[#111118] text-white">Bekleyen</option>
-                <option value="review" className="bg-[#111118] text-white">İncelemede</option>
+                <option value="review" className="bg-[#111118] text-white">\u0130ncelemede</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
             </div>
@@ -188,7 +212,7 @@ export default function ReportsPage() {
               className="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium hover:from-blue-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2"
             >
               <FileText size={15} />
-              Rapor Oluştur
+              Rapor Olu\u015Ftur
             </button>
           </div>
         </div>
@@ -244,15 +268,15 @@ export default function ReportsPage() {
                     .report-footer { text-align: center; border-top: 2px solid #1a1a1a; padding-top: 10px; margin-top: 25px; font-size: 8pt; color: #666; }
                   </style></head><body>`);
 
-                  const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
-                  const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
+                  const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "\u0130ncelemede", done: "Tamamland\u0131" };
+                  const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Y\u00FCksek", medium: "Orta", low: "D\u00FC\u015F\u00FCk" };
 
                   win.document.write(`
                     <div class="report-header">
                       <div class="logo-text">ERP<span>IDE</span></div>
-                      <div class="tagline">ERP Çözümleri Hakkında Her Şey</div>
-                      <div class="subtitle">Haftalık Geliştirme Dökümanı</div>
-                      <div class="date-range">${formatDateTR(startDate)} — ${formatDateTR(endDate)} | ${clientLabel}</div>
+                      <div class="tagline">ERP \u00C7\u00F6z\u00FCmleri Hakk\u0131nda Her \u015Eey</div>
+                      <div class="subtitle">Haftal\u0131k Geli\u015Ftirme D\u00F6k\u00FCman\u0131</div>
+                      <div class="date-range">${formatDateTR(startDate)} \u2014 ${formatDateTR(endDate)} | ${clientLabel}</div>
                     </div>
                     <div class="stats-row">
                       <div class="stat-box"><div class="val">${stats.total}</div><div class="lbl">Toplam</div></div>
@@ -264,7 +288,7 @@ export default function ReportsPage() {
 
                   const tasksForPdf = filteredTasks.filter(t => t.status === "done");
                   if (tasksForPdf.length === 0) {
-                    win.document.write('<p style="text-align:center;color:#999;padding:30px;">Seçilen tarih aralığında tamamlanmış görev bulunamadı.</p>');
+                    win.document.write('<p style="text-align:center;color:#999;padding:30px;">Se\u00E7ilen tarih aral\u0131\u011F\u0131nda tamamlanm\u0131\u015F g\u00F6rev bulunamad\u0131.</p>');
                   }
                   tasksForPdf.forEach((task, i) => {
                     const devComments = task.comments.filter(c => c.authorRole === "developer");
@@ -275,21 +299,21 @@ export default function ReportsPage() {
                     win.document.write(`
                       <div class="task-item">
                         <h3>Sorun ${i + 1}: ${task.title}</h3>
-                        <div class="field"><span class="label">Açıklama:</span> ${task.description}</div>
-                        <div class="field"><span class="label">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+                        <div class="field"><span class="label">A\u00E7\u0131klama:</span> ${task.description}</div>
+                        <div class="field"><span class="label">\u00C7\u00F6z\u00FCm:</span> ${task.devNote || "<em style='color:#999'>\u00C7\u00F6z\u00FCm bekleniyor</em>"}</div>
                         <div class="field">
                           <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
-                          &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
+                          &nbsp;&nbsp;<span class="label">\u00D6ncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
                         </div>
-                        ${devComment ? `<div class="dev-note"><strong>Geliştirmeci Notu:</strong> ${devComment.text}</div>` : ""}
+                        ${devComment ? `<div class="dev-note"><strong>Geli\u015Ftirmeci Notu:</strong> ${devComment.text}</div>` : ""}
                       </div>
                     `);
                   });
 
                   win.document.write(`
                     <div class="report-footer">
-                      <strong>ERPIDE YAZILIM A.Ş.</strong><br>
-                      info@erpide.com — 0554 694 34 09<br>
+                      <strong>ERPIDE YAZILIM A.\u015E.</strong><br>
+                      info@erpide.com \u2014 0554 694 34 09<br>
                       www.erpide.com
                     </div>
                   </body></html>`);
@@ -299,14 +323,14 @@ export default function ReportsPage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/10 text-blue-400 text-sm hover:bg-blue-600/20 transition border border-blue-500/10"
               >
                 <FileDown size={15} />
-                PDF İndir / Yazdır
+                PDF \u0130ndir / Yazd\u0131r
               </button>
               <button
-                onClick={() => alert("Email gönderme özelliği yakında aktif olacak.\ninfo@erpide.com adresine bildirim gönderilecek.")}
+                onClick={() => alert("Email g\u00F6nderme \u00F6zelli\u011Fi yak\u0131nda aktif olacak.\ninfo@erpide.com adresine bildirim g\u00F6nderilecek.")}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/10 text-purple-400 text-sm hover:bg-purple-600/20 transition border border-purple-500/10"
               >
                 <Send size={15} />
-                Email Gönder
+                Email G\u00F6nder
               </button>
             </div>
 
@@ -323,9 +347,9 @@ export default function ReportsPage() {
                   <div className="flex items-center gap-5">
                     <Logo size="default" />
                     <div className="ml-4">
-                      <h2 className="text-xl font-bold text-white">Haftalık Geliştirme Dökümanı</h2>
+                      <h2 className="text-xl font-bold text-white">Haftal\u0131k Geli\u015Ftirme D\u00F6k\u00FCman\u0131</h2>
                       <p className="text-sm text-gray-400 mt-1">
-                        {formatDateTR(startDate)} — {formatDateTR(endDate)}
+                        {formatDateTR(startDate)} \u2014 {formatDateTR(endDate)}
                       </p>
                       <p className="text-sm text-blue-400 mt-0.5">{clientLabel}</p>
                     </div>
@@ -342,7 +366,7 @@ export default function ReportsPage() {
                   className="p-4 rounded-xl bg-white/5 border border-white/5 text-center"
                 >
                   <div className="text-2xl font-bold text-white">{stats.total}</div>
-                  <div className="text-xs text-gray-400 mt-1">Toplam Görev</div>
+                  <div className="text-xs text-gray-400 mt-1">Toplam G\u00F6rev</div>
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -383,7 +407,7 @@ export default function ReportsPage() {
               <div className="p-8 space-y-6">
                 {filteredTasks.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-8">
-                    Seçilen tarih aralığında görev bulunamadı.
+                    Se\u00E7ilen tarih aral\u0131\u011F\u0131nda g\u00F6rev bulunamad\u0131.
                   </p>
                 ) : (
                   filteredTasks.map((task, index) => {
@@ -403,15 +427,15 @@ export default function ReportsPage() {
 
                         {/* Description */}
                         <div className="text-sm text-gray-400">
-                          <span className="text-gray-500 font-medium">Açıklama: </span>
+                          <span className="text-gray-500 font-medium">A\u00E7\u0131klama: </span>
                           {task.description}
                         </div>
 
                         {/* Solution */}
                         <div className="text-sm text-gray-400">
-                          <span className="text-gray-500 font-medium">Çözüm: </span>
+                          <span className="text-gray-500 font-medium">\u00C7\u00F6z\u00FCm: </span>
                           <span className={task.devNote ? "text-blue-300" : "text-gray-500 italic"}>
-                            {task.devNote || "Çözüm bekleniyor"}
+                            {task.devNote || "\u00C7\u00F6z\u00FCm bekleniyor"}
                           </span>
                         </div>
 
@@ -426,7 +450,7 @@ export default function ReportsPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-gray-500">Öncelik:</span>
+                            <span className="text-xs text-gray-500">\u00D6ncelik:</span>
                             <span
                               className={`text-xs px-2 py-0.5 rounded-md ${priorityConfig[task.priority].bg} ${priorityConfig[task.priority].color}`}
                             >
@@ -448,10 +472,10 @@ export default function ReportsPage() {
                           <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
                             <MessageSquare size={13} className="text-blue-400 mt-0.5 shrink-0" />
                             <div>
-                              <span className="text-xs text-blue-400 font-medium">Geliştirmeci Notu:</span>
+                              <span className="text-xs text-blue-400 font-medium">Geli\u015Ftirmeci Notu:</span>
                               <p className="text-xs text-gray-300 mt-0.5">{devComment.text}</p>
                               <p className="text-[10px] text-gray-600 mt-1">
-                                {devComment.author} — {formatDateTR(devComment.date)}
+                                {devComment.author} \u2014 {formatDateTR(devComment.date)}
                               </p>
                             </div>
                           </div>
@@ -480,7 +504,7 @@ export default function ReportsPage() {
               {/* Report Footer */}
               <div className="px-8 py-5 border-t border-white/5 text-center">
                 <p className="text-xs text-gray-600">
-                  ERPIDE YAZILIM A.Ş. — info@erpide.com — 0554 694 34 09
+                  ERPIDE YAZILIM A.\u015E. \u2014 info@erpide.com \u2014 0554 694 34 09
                 </p>
               </div>
             </motion.div>
@@ -496,7 +520,7 @@ export default function ReportsPage() {
       >
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Calendar size={18} className="text-blue-400" />
-          Geçmiş Raporlar
+          Ge\u00E7mi\u015F Raporlar
         </h2>
         <div className="space-y-2">
           {pastReports.map((report, i) => (
@@ -517,7 +541,7 @@ export default function ReportsPage() {
                 </div>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/10">
-                Gönderildi
+                G\u00F6nderildi
               </span>
             </motion.div>
           ))}

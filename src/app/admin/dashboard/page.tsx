@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   ListTodo,
@@ -16,11 +16,11 @@ import {
   Flame,
   MessageSquare,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import {
   Task,
-  initialTasks,
   priorityConfig,
   statusConfig,
 } from "@/lib/store";
@@ -60,7 +60,18 @@ const child = {
 
 // ── main component ───────────────────────────────────────────────────
 export default function DashboardPage() {
-  const tasks: Task[] = initialTasks;
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((res) => res.json())
+      .then((data: Task[]) => {
+        setTasks(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   // Stats
   const total = tasks.length;
@@ -222,6 +233,18 @@ export default function DashboardPage() {
       trendUp: criticalUrgent === 0,
     },
   ];
+
+  // ── Loading State ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={36} className="text-blue-400 animate-spin" />
+          <p className="text-sm text-gray-500">Veriler yukleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">

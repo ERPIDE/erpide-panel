@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock,
@@ -24,7 +24,6 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import {
   Task,
-  initialTasks,
   priorityConfig,
   statusConfig,
   labelConfig,
@@ -53,8 +52,8 @@ const customers: Record<
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const months = [
-    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+    "Ocak", "\u015Eubat", "Mart", "Nisan", "May\u0131s", "Haziran",
+    "Temmuz", "A\u011Fustos", "Eyl\u00FCl", "Ekim", "Kas\u0131m", "Aral\u0131k",
   ];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
@@ -74,7 +73,8 @@ export default function PanelPage() {
   const [loggedIn, setLoggedIn] = useState<string | null>(null);
 
   // Dashboard state
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
@@ -82,12 +82,31 @@ export default function PanelPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [submittingTicket, setSubmittingTicket] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [taskComments, setTaskComments] = useState<Comment[]>([]);
 
   // New ticket form
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
   const [newLabel, setNewLabel] = useState<Label>("feature");
+
+  const customerData = loggedIn ? customers[loggedIn] : null;
+
+  // Fetch tasks after login
+  useEffect(() => {
+    if (!loggedIn) return;
+    setLoadingTasks(true);
+    fetch("/api/tasks")
+      .then((res) => res.json())
+      .then((data: Task[]) => {
+        setTasks(data);
+        setLoadingTasks(false);
+      })
+      .catch(() => setLoadingTasks(false));
+  }, [loggedIn]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +118,6 @@ export default function PanelPage() {
       setError("Hatali musteri kodu veya sifre!");
     }
   };
-
-  const customerData = loggedIn ? customers[loggedIn] : null;
 
   const customerTasks = useMemo(() => {
     if (!customerData) return [];
@@ -134,46 +151,94 @@ export default function PanelPage() {
     return withDeadline[0].deadline!;
   }, [customerTasks]);
 
-  const handleAddComment = () => {
-    if (!newComment.trim() || !selectedTask || !customerData) return;
-    const comment: Comment = {
-      id: `c-${Date.now()}`,
-      author: customerData.name,
-      authorRole: "customer",
-      text: newComment.trim(),
-      date: new Date().toISOString().split("T")[0],
-    };
-    const updated = tasks.map((t) =>
-      t.id === selectedTask.id ? { ...t, comments: [...t.comments, comment] } : t
-    );
-    setTasks(updated);
-    setSelectedTask({ ...selectedTask, comments: [...selectedTask.comments, comment] });
-    setNewComment("");
+  // Open task detail: fetch comments from API
+  const handleOpenTask = async (task: Task) => {
+    setSelectedTask(task);
+    setTaskComments([]);
+    if (task.repo && task.id) {
+      setLoadingComments(true);
+      try {
+        const res = await fetch(`/api/tasks/comments?repo=${encodeURIComponent(task.repo)}&issue=${task.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTaskComments(data);
+        }
+      } catch {
+        // silently fail
+      } finally {
+        setLoadingComments(false);
+      }
+    }
   };
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedTask || !customerData) return;
+    setSubmittingComment(true);
+    try {
+      const res = await fetch("/api/tasks/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repo: selectedTask.repo,
+          issueNumber: selectedTask.id,
+          comment: newComment.trim(),
+          author: customerData.name,
+        }),
+      });
+      if (res.ok) {
+        const comment: Comment = {
+          id: `c-${Date.now()}`,
+          author: customerData.name,
+          authorRole: "customer",
+          text: newComment.trim(),
+          date: new Date().toISOString().split("T")[0],
+        };
+        setTaskComments((prev) => [...prev, comment]);
+        setNewComment("");
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !customerData) return;
-    const newTask: Task = {
-      id: Math.max(...tasks.map((t) => t.id), 0) + 1,
-      title: newTitle.trim(),
-      description: newDescription.trim(),
-      project: customerData.project,
-      client: customerData.name,
-      label: newLabel,
-      status: "todo",
-      priority: newPriority,
-      createdAt: new Date().toISOString().split("T")[0],
-      createdBy: customerData.name,
-      comments: [],
-      attachments: [],
-    };
-    setTasks([...tasks, newTask]);
-    setNewTitle("");
-    setNewDescription("");
-    setNewPriority("medium");
-    setNewLabel("feature");
-    setShowCreateForm(false);
+    setSubmittingTicket(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          description: newDescription.trim(),
+          project: customerData.project,
+          client: customerData.name,
+          label: newLabel,
+          priority: newPriority,
+          createdBy: customerData.name,
+        }),
+      });
+      if (res.ok) {
+        // Refresh tasks
+        const refreshRes = await fetch("/api/tasks");
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          setTasks(data);
+        }
+        setNewTitle("");
+        setNewDescription("");
+        setNewPriority("medium");
+        setNewLabel("feature");
+        setShowCreateForm(false);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSubmittingTicket(false);
+    }
   };
 
   // LOGIN SCREEN
@@ -237,6 +302,18 @@ export default function PanelPage() {
     );
   }
 
+  // LOADING STATE
+  if (loadingTasks) {
+    return (
+      <div className="min-h-screen bg-[#08080c] text-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={36} className="text-blue-400 animate-spin" />
+          <p className="text-sm text-gray-500">Tasklar yukleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   // DASHBOARD
   return (
     <div className="min-h-screen bg-[#08080c] text-white">
@@ -260,6 +337,7 @@ export default function PanelPage() {
               setStatusFilter("all");
               setPriorityFilter("all");
               setLabelFilter("all");
+              setTasks([]);
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm transition"
           >
@@ -406,7 +484,7 @@ export default function PanelPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                onClick={() => setSelectedTask(task)}
+                onClick={() => handleOpenTask(task)}
                 className="flex items-center gap-4 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-white/10 cursor-pointer group transition"
               >
                 {/* Priority Indicator */}
@@ -449,9 +527,9 @@ export default function PanelPage() {
                 </div>
                 {/* Right side */}
                 <div className="flex items-center gap-3">
-                  {task.comments.length > 0 && (
+                  {(task.commentsCount ?? task.comments.length) > 0 && (
                     <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <MessageSquare size={12} /> {task.comments.length}
+                      <MessageSquare size={12} /> {task.commentsCount ?? task.comments.length}
                     </span>
                   )}
                   <ChevronRight size={16} className="text-gray-600 group-hover:text-gray-400 transition" />
@@ -583,12 +661,16 @@ export default function PanelPage() {
                 {/* Comments */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                    <MessageSquare size={14} /> Yorumlar ({selectedTask.comments.length})
+                    <MessageSquare size={14} /> Yorumlar ({taskComments.length})
                   </h3>
 
-                  {selectedTask.comments.length > 0 && (
+                  {loadingComments ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 size={24} className="text-blue-400 animate-spin" />
+                    </div>
+                  ) : taskComments.length > 0 ? (
                     <div className="space-y-3 mb-4">
-                      {selectedTask.comments.map((c) => (
+                      {taskComments.map((c) => (
                         <div
                           key={c.id}
                           className={`p-3 rounded-xl border text-sm ${
@@ -607,6 +689,8 @@ export default function PanelPage() {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <div className="mb-4" />
                   )}
 
                   {/* Add comment */}
@@ -620,10 +704,10 @@ export default function PanelPage() {
                     />
                     <button
                       onClick={handleAddComment}
-                      disabled={!newComment.trim()}
+                      disabled={!newComment.trim() || submittingComment}
                       className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition disabled:opacity-30"
                     >
-                      <Send size={16} />
+                      {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     </button>
                   </div>
                 </div>
@@ -721,9 +805,15 @@ export default function PanelPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                  disabled={submittingTicket}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Plus size={16} /> Talep Olustur
+                  {submittingTicket ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Plus size={16} />
+                  )}
+                  {submittingTicket ? "Olusturuluyor..." : "Talep Olustur"}
                 </button>
               </form>
             </motion.div>
