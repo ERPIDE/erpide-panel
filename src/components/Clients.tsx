@@ -1,8 +1,11 @@
 "use client";
 import { motion } from "framer-motion";
-import { Quote } from "lucide-react";
 
-const clients = ["Sirmersan", "ATM Constructor", "YDA Group", "Marijeo"];
+const clients = [
+  "Sirmersan", "ATM Constructor", "YDA Group",
+  "LC Waikiki", "LUKOIL", "OKT TRAILER",
+  "Gelişim OFSET", "CAST ANB",
+];
 
 export default function Clients() {
   return (
@@ -15,41 +18,26 @@ export default function Clients() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Güvendikleri</span>
+            <span className="gradient-text">Çözüm Ortakları</span>
           </h2>
-          <p className="text-gray-400">Turkiye ve Kazakistan&apos;da öncü firmaların çözüm ortağı</p>
+          <p className="text-gray-400">Türkiye ve Kazakistan&apos;da öncü firmaların güvenilir teknoloji ortağı</p>
         </motion.div>
 
-        {/* Client logos */}
-        <div className="flex justify-center gap-8 flex-wrap mb-16">
+        <div className="flex justify-center gap-6 flex-wrap">
           {clients.map((c, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.8 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="px-8 py-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/30 transition"
+              transition={{ delay: i * 0.08 }}
+              whileHover={{ scale: 1.05, y: -3 }}
+              className="px-8 py-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/30 hover:glow-blue transition-all duration-300"
             >
               <span className="text-lg font-semibold text-gray-300">{c}</span>
             </motion.div>
           ))}
         </div>
-
-        {/* Testimonial */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <Quote size={40} className="text-blue-500/30 mx-auto mb-4" />
-          <p className="text-lg text-gray-300 italic leading-relaxed mb-4">
-            &quot;ERPIDE ile ERP süreçlerimizi tamamen dönüştürdük. Profesyonel ekip ve kesintisiz destek
-            ile iş süreçlerimiz çok daha verimli hale geldi.&quot;
-          </p>
-          <p className="text-sm text-gray-500">— Operasyon Müdürü, Üretim Sektörü</p>
-        </motion.div>
       </div>
     </section>
   );

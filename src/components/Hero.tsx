@@ -69,7 +69,7 @@ export default function Hero() {
           className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-10"
         >
           CANIAS ERP, 1C ERP ve özel yazılım çözümleriyle işletmenizi dijital çağa hazırlıyoruz.
-          Turkiye ve Kazakistan&apos;da güvenilir çözüm ortağınız.
+          Türkiye ve Kazakistan&apos;da güvenilir çözüm ortağınız.
         </motion.p>
 
         <motion.div
