@@ -232,10 +232,23 @@ export default function ReportsPage() {
             <div className="flex items-center gap-3 print:hidden">
               <button
                 onClick={() => {
-                  const printArea = document.getElementById("report-printable");
-                  if (!printArea) return;
-                  const win = window.open("", "_blank");
+                  // Remove old iframe if exists
+                  const oldFrame = document.getElementById("print-frame");
+                  if (oldFrame) oldFrame.remove();
+
+                  const iframe = document.createElement("iframe");
+                  iframe.id = "print-frame";
+                  iframe.style.position = "fixed";
+                  iframe.style.right = "0";
+                  iframe.style.bottom = "0";
+                  iframe.style.width = "0";
+                  iframe.style.height = "0";
+                  iframe.style.border = "0";
+                  document.body.appendChild(iframe);
+
+                  const win = iframe.contentWindow;
                   if (!win) return;
+                  win.document.open();
                   win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>ERPIDE Rapor - ${clientLabel}</title><style>
                     @page { margin: 20mm 15mm; }
                     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -318,7 +331,9 @@ export default function ReportsPage() {
                     </div>
                   </body></html>`);
                   win.document.close();
-                  setTimeout(() => win.print(), 500);
+                  setTimeout(() => {
+                    try { win.print(); } catch(e) { window.print(); }
+                  }, 600);
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/10 text-blue-400 text-sm hover:bg-blue-600/20 transition border border-blue-500/10"
               >
