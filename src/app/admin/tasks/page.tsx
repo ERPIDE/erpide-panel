@@ -173,11 +173,22 @@ export default function TasksPage() {
     "1C ERP": "info@atmconstructor.kz",
   };
 
+  function getSavedEmail(project: string): string {
+    try {
+      const saved = localStorage.getItem(`erpide_email_${project}`);
+      return saved || defaultEmails[project] || "";
+    } catch { return defaultEmails[project] || ""; }
+  }
+
+  function saveEmail(project: string, email: string) {
+    try { localStorage.setItem(`erpide_email_${project}`, email); } catch {}
+  }
+
   function openTaskDetail(task: Task) {
     setSelectedTask(task);
     setCommentText("");
     setComments([]);
-    setNotifyEmail(defaultEmails[task.project] || "");
+    setNotifyEmail(getSavedEmail(task.project));
     setEditingDevNote(false);
     setNotifySuccess("");
     fetchComments(task);
@@ -883,11 +894,14 @@ export default function TasksPage() {
                     <input
                       type="email"
                       value={notifyEmail}
-                      onChange={(e) => setNotifyEmail(e.target.value)}
+                      onChange={(e) => {
+                        setNotifyEmail(e.target.value);
+                        saveEmail(activeTask.project, e.target.value);
+                      }}
                       placeholder="ornek@firma.com"
                       className="w-full px-3 py-2 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
                     />
-                    <p className="text-[10px] text-gray-600 mt-1">CC: info@erpide.com</p>
+                    <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de gonderilir</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
