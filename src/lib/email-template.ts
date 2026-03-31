@@ -3,16 +3,20 @@
 
 export const emailLogo = `
 <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-  <tr><td style="text-align:center;padding-bottom:2px">
-    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAxNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMkw1IDRMOS41IDhMMTIgMkwxNS41IDhMMTkgNEwyMiAxMiIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjEuOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PGNpcmNsZSBjeD0iNSIgY3k9IjMuNSIgcj0iMS4yIiBmaWxsPSIjM2I4MmY2Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxLjUiIHI9IjEuMiIgZmlsbD0iIzNiODJmNiIvPjxjaXJjbGUgY3g9IjE5IiBjeT0iMy41IiByPSIxLjIiIGZpbGw9IiMzYjgyZjYiLz48L3N2Zz4=" alt="ERPIDE" width="24" height="14" style="display:block;margin:0 auto" />
+  <tr><td style="text-align:center;padding-bottom:6px">
+    <table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
+      <td style="font-size:11px;color:#3b82f6;line-height:1">&#9650;</td>
+      <td style="font-size:14px;color:#3b82f6;line-height:1;padding:0 1px">&#9650;</td>
+      <td style="font-size:11px;color:#3b82f6;line-height:1">&#9650;</td>
+    </tr></table>
   </td></tr>
-  <tr><td style="height:1px;background:linear-gradient(to right,transparent,rgba(59,130,246,0.4),transparent)"></td></tr>
-  <tr><td style="text-align:center;padding:4px 0">
-    <span style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;color:#0f172a;letter-spacing:2px">ERP</span><span style="font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:bold;color:#3b82f6;letter-spacing:1px">IDE</span>
+  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
+  <tr><td style="text-align:center;padding:6px 0 4px">
+    <span style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:bold;color:#0f172a;letter-spacing:3px">ERP</span><span style="font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:bold;color:#3b82f6;letter-spacing:2px">IDE</span>
   </td></tr>
-  <tr><td style="height:1px;background:linear-gradient(to right,transparent,rgba(59,130,246,0.4),transparent)"></td></tr>
-  <tr><td style="text-align:center;padding-top:4px">
-    <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:7px;letter-spacing:3px;color:#94a3b8">ERP COZUMLERI HAKKINDA HER SEY</span>
+  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
+  <tr><td style="text-align:center;padding-top:6px">
+    <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#94a3b8;text-transform:uppercase">ERP COZUMLERI HAKKINDA HER SEY</span>
   </td></tr>
 </table>`;
 
@@ -36,7 +40,7 @@ export const emailSignature = `
 </table>`;
 
 export const emailHeader = `
-<div style="text-align:center;padding:24px 32px;background:#ffffff;border-bottom:3px solid #3b82f6">
+<div style="text-align:center;padding:24px 32px;background-color:#ffffff;border-bottom:3px solid #3b82f6">
   <a href="https://erpide.com" style="text-decoration:none">
     ${emailLogo}
   </a>

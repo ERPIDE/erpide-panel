@@ -159,9 +159,9 @@ export default function ReportsPage() {
     tasksForPdf.forEach((task, i) => {
       const statusBadge = task.status === "done" ? "background:#dcfce7;color:#166534" : task.status === "in_progress" ? "background:#fef9c3;color:#854d0e" : "background:#f3f4f6;color:#4b5563";
       const attHtml = (task.attachments?.length > 0)
-        ? `<div style="margin-top:8px"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
+        ? `<div style="margin-top:10px;page-break-inside:avoid"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
             a.type === "image"
-              ? `<div style="margin-bottom:8px"><img src="${a.url}" style="max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:6px" crossorigin="anonymous"/><br><small style="color:#666">${a.name}</small></div>`
+              ? `<div style="margin-bottom:10px;page-break-inside:avoid"><img src="${a.url}" style="max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:block" crossorigin="anonymous"/><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
               : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
           ).join("")}</div></div>`
         : "";
@@ -188,52 +188,106 @@ export default function ReportsPage() {
       setEmailSending(true);
       toast("info", "PDF olusturuluyor...");
 
-      // Use the same HTML as print PDF (4th screenshot - the good one)
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
       const clientInfo = clientOptions.find(c => c.value === selectedClient);
       const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
-      const pdfHtml = buildPdfHtml();
 
-      // Render HTML in hidden container
-      const container = document.createElement("div");
-      container.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;background:white;padding:30px";
-      container.innerHTML = pdfHtml;
-      document.body.appendChild(container);
+      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
+      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
 
-      await new Promise(r => setTimeout(r, 600));
+      const baseStyle = `font-family:'Segoe UI',Tahoma,sans-serif;color:#1a1a1a;font-size:11pt;line-height:1.6;`;
 
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      document.body.removeChild(container);
+      // Build separate HTML blocks: header+stats, then each task, then footer
+      const headerHtml = `<div style="${baseStyle}">
+        <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:15px;margin-bottom:20px">
+          <img src="${logoBase64}" width="200" height="55" style="margin:0 auto 5px;display:block" />
+          <div style="font-size:7pt;letter-spacing:3px;color:#666;text-transform:uppercase">ERP Çözümleri Hakkında Her Şey</div>
+          <div style="font-size:12pt;margin-top:8px;font-weight:bold">Haftalık Geliştirme Dökümanı</div>
+          <div style="font-size:9pt;color:#666;margin-top:3px">${formatDateTR(startDate)} — ${formatDateTR(endDate)} | ${clientLabel}</div>
+        </div>
+        <div style="display:flex;gap:15px;margin:15px 0">
+          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold">${stats.total}</div><div style="font-size:8pt;color:#666">Toplam</div></div>
+          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#16a34a">${stats.completed}</div><div style="font-size:8pt;color:#666">Tamamlanan</div></div>
+          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#ca8a04">${stats.inProgress}</div><div style="font-size:8pt;color:#666">Devam Eden</div></div>
+          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#6b7280">${stats.waiting}</div><div style="font-size:8pt;color:#666">Bekleyen</div></div>
+        </div>
+      </div>`;
+
+      const tasksForPdf = filteredTasks.filter(t => t.status === "done");
+      const taskHtmls = tasksForPdf.map((task, i) => {
+        const statusBadge = task.status === "done" ? "background:#dcfce7;color:#166534" : task.status === "in_progress" ? "background:#fef9c3;color:#854d0e" : "background:#f3f4f6;color:#4b5563";
+        const attHtml = (task.attachments?.length > 0)
+          ? `<div style="margin-top:10px"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
+              a.type === "image"
+                ? `<div style="margin-bottom:10px"><img src="${a.url}" style="max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:block" crossorigin="anonymous"/><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
+                : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
+            ).join("")}</div></div>`
+          : "";
+
+        return `<div style="${baseStyle}">
+          <div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px">
+            <h3 style="font-size:11pt;font-weight:bold;margin:0 0 6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px">Sorun ${i + 1}: ${task.title}</h3>
+            <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Açıklama:</span> ${task.description}</div>
+            <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+            <div style="font-size:10pt"><span style="display:inline-block;padding:1px 8px;border-radius:3px;font-size:8pt;font-weight:600;${statusBadge}">${statusLabels[task.status]}</span>
+            &nbsp;&nbsp;<span style="font-weight:600;color:#444">Öncelik:</span> ${priorityLabels[task.priority]}</div>
+            ${attHtml}
+          </div>
+        </div>`;
+      });
+
+      const footerHtml = `<div style="${baseStyle}">
+        <div style="text-align:center;border-top:2px solid #1a1a1a;padding-top:10px;margin-top:25px;font-size:8pt;color:#666">
+          <strong>ERPIDE YAZILIM A.Ş.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com
+        </div>
+      </div>`;
+
+      // Render each block separately with html2canvas, then place on PDF pages
+      const allBlocks = [headerHtml, ...taskHtmls, footerHtml];
+
+      async function renderBlock(html: string): Promise<HTMLCanvasElement> {
+        const el = document.createElement("div");
+        el.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;background:white;padding:20px 30px";
+        el.innerHTML = html;
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 300));
+        const c = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        document.body.removeChild(el);
+        return c;
+      }
 
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
+      const marginMm = 10;
+      const usableH = pageH - marginMm * 2;
+      let cursorMm = marginMm; // current Y position on page in mm
 
-      // Calculate how many canvas pixels fit per PDF page
-      const scaleFactor = pdfW / canvas.width;
-      const pageHeightPx = Math.floor(pageH / scaleFactor);
-      const totalPages = Math.ceil(canvas.height / pageHeightPx);
+      for (let i = 0; i < allBlocks.length; i++) {
+        const canvas = await renderBlock(allBlocks[i]);
+        const scaleFactor = pdfW / canvas.width;
+        const blockHeightMm = canvas.height * scaleFactor;
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage();
-
-        // Slice the canvas for this page
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-        const ctx = pageCanvas.getContext("2d");
-        if (ctx) {
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(canvas, 0, page * pageHeightPx, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+        // If block doesn't fit on current page, start a new page
+        if (cursorMm + blockHeightMm > pageH - marginMm && cursorMm > marginMm + 1) {
+          pdf.addPage();
+          cursorMm = marginMm;
         }
 
-        const pageImg = pageCanvas.toDataURL("image/jpeg", 0.95);
-        const sliceHeightMm = sliceHeight * scaleFactor;
-        pdf.addImage(pageImg, "JPEG", 0, 0, pdfW, sliceHeightMm);
+        // If a single block is taller than one page, scale it down to fit
+        if (blockHeightMm > usableH) {
+          const fitScale = usableH / blockHeightMm;
+          const fitW = pdfW * fitScale;
+          const offsetX = (pdfW - fitW) / 2;
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", offsetX, cursorMm, fitW, usableH);
+          cursorMm = marginMm;
+          if (i < allBlocks.length - 1) pdf.addPage();
+        } else {
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, cursorMm, pdfW, blockHeightMm);
+          cursorMm += blockHeightMm + 2; // 2mm gap between blocks
+        }
       }
 
       const pdfBase64 = pdf.output("datauristring").split(",")[1];
@@ -480,11 +534,11 @@ export default function ReportsPage() {
                     const priorityBadge = `badge-${task.priority}`;
 
                     const attachmentHtml = (task.attachments && task.attachments.length > 0)
-                      ? `<div class="field" style="margin-top:8px">
+                      ? `<div class="field" style="margin-top:10px;page-break-inside:avoid">
                           <span class="label">Ekler:</span>
                           <div style="margin-top:6px">${task.attachments.map(a =>
                             a.type === "image"
-                              ? `<div style="margin-bottom:8px"><img src="${a.url}" alt="${a.name}" style="max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:6px" /><br><small style="color:#666">${a.name}</small></div>`
+                              ? `<div style="margin-bottom:10px;page-break-inside:avoid"><img src="${a.url}" alt="${a.name}" style="max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:block" /><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
                               : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
                           ).join("")}</div>
                         </div>`
