@@ -105,9 +105,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Bilinmeyen bildirim tipi" }, { status: 400 });
     }
 
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>";
+
+    // Send to customer
     const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>",
-      to: [recipientEmail, "info@erpide.com"],
+      from: fromEmail,
+      to: [recipientEmail],
       subject,
       html,
     });
@@ -115,6 +118,18 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Resend error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Send copy to admin (don't block if fails)
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: ["info@erpide.com"],
+        subject: `[Kopya] ${subject}`,
+        html,
+      });
+    } catch (e) {
+      console.error("Admin copy failed:", e);
     }
 
     return NextResponse.json({ id: data?.id, message: "Email gonderildi" });
