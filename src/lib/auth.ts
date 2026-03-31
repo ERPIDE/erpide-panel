@@ -1,4 +1,4 @@
-import { put, list } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import {
   AdminUser,
   CustomerUser,
@@ -24,14 +24,23 @@ const SESSION_EXPIRY_DAYS = 7;
 
 // ── Blob helpers ──────────────────────────────────────────────────
 
+function getBlobBaseUrl(): string {
+  // Extract store ID from token: vercel_blob_rw_{storeId}_{rest}
+  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
+  const parts = token.split("_");
+  if (parts.length >= 4) {
+    const storeId = parts[3].toLowerCase();
+    return `https://${storeId}.public.blob.vercel-storage.com`;
+  }
+  return "";
+}
+
 async function readBlob<T>(key: string, fallback: T): Promise<T> {
   try {
-    // Find the blob URL via list
-    const { blobs } = await list({ prefix: key });
-    const blob = blobs.find((b) => b.pathname === key);
-    if (!blob) return fallback;
+    const baseUrl = getBlobBaseUrl();
+    if (!baseUrl) return fallback;
 
-    const res = await fetch(blob.url, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/${key}`, { cache: "no-store" });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
   } catch {
