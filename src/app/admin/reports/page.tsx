@@ -189,45 +189,124 @@ export default function ReportsPage() {
       setEmailSending(true);
       toast("info", "PDF olusturuluyor...");
 
-      // Generate PDF from report HTML using hidden iframe + html2canvas + jsPDF
-      const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-
-      const pdfHtml = buildPdfHtml();
-
-      // Create hidden container
-      const container = document.createElement("div");
-      container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:white;padding:0";
-      container.innerHTML = pdfHtml;
-      document.body.appendChild(container);
-
-      // Wait for render
-      await new Promise(r => setTimeout(r, 500));
-
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      document.body.removeChild(container);
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentW = pageW - margin * 2;
+      let y = margin;
 
-      // Handle multi-page
-      let heightLeft = pdfHeight;
-      let position = 0;
-      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
-      while (heightLeft > 0) {
-        position -= pdf.internal.pageSize.getHeight();
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-      }
-
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
-
+      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "Incelemede", done: "Tamamlandi" };
+      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yuksek", medium: "Orta", low: "Dusuk" };
       const clientInfo = clientOptions.find(c => c.value === selectedClient);
       const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
+
+      function checkPage(needed: number) {
+        if (y + needed > pageH - 20) { pdf.addPage(); y = margin; }
+      }
+
+      // Header
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("ERP", pageW / 2 - 12, y, { align: "center" });
+      pdf.setFontSize(16);
+      pdf.setTextColor(59, 130, 246);
+      pdf.text("IDE", pageW / 2 + 15, y - 1, { align: "center" });
+      y += 4;
+      pdf.line(margin, y, pageW - margin, y);
+      y += 5;
+      pdf.setFontSize(7);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text("ERP COZUMLERI HAKKINDA HER SEY", pageW / 2, y, { align: "center" });
+      y += 8;
+      pdf.setFontSize(14);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Haftalik Gelistirme Dokumani", pageW / 2, y, { align: "center" });
+      y += 6;
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`${dateRange} | ${clientInfo?.label || selectedClient}`, pageW / 2, y, { align: "center" });
+      y += 10;
+
+      // Stats
+      const statW = contentW / 4;
+      const statLabels = ["Toplam", "Tamamlanan", "Devam Eden", "Bekleyen"];
+      const statValues = [stats.total, stats.completed, stats.inProgress, stats.waiting];
+      const statColors: [number, number, number][] = [[15, 23, 42], [22, 163, 74], [217, 119, 6], [100, 116, 139]];
+      statLabels.forEach((label, i) => {
+        const x = margin + i * statW;
+        pdf.setDrawColor(226, 232, 240);
+        pdf.roundedRect(x + 2, y, statW - 4, 18, 2, 2, "S");
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...statColors[i]);
+        pdf.text(String(statValues[i]), x + statW / 2, y + 10, { align: "center" });
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 116, 139);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(label, x + statW / 2, y + 15, { align: "center" });
+      });
+      y += 24;
+
+      // Tasks
+      filteredTasks.forEach((task, i) => {
+        checkPage(30);
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 5;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(15, 23, 42);
+        const titleLines = pdf.splitTextToSize(`Sorun ${i + 1}: ${task.title}`, contentW);
+        pdf.text(titleLines, margin, y);
+        y += titleLines.length * 5;
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.setTextColor(71, 85, 105);
+        const descLines = pdf.splitTextToSize(`Aciklama: ${task.description}`, contentW);
+        checkPage(descLines.length * 4 + 10);
+        pdf.text(descLines, margin, y);
+        y += descLines.length * 4 + 1;
+
+        const solText = task.devNote ? `Cozum: ${task.devNote}` : "Cozum: Cozum bekleniyor";
+        const solLines = pdf.splitTextToSize(solText, contentW);
+        checkPage(solLines.length * 4 + 8);
+        pdf.setTextColor(task.devNote ? 30 : 150, task.devNote ? 64 : 150, task.devNote ? 175 : 150);
+        pdf.text(solLines, margin, y);
+        y += solLines.length * 4 + 1;
+
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`Durum: ${statusLabels[task.status] || task.status}  |  Oncelik: ${priorityLabels[task.priority] || task.priority}`, margin, y);
+        y += 6;
+      });
+
+      // Footer
+      checkPage(20);
+      y += 5;
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("ERPIDE YAZILIM A.S.", pageW / 2, y, { align: "center" });
+      y += 4;
+      pdf.setFont("helvetica", "normal");
+      pdf.text("info@erpide.com  -  0554 694 34 09  -  www.erpide.com", pageW / 2, y, { align: "center" });
+
+      const pdfBase64 = pdf.output("datauristring").split(",")[1];
+      const filename = `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`;
 
       const res = await fetch("/api/report-email", {
         method: "POST",
@@ -238,7 +317,7 @@ export default function ReportsPage() {
           project: clientInfo?.project || "",
           dateRange,
           pdfBase64,
-          pdfFilename: `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`,
+          pdfFilename: filename,
         }),
       });
 
