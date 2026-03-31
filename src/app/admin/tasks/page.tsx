@@ -27,6 +27,7 @@ import {
   BarChart3,
   ListTodo,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import {
   Task,
@@ -124,6 +125,10 @@ export default function TasksPage() {
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState("");
   const [savingDate, setSavingDate] = useState(false);
+
+  // delete
+  const [deleteConfirm, setDeleteConfirm] = useState<Task | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // create form
   const [creating, setCreating] = useState(false);
@@ -416,6 +421,28 @@ export default function TasksPage() {
     }
   }
 
+  async function deleteTask(task: Task) {
+    if (!task.repo) return;
+    try {
+      setDeleting(true);
+      const res = await fetch(`/api/tasks/update?repo=${task.repo}&issueNumber=${task.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast("success", "Task silindi");
+        setDeleteConfirm(null);
+        setSelectedTask(null);
+        await fetchTasks();
+      } else {
+        toast("error", "Task silinemedi");
+      }
+    } catch {
+      toast("error", "Task silinemedi");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   /* ─── derived ─── */
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
@@ -664,12 +691,21 @@ export default function TasksPage() {
                     </div>
                     <h2 className="text-lg font-semibold text-white leading-snug">{activeTask.title}</h2>
                   </div>
-                  <button
-                    onClick={() => { setSelectedTask(null); setCommentText(""); setComments([]); }}
-                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition shrink-0"
-                  >
-                    <X size={20} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => setDeleteConfirm(activeTask)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition"
+                      title="Task'i sil"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                    <button
+                      onClick={() => { setSelectedTask(null); setCommentText(""); setComments([]); }}
+                      className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* meta grid */}
@@ -1135,6 +1171,58 @@ export default function TasksPage() {
                   >
                     {creating && <Loader2 size={14} className="animate-spin" />}
                     Olustur
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirm(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                    <Trash2 size={18} className="text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Task Sil</h3>
+                    <p className="text-xs text-gray-500">Bu islem geri alinamaz</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-300">
+                  <span className="font-medium text-white">&quot;{deleteConfirm.title}&quot;</span> task&apos;ini silmek istediginize emin misiniz?
+                </p>
+                <div className="flex justify-end gap-3 pt-1">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition"
+                  >
+                    Iptal
+                  </button>
+                  <button
+                    onClick={() => deleteTask(deleteConfirm)}
+                    disabled={deleting}
+                    className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
+                  >
+                    {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    {deleting ? "Siliniyor..." : "Sil"}
                   </button>
                 </div>
               </div>

@@ -119,3 +119,34 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Guncellenemedi" }, { status: 500 });
   }
 }
+
+// DELETE /api/tasks/update — close and label a task as deleted
+export async function DELETE(request: NextRequest) {
+  if (!GITHUB_TOKEN) {
+    return NextResponse.json({ error: "GITHUB_TOKEN not configured" }, { status: 500 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const repo = searchParams.get("repo");
+    const issueNumber = searchParams.get("issueNumber");
+
+    if (!repo || !issueNumber) {
+      return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
+    }
+
+    // Close the issue and add "silindi" label
+    await ghFetch(
+      `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ state: "closed", labels: ["silindi"] }),
+      }
+    );
+
+    return NextResponse.json({ message: "Task silindi" });
+  } catch (error) {
+    console.error("Delete error:", error);
+    return NextResponse.json({ error: "Task silinemedi" }, { status: 500 });
+  }
+}

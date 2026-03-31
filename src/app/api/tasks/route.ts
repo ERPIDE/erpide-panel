@@ -84,6 +84,8 @@ export async function GET() {
       const issues = await res.json();
       for (const issue of issues) {
         if (issue.pull_request) continue;
+        const issueLabels = issue.labels.map((l: { name: string }) => l.name);
+        if (issueLabels.includes("silindi")) continue;
 
         const labels = issue.labels.map((l: { name: string }) => l.name);
         const label = labels.find((l: string) =>
