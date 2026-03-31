@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { LOGO_URL, emailSignature, emailFooter } from "@/lib/email-template";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -32,82 +33,61 @@ export async function POST(request: NextRequest) {
     }
 
     let subject = "";
-    let html = "";
+    let contentBlock = "";
 
     if (type === "task_completed") {
       subject = `[ERPIDE] Gorev Tamamlandi: ${taskTitle}`;
-      html = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 24px; border-radius: 12px;">
-          <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">ERPIDE</h1>
-            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Gorev Tamamlandi</p>
-          </div>
-          <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${recipientName},</p>
-            <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
-              <p style="margin: 0; font-weight: 600; color: #166534;">#${taskId} - ${taskTitle}</p>
-              <p style="margin: 8px 0 0; color: #15803d;">Durum: Tamamlandi &#10003;</p>
-            </div>
-            <p>Goreviniz basariyla tamamlanmistir. Detaylari gormek icin ERPIDE panelinizi ziyaret edebilirsiniz.</p>
-            <a href="https://erpide.com/panel" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin-top: 16px;">Panele Git</a>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-            <p style="color: #6b7280; font-size: 12px;">Bu email ERPIDE proje yonetim sistemi tarafindan otomatik gonderilmistir.</p>
-          </div>
+      contentBlock = `
+        <p style="font-size:15px;color:#374151;line-height:1.6">Sayin ${recipientName},</p>
+        <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:16px;margin:16px 0;border-radius:0 8px 8px 0">
+          <p style="margin:0;font-weight:600;color:#166534">#${taskId} - ${taskTitle}</p>
+          <p style="margin:8px 0 0;color:#15803d">Durum: Tamamlandi &#10003;</p>
         </div>
+        <p style="font-size:15px;color:#374151;line-height:1.6">Goreviniz basariyla tamamlanmistir. Detaylari gormek icin ERPIDE panelinizi ziyaret edebilirsiniz.</p>
       `;
     } else if (type === "new_comment") {
       subject = `[ERPIDE] Yeni Yorum: ${taskTitle}`;
-      html = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 24px; border-radius: 12px;">
-          <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">ERPIDE</h1>
-            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Yeni Yorum</p>
-          </div>
-          <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${recipientName},</p>
-            <p><strong>#${taskId} - ${taskTitle}</strong> gorevine yeni bir yorum eklendi:</p>
-            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
-              <p style="margin: 0; color: #1e40af;">${comment || ""}</p>
-            </div>
-            <a href="https://erpide.com/panel" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin-top: 16px;">Panele Git</a>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-            <p style="color: #6b7280; font-size: 12px;">Bu email ERPIDE proje yonetim sistemi tarafindan otomatik gonderilmistir.</p>
-          </div>
+      contentBlock = `
+        <p style="font-size:15px;color:#374151;line-height:1.6">Sayin ${recipientName},</p>
+        <p style="font-size:15px;color:#374151"><strong>#${taskId} - ${taskTitle}</strong> gorevine yeni bir yorum eklendi:</p>
+        <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:16px;margin:16px 0;border-radius:0 8px 8px 0">
+          <p style="margin:0;color:#1e40af">${comment || ""}</p>
         </div>
       `;
     } else if (type === "status_change") {
-      const statusLabels: Record<string, string> = {
-        todo: "Bekliyor",
-        in_progress: "Devam Ediyor",
-        review: "Incelemede",
-        done: "Tamamlandi",
-      };
+      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "Incelemede", done: "Tamamlandi" };
       subject = `[ERPIDE] Durum Guncellendi: ${taskTitle}`;
-      html = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 24px; border-radius: 12px;">
-          <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">ERPIDE</h1>
-            <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Durum Guncellendi</p>
-          </div>
-          <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${recipientName},</p>
-            <div style="background: #fefce8; border-left: 4px solid #eab308; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
-              <p style="margin: 0; font-weight: 600;">#${taskId} - ${taskTitle}</p>
-              <p style="margin: 8px 0 0;">Yeni durum: <strong>${statusLabels[status] || status}</strong></p>
-            </div>
-            <a href="https://erpide.com/panel" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin-top: 16px;">Panele Git</a>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-            <p style="color: #6b7280; font-size: 12px;">Bu email ERPIDE proje yonetim sistemi tarafindan otomatik gonderilmistir.</p>
-          </div>
+      contentBlock = `
+        <p style="font-size:15px;color:#374151;line-height:1.6">Sayin ${recipientName},</p>
+        <div style="background:#fefce8;border-left:4px solid #eab308;padding:16px;margin:16px 0;border-radius:0 8px 8px 0">
+          <p style="margin:0;font-weight:600">#${taskId} - ${taskTitle}</p>
+          <p style="margin:8px 0 0">Yeni durum: <strong>${statusLabels[status] || status}</strong></p>
         </div>
       `;
     } else {
       return NextResponse.json({ error: "Bilinmeyen bildirim tipi" }, { status: 400 });
     }
 
+    const html = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f8f9fa">
+  <div style="max-width:600px;margin:0 auto;padding:24px">
+    <div style="background:#ffffff;padding:24px 32px;border-radius:12px 12px 0 0;text-align:center;border-bottom:3px solid #3b82f6">
+      <a href="https://erpide.com" style="text-decoration:none"><img src="${LOGO_URL}" alt="ERPIDE" width="160" style="display:inline-block" /></a>
+    </div>
+    <div style="background:white;padding:28px 32px;border-radius:0 0 12px 12px;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
+      ${contentBlock}
+      <a href="https://erpide.com/panel" style="display:inline-block;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin:16px 0">Panele Git &rarr;</a>
+      <p style="font-size:14px;color:#374151;margin:24px 0 0">Saygilarimizla,</p>
+      ${emailSignature}
+    </div>
+    ${emailFooter}
+  </div>
+</body></html>`;
+
     const fromEmail = process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>";
 
-    // Send to customer
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [recipientEmail],
