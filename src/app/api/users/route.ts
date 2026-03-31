@@ -31,11 +31,7 @@ export async function GET(req: NextRequest) {
     getCustomers(),
   ]);
 
-  // Strip passwords from response
-  const safeAdmins = admins.map(({ password: _, ...rest }) => rest);
-  const safeCustomers = customers.map(({ password: _, ...rest }) => rest);
-
-  return NextResponse.json({ admins: safeAdmins, customers: safeCustomers });
+  return NextResponse.json({ admins, customers });
 }
 
 // POST — create user
@@ -53,7 +49,7 @@ export async function POST(req: NextRequest) {
     const { type, ...userData } = body;
 
     if (type === "admin") {
-      const { name, email, password, role } = userData;
+      const { id, name, email, password, role } = userData;
       if (!name || !email || !password || !role) {
         return NextResponse.json(
           { error: "Tüm alanlar gerekli" },
@@ -63,7 +59,17 @@ export async function POST(req: NextRequest) {
 
       const admins = await getAdmins();
 
-      // Check duplicate email
+      if (id) {
+        // Update existing
+        const idx = admins.findIndex((a) => a.id === id);
+        if (idx >= 0) {
+          admins[idx] = { ...admins[idx], name, email, password, role: role as "admin" | "developer" };
+          await saveAdmins(admins);
+          return NextResponse.json({ success: true });
+        }
+      }
+
+      // Check duplicate email for new users
       if (admins.some((a) => a.email === email)) {
         return NextResponse.json(
           { error: "Bu email zaten kayıtlı" },
@@ -71,23 +77,13 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const newAdmin = {
-        id: `a${Date.now()}`,
-        name,
-        email,
-        password,
-        role: role as "admin" | "developer",
-      };
-
-      admins.push(newAdmin);
+      admins.push({ id: `a${Date.now()}`, name, email, password, role: role as "admin" | "developer" });
       await saveAdmins(admins);
-
-      const { password: _, ...safe } = newAdmin;
-      return NextResponse.json({ success: true, user: safe }, { status: 201 });
+      return NextResponse.json({ success: true }, { status: 201 });
     }
 
     if (type === "customer") {
-      const { code, name, password, project, contactEmail, contactPhone } =
+      const { id, code, name, password, project, contactEmail, contactPhone } =
         userData;
       if (!code || !name || !password || !project || !contactEmail) {
         return NextResponse.json(
@@ -98,6 +94,16 @@ export async function POST(req: NextRequest) {
 
       const customers = await getCustomers();
 
+      if (id) {
+        // Update existing
+        const idx = customers.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          customers[idx] = { ...customers[idx], code, name, password, project, contactEmail, contactPhone };
+          await saveCustomers(customers);
+          return NextResponse.json({ success: true });
+        }
+      }
+
       if (customers.some((c) => c.code === code)) {
         return NextResponse.json(
           { error: "Bu müşteri kodu zaten kayıtlı" },
@@ -105,16 +111,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const newCustomer = {
-        id: `c${Date.now()}`,
-        code,
-        name,
-        password,
-        project,
-        contactEmail,
-        contactPhone,
-      };
-
+      const newCustomer = { id: `c${Date.now()}`, code, name, password, project, contactEmail, contactPhone };
       customers.push(newCustomer);
       await saveCustomers(customers);
 

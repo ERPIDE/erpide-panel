@@ -13,11 +13,10 @@ import {
   Building2,
   X,
 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   AdminUser,
   CustomerUser,
-  initialAdmins,
-  initialCustomers,
 } from "@/lib/store";
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -75,29 +74,25 @@ function PasswordCell({ value }: { value: string }) {
 export default function UsersPage() {
   // ── state ────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"customers" | "admins">("customers");
+  const [customers, setCustomers] = useState<CustomerUser[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [customers, setCustomers] = useState<CustomerUser[]>(() => {
-    if (typeof window === "undefined") return [...initialCustomers];
+  async function fetchUsers() {
     try {
-      const saved = localStorage.getItem("erpide_customers");
-      return saved ? JSON.parse(saved) : [...initialCustomers];
-    } catch { return [...initialCustomers]; }
-  });
-  const [admins, setAdmins] = useState<AdminUser[]>(() => {
-    if (typeof window === "undefined") return [...initialAdmins];
-    try {
-      const saved = localStorage.getItem("erpide_admins");
-      return saved ? JSON.parse(saved) : [...initialAdmins];
-    } catch { return [...initialAdmins]; }
-  });
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setAdmins(data.admins || []);
+        setCustomers(data.customers || []);
+      }
+    } catch {} finally {
+      setLoadingUsers(false);
+    }
+  }
 
-  useEffect(() => {
-    try { localStorage.setItem("erpide_customers", JSON.stringify(customers)); } catch {}
-  }, [customers]);
-
-  useEffect(() => {
-    try { localStorage.setItem("erpide_admins", JSON.stringify(admins)); } catch {}
-  }, [admins]);
+  useEffect(() => { fetchUsers(); }, []);
 
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -184,28 +179,13 @@ export default function UsersPage() {
   }
 
   // ── save handlers ────────────────────────────────────────────────
-  function saveCustomer() {
+  async function saveCustomer() {
     if (!custCode.trim() || !custName.trim() || !custPassword.trim()) return;
-
-    if (editingId) {
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === editingId
-            ? {
-                ...c,
-                code: custCode.trim(),
-                name: custName.trim(),
-                project: custProject,
-                password: custPassword,
-                contactEmail: custEmail.trim(),
-                contactPhone: custPhone.trim() || undefined,
-              }
-            : c
-        )
-      );
-    } else {
-      const newCustomer: CustomerUser = {
-        id: genId(),
+    setSaving(true);
+    try {
+      const userData = {
+        type: "customer",
+        id: editingId || undefined,
         code: custCode.trim(),
         name: custName.trim(),
         project: custProject,
@@ -213,50 +193,49 @@ export default function UsersPage() {
         contactEmail: custEmail.trim(),
         contactPhone: custPhone.trim() || undefined,
       };
-      setCustomers((prev) => [...prev, newCustomer]);
-    }
-    closeModal();
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+      await fetchUsers();
+      closeModal();
+    } catch {} finally { setSaving(false); }
   }
 
-  function saveAdmin() {
+  async function saveAdmin() {
     if (!admName.trim() || !admEmail.trim() || !admPassword.trim()) return;
-
-    if (editingId) {
-      setAdmins((prev) =>
-        prev.map((a) =>
-          a.id === editingId
-            ? {
-                ...a,
-                name: admName.trim(),
-                email: admEmail.trim(),
-                password: admPassword,
-                role: admRole,
-              }
-            : a
-        )
-      );
-    } else {
-      const newAdmin: AdminUser = {
-        id: genId(),
+    setSaving(true);
+    try {
+      const userData = {
+        type: "admin",
+        id: editingId || undefined,
         name: admName.trim(),
         email: admEmail.trim(),
         password: admPassword,
         role: admRole,
       };
-      setAdmins((prev) => [...prev, newAdmin]);
-    }
-    closeModal();
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+      await fetchUsers();
+      closeModal();
+    } catch {} finally { setSaving(false); }
   }
 
   // ── delete ───────────────────────────────────────────────────────
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
-    if (deleteTarget.type === "customer") {
-      setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-    } else {
-      setAdmins((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-    }
-    setDeleteTarget(null);
+    setSaving(true);
+    try {
+      await fetch(`/api/users?id=${deleteTarget.id}&type=${deleteTarget.type}`, {
+        method: "DELETE",
+      });
+      await fetchUsers();
+      setDeleteTarget(null);
+    } catch {} finally { setSaving(false); }
   }
 
   // ── tabs config ──────────────────────────────────────────────────
@@ -276,6 +255,14 @@ export default function UsersPage() {
   ];
 
   // ── render ───────────────────────────────────────────────────────
+  if (loadingUsers) {
+    return (
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-32">
+        <Loader2 size={24} className="text-blue-400 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
