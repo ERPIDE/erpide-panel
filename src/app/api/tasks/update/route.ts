@@ -30,10 +30,33 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { repo, issueNumber, status, devNote, customDate } = body;
+    const { repo, issueNumber, status, devNote, customDate, title, description } = body;
 
     if (!repo || !issueNumber) {
       return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
+    }
+
+    // Update title and/or description
+    if (title || description) {
+      const updateBody: Record<string, string> = {};
+      if (title) updateBody.title = title;
+      if (description) {
+        // Rebuild issue body with metadata preserved
+        const issueRes = await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+        );
+        if (issueRes.ok) {
+          const issue = await issueRes.json();
+          const oldBody: string = issue.body || "";
+          const sepIdx = oldBody.indexOf("\n---\n");
+          const metadata = sepIdx > -1 ? oldBody.substring(sepIdx) : "";
+          updateBody.body = description + metadata;
+        }
+      }
+      await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+        { method: "PATCH", body: JSON.stringify(updateBody) }
+      );
     }
 
     // Update status via labels
