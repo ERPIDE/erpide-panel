@@ -124,34 +124,111 @@ export default function ReportsPage() {
     setShowEmailModal(true);
   };
 
+  function buildPdfHtml(): string {
+    const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
+    const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
+    const dateRange = `${formatDateTR(startDate)} — ${formatDateTR(endDate)}`;
+    const clientInfo = clientOptions.find(c => c.value === selectedClient);
+    const clientLabel2 = clientInfo?.label || selectedClient;
+
+    let html = `<html><head><meta charset="utf-8"><style>
+      body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;margin:0;padding:32px;font-size:13px;line-height:1.5}
+      .header{text-align:center;margin-bottom:24px}
+      .logo-text{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:#0f172a;letter-spacing:2px}
+      .logo-ide{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:#3b82f6;letter-spacing:1px}
+      .tagline{font-size:7px;letter-spacing:3px;color:#94a3b8;margin-top:4px}
+      .title{font-size:16px;font-weight:600;margin:8px 0 4px}
+      .subtitle{font-size:12px;color:#64748b}
+      .line{height:1px;background:linear-gradient(to right,transparent,rgba(59,130,246,0.4),transparent);margin:6px 0}
+      .stats{display:flex;gap:12px;margin:16px 0}
+      .stat{flex:1;text-align:center;padding:10px;border:1px solid #e2e8f0;border-radius:8px}
+      .stat-num{font-size:22px;font-weight:700}
+      .stat-label{font-size:10px;color:#64748b;margin-top:2px}
+      .task-item{padding:12px 0;border-bottom:1px solid #e2e8f0}
+      .task-item h3{font-size:13px;font-weight:600;margin:0 0 4px}
+      .field{font-size:12px;color:#475569;margin:2px 0}
+      .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+      .badge-done{background:#f0fdf4;color:#16a34a}
+      .badge-progress{background:#fffbeb;color:#d97706}
+      .badge-review{background:#eff6ff;color:#3b82f6}
+      .badge-todo{background:#f1f5f9;color:#64748b}
+      .report-footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8}
+    </style></head><body>
+    <div class="header">
+      <div class="line"></div>
+      <span class="logo-text">ERP</span><span class="logo-ide">IDE</span>
+      <div class="line"></div>
+      <div class="tagline">ERP COZUMLERI HAKKINDA HER SEY</div>
+      <div class="title">Haftalik Gelistirme Dokumani</div>
+      <div class="subtitle">${dateRange} | ${clientLabel2}</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">${stats.total}</div><div class="stat-label">Toplam</div></div>
+      <div class="stat"><div class="stat-num" style="color:#16a34a">${stats.completed}</div><div class="stat-label">Tamamlanan</div></div>
+      <div class="stat"><div class="stat-num" style="color:#d97706">${stats.inProgress}</div><div class="stat-label">Devam Eden</div></div>
+      <div class="stat"><div class="stat-num">${stats.waiting}</div><div class="stat-label">Bekleyen</div></div>
+    </div>`;
+
+    filteredTasks.forEach((task, i) => {
+      const sb = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";
+      html += `<div class="task-item">
+        <h3>Sorun ${i + 1}: ${task.title}</h3>
+        <div class="field"><strong>Aciklama:</strong> ${task.description}</div>
+        <div class="field"><strong>Cozum:</strong> ${task.devNote || "<em style='color:#999'>Cozum bekleniyor</em>"}</div>
+        <div class="field"><span class="badge ${sb}">${statusLabels[task.status] || task.status}</span> &nbsp; Oncelik: ${priorityLabels[task.priority] || task.priority}</div>
+      </div>`;
+    });
+
+    html += `<div class="report-footer"><strong>ERPIDE YAZILIM A.S.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com</div></body></html>`;
+    return html;
+  }
+
   async function sendReportEmail() {
     if (!emailTo.trim()) return;
     try {
       setEmailSending(true);
-      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "Incelemede", done: "Tamamlandi" };
-      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yuksek", medium: "Orta", low: "Dusuk" };
+      toast("info", "PDF olusturuluyor...");
 
-      const reportHtml = `
-        <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-          <tr>
-            <td style="text-align:center;padding:8px;background:#f1f5f9;border-radius:8px;width:25%"><strong style="font-size:20px;color:#1e293b">${stats.total}</strong><br><span style="font-size:11px;color:#64748b">Toplam</span></td>
-            <td style="text-align:center;padding:8px;background:#f0fdf4;border-radius:8px;width:25%"><strong style="font-size:20px;color:#16a34a">${stats.completed}</strong><br><span style="font-size:11px;color:#64748b">Tamamlanan</span></td>
-            <td style="text-align:center;padding:8px;background:#fffbeb;border-radius:8px;width:25%"><strong style="font-size:20px;color:#d97706">${stats.inProgress}</strong><br><span style="font-size:11px;color:#64748b">Devam Eden</span></td>
-            <td style="text-align:center;padding:8px;background:#fef2f2;border-radius:8px;width:25%"><strong style="font-size:20px;color:#6b7280">${stats.waiting}</strong><br><span style="font-size:11px;color:#64748b">Bekleyen</span></td>
-          </tr>
-        </table>
-        ${filteredTasks.map((t, i) => `
-          <div style="padding:12px 0;border-bottom:1px solid #e2e8f0">
-            <p style="margin:0 0 4px;font-weight:600;color:#1e293b;font-size:14px">${i + 1}. ${t.title}</p>
-            <p style="margin:0 0 4px;font-size:13px;color:#475569">${t.description}</p>
-            <p style="margin:0 0 4px;font-size:13px;color:#475569"><strong>Cozum:</strong> ${t.devNote || "<em style='color:#9ca3af'>Cozum bekleniyor</em>"}</p>
-            <p style="margin:0;font-size:12px;color:#94a3b8">Durum: ${statusLabels[t.status] || t.status} | Oncelik: ${priorityLabels[t.priority] || t.priority}</p>
-            ${(t.attachments?.length > 0) ? t.attachments.map(a => a.type === "image" ? `<img src="${a.url}" alt="${a.name}" style="max-width:100%;max-height:200px;border-radius:8px;margin-top:8px;border:1px solid #e2e8f0" />` : `<a href="${a.url}" style="color:#3b82f6;font-size:12px">${a.name}</a>`).join("") : ""}
-          </div>
-        `).join("")}
-      `;
+      // Generate PDF from report HTML using hidden iframe + html2canvas + jsPDF
+      const { default: html2canvas } = await import("html2canvas");
+      const { jsPDF } = await import("jspdf");
+
+      const pdfHtml = buildPdfHtml();
+
+      // Create hidden container
+      const container = document.createElement("div");
+      container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:white;padding:0";
+      container.innerHTML = pdfHtml;
+      document.body.appendChild(container);
+
+      // Wait for render
+      await new Promise(r => setTimeout(r, 500));
+
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      document.body.removeChild(container);
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      // Handle multi-page
+      let heightLeft = pdfHeight;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+      while (heightLeft > 0) {
+        position -= pdf.internal.pageSize.getHeight();
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
+      }
+
+      const pdfBase64 = pdf.output("datauristring").split(",")[1];
 
       const clientInfo = clientOptions.find(c => c.value === selectedClient);
+      const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
+
       const res = await fetch("/api/report-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -159,20 +236,22 @@ export default function ReportsPage() {
           toEmail: emailTo.trim(),
           clientName: clientInfo?.value || selectedClient,
           project: clientInfo?.project || "",
-          dateRange: `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`,
-          reportHtml,
+          dateRange,
+          pdfBase64,
+          pdfFilename: `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`,
         }),
       });
 
       if (res.ok) {
-        toast("success", `Rapor ${emailTo} adresine gonderildi`);
+        toast("success", `Rapor PDF olarak ${emailTo} adresine gonderildi`);
         setShowEmailModal(false);
       } else {
         const err = await res.json();
         toast("error", err.error || "Email gonderilemedi");
       }
-    } catch {
-      toast("error", "Email gonderilemedi");
+    } catch (e) {
+      console.error(e);
+      toast("error", "PDF olusturulamadi veya email gonderilemedi");
     } finally {
       setEmailSending(false);
     }

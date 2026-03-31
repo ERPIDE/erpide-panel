@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { LOGO_URL, emailSignature, emailFooter } from "@/lib/email-template";
+import { emailLogo, emailSignature, emailFooter } from "@/lib/email-template";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 <body style="font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f8f9fa">
   <div style="max-width:600px;margin:0 auto;padding:24px">
     <div style="background:#ffffff;padding:24px 32px;border-radius:12px 12px 0 0;text-align:center;border-bottom:3px solid #3b82f6">
-      <a href="https://erpide.com" style="text-decoration:none"><img src="${LOGO_URL}" alt="ERPIDE" width="160" style="display:inline-block" /></a>
+      <a href="https://erpide.com" style="text-decoration:none">${emailLogo}</a>
     </div>
     <div style="background:white;padding:28px 32px;border-radius:0 0 12px 12px;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
       ${contentBlock}

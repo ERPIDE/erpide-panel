@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { LOGO_URL, emailSignature, emailFooter } from "@/lib/email-template";
+import { emailSignature, emailHeader, emailFooter } from "@/lib/email-template";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { toEmail, clientName, project, dateRange, reportHtml } = body;
+    const { toEmail, clientName, project, dateRange, pdfBase64, pdfFilename } = body;
 
     if (!toEmail) {
       return NextResponse.json({ error: "Email adresi gerekli" }, { status: 400 });
@@ -26,67 +26,50 @@ export async function POST(request: NextRequest) {
 
     const html = `
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
+<html><head><meta charset="utf-8"></head>
 <body style="font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f8f9fa">
-  <div style="max-width:680px;margin:0 auto;padding:24px">
-
-    <!-- Header with Logo -->
-    <div style="background:#ffffff;padding:28px 32px;border-radius:16px 16px 0 0;text-align:center;border-bottom:3px solid #3b82f6">
-      <a href="https://erpide.com" style="text-decoration:none">
-        <img src="${LOGO_URL}" alt="ERPIDE" width="200" style="display:inline-block" />
-      </a>
-    </div>
-
-    <!-- Body -->
+  <div style="max-width:600px;margin:0 auto;padding:24px">
+    ${emailHeader}
     <div style="background:white;padding:32px;border-radius:0 0 16px 16px;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
-
       <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 16px">
         Sayin ${clientName || "Degerli Musterimiz"},
       </p>
-
       <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px">
-        <strong>${dateRange}</strong> tarihleri arasindaki haftalik gelistirme dokumunuz asagida iletilmistir.
+        <strong>${dateRange}</strong> tarihleri arasindaki haftalik gelistirme dokumunuz ekte PDF olarak iletilmistir.
         Donem icerisinde gerceklestirilen calismalarin ozeti ve detaylari raporda yer almaktadir.
       </p>
-
-      <!-- Report Content -->
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin:0 0 24px">
-        <h2 style="font-size:16px;color:#1e293b;margin:0 0 4px">Haftalik Gelistirme Dokumu</h2>
-        <p style="font-size:13px;color:#64748b;margin:0 0 16px">${dateRange} | ${clientName} - ${project}</p>
-        ${reportHtml}
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px;margin:0 0 24px;text-align:center">
+        <p style="margin:0 0 4px;font-size:14px;color:#0369a1;font-weight:600">&#128206; PDF Eki</p>
+        <p style="margin:0;font-size:13px;color:#0c4a6e">${pdfFilename || "Haftalik_Dokum.pdf"}</p>
       </div>
-
       <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 8px">
         Detayli bilgi ve gorev takibi icin ERPIDE panelinizi ziyaret edebilirsiniz:
       </p>
-
       <a href="https://erpide.com/panel" style="display:inline-block;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;margin:16px 0">
         Panele Git &rarr;
       </a>
-
-      <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:24px 0 0">
-        Sorulariniz icin bize her zaman ulasabilirsiniz.
-      </p>
-      <p style="font-size:14px;color:#374151;margin:4px 0 0">
-        Saygilarimizla,
-      </p>
-
+      <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:24px 0 0">Sorulariniz icin bize her zaman ulasabilirsiniz.</p>
+      <p style="font-size:14px;color:#374151;margin:4px 0 0">Saygilarimizla,</p>
       ${emailSignature}
     </div>
-
     ${emailFooter}
   </div>
-</body>
-</html>`;
+</body></html>`;
 
     const fromEmail = process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>";
+
+    // Build attachments array
+    const attachments = pdfBase64 ? [{
+      filename: pdfFilename || "ERPIDE_Haftalik_Dokum.pdf",
+      content: pdfBase64,
+    }] : [];
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
       subject,
       html,
+      attachments,
     });
 
     if (error) {
@@ -100,6 +83,7 @@ export async function POST(request: NextRequest) {
         to: ["info@erpide.com"],
         subject: `[Kopya] ${subject}`,
         html,
+        attachments,
       });
     } catch {}
 
