@@ -317,6 +317,17 @@ export default function ReportsPage() {
                     const statusBadge = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";
                     const priorityBadge = `badge-${task.priority}`;
 
+                    const attachmentHtml = (task.attachments && task.attachments.length > 0)
+                      ? `<div class="field" style="margin-top:8px">
+                          <span class="label">Ekler:</span>
+                          <div style="margin-top:6px">${task.attachments.map(a =>
+                            a.type === "image"
+                              ? `<div style="margin-bottom:8px"><img src="${a.url}" alt="${a.name}" style="max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:6px" /><br><small style="color:#666">${a.name}</small></div>`
+                              : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
+                          ).join("")}</div>
+                        </div>`
+                      : "";
+
                     win.document.write(`
                       <div class="task-item">
                         <h3>Sorun ${i + 1}: ${task.title}</h3>
@@ -327,6 +338,7 @@ export default function ReportsPage() {
                           &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
                         </div>
                         ${devComment ? `<div class="dev-note"><strong>Geliştirmeci Notu:</strong> ${devComment.text}</div>` : ""}
+                        ${attachmentHtml}
                       </div>
                     `);
                   });
@@ -506,15 +518,22 @@ export default function ReportsPage() {
 
                         {/* Attachments */}
                         {task.attachments.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Paperclip size={12} className="text-gray-500" />
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <Paperclip size={12} className="text-gray-500" />
+                              <span className="text-xs text-gray-500">Ekler ({task.attachments.length})</span>
+                            </div>
                             {task.attachments.map((att) => (
-                              <span
-                                key={att.id}
-                                className="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5"
-                              >
-                                {att.name}
-                              </span>
+                              att.type === "image" ? (
+                                <a key={att.id} href={att.url} target="_blank" rel="noreferrer" className="block">
+                                  <img src={att.url} alt={att.name} className="max-w-full max-h-48 rounded-lg border border-white/10" />
+                                  <span className="text-[10px] text-gray-500 mt-1 block">{att.name}</span>
+                                </a>
+                              ) : (
+                                <a key={att.id} href={att.url} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 text-blue-400 border border-white/5 inline-block">
+                                  {att.name}
+                                </a>
+                              )
                             ))}
                           </div>
                         )}

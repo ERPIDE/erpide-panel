@@ -96,6 +96,42 @@ export async function GET() {
         const parsed = parseBody(issue.body || "");
         const client = parsed.client || clientMap[project] || "";
 
+        // Fetch comments to extract devNote and attachments
+        let devNote = "";
+        const attachments: { id: string; name: string; type: "image" | "document" | "screenshot"; url: string; date: string }[] = [];
+
+        if (issue.comments > 0) {
+          try {
+            const commentsRes = await ghFetch(
+              `https://api.github.com/repos/${ORG}/${repo}/issues/${issue.number}/comments?per_page=100`
+            );
+            if (commentsRes.ok) {
+              const comments = await commentsRes.json();
+              for (const c of comments) {
+                const body: string = c.body || "";
+                // Extract dev notes
+                if (body.startsWith("**ERPIDE Dev Notu:**")) {
+                  devNote = body.replace("**ERPIDE Dev Notu:**", "").trim();
+                }
+                // Extract file attachments
+                const attachMatch = body.match(/^\*\*Ek Dosya:\*\*\s*(?:\[(.+?)\]\((.+?)\)|(.+?)\n\n!\[(.+?)\]\((.+?)\))/);
+                if (attachMatch) {
+                  const name = attachMatch[1] || attachMatch[4] || "dosya";
+                  const url = attachMatch[2] || attachMatch[5] || "";
+                  const isImage = body.includes("![");
+                  attachments.push({
+                    id: String(c.id),
+                    name,
+                    type: isImage ? "image" : "document",
+                    url,
+                    date: c.created_at.split("T")[0],
+                  });
+                }
+              }
+            }
+          } catch {}
+        }
+
         allTasks.push({
           id: issue.number,
           repo,
@@ -112,8 +148,8 @@ export async function GET() {
           url: issue.html_url,
           commentsCount: issue.comments,
           comments: [],
-          attachments: [],
-          devNote: "",
+          attachments,
+          devNote,
         });
       }
     }
