@@ -124,23 +124,26 @@ export default function ReportsPage() {
     setShowEmailModal(true);
   };
 
+  // SVG logo as base64 PNG-equivalent for html2canvas compatibility
+  const logoBase64 = "data:image/svg+xml;base64," + btoa(`<svg viewBox="0 0 200 55" width="200" height="55" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+    <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
+    <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+    <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
+    <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#3b82f6" letter-spacing="2">IDE</text>
+    <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+  </svg>`);
+
   function buildPdfHtml(): string {
     const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
     const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
     const dateRange = `${formatDateTR(startDate)} — ${formatDateTR(endDate)}`;
 
-    // Same styles as print iframe
+    // Use <img> with base64 SVG instead of inline <svg> for html2canvas compatibility
     let html = `<div style="font-family:'Segoe UI',Tahoma,sans-serif;color:#1a1a1a;font-size:11pt;line-height:1.6">
       <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:15px;margin-bottom:20px">
-        <svg viewBox="0 0 200 55" width="200" height="55" style="margin:0 auto 5px;display:block">
-          <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#8b5cf6"/></linearGradient></defs>
-          <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
-          <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
-          <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
-          <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="url(#g1)" letter-spacing="2">IDE</text>
-          <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
-        </svg>
+        <img src="${logoBase64}" width="200" height="55" style="margin:0 auto 5px;display:block" />
         <div style="font-size:7pt;letter-spacing:3px;color:#666;text-transform:uppercase">ERP Çözümleri Hakkında Her Şey</div>
         <div style="font-size:12pt;margin-top:8px;font-weight:bold">Haftalık Geliştirme Dökümanı</div>
         <div style="font-size:9pt;color:#666;margin-top:3px">${dateRange} | ${clientLabel}</div>
@@ -163,7 +166,7 @@ export default function ReportsPage() {
           ).join("")}</div></div>`
         : "";
 
-      html += `<div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px">
+      html += `<div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px;page-break-inside:avoid">
         <h3 style="font-size:11pt;font-weight:bold;margin:0 0 6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px">Sorun ${i + 1}: ${task.title}</h3>
         <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Açıklama:</span> ${task.description}</div>
         <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
@@ -204,21 +207,33 @@ export default function ReportsPage() {
       const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
       document.body.removeChild(container);
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = (canvas.height * pdfW) / canvas.width;
       const pageH = pdf.internal.pageSize.getHeight();
 
-      let heightLeft = pdfH;
-      let pos = 0;
-      pdf.addImage(imgData, "JPEG", 0, pos, pdfW, pdfH);
-      heightLeft -= pageH;
-      while (heightLeft > 0) {
-        pos -= pageH;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, pos, pdfW, pdfH);
-        heightLeft -= pageH;
+      // Calculate how many canvas pixels fit per PDF page
+      const scaleFactor = pdfW / canvas.width;
+      const pageHeightPx = Math.floor(pageH / scaleFactor);
+      const totalPages = Math.ceil(canvas.height / pageHeightPx);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+
+        // Slice the canvas for this page
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const ctx = pageCanvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, page * pageHeightPx, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+        }
+
+        const pageImg = pageCanvas.toDataURL("image/jpeg", 0.95);
+        const sliceHeightMm = sliceHeight * scaleFactor;
+        pdf.addImage(pageImg, "JPEG", 0, 0, pdfW, sliceHeightMm);
       }
 
       const pdfBase64 = pdf.output("datauristring").split(",")[1];

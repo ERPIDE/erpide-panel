@@ -3,8 +3,8 @@
 
 export const emailLogo = `
 <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-  <tr><td style="text-align:center;padding-bottom:2px;font-size:0;line-height:0">
-    <span style="color:#3b82f6;font-size:16px">&#9826;</span>
+  <tr><td style="text-align:center;padding-bottom:2px">
+    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAxNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMkw1IDRMOS41IDhMMTIgMkwxNS41IDhMMTkgNEwyMiAxMiIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjEuOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PGNpcmNsZSBjeD0iNSIgY3k9IjMuNSIgcj0iMS4yIiBmaWxsPSIjM2I4MmY2Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxLjUiIHI9IjEuMiIgZmlsbD0iIzNiODJmNiIvPjxjaXJjbGUgY3g9IjE5IiBjeT0iMy41IiByPSIxLjIiIGZpbGw9IiMzYjgyZjYiLz48L3N2Zz4=" alt="ERPIDE" width="24" height="14" style="display:block;margin:0 auto" />
   </td></tr>
   <tr><td style="height:1px;background:linear-gradient(to right,transparent,rgba(59,130,246,0.4),transparent)"></td></tr>
   <tr><td style="text-align:center;padding:4px 0">
