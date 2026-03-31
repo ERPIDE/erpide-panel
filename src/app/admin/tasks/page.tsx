@@ -469,7 +469,7 @@ export default function TasksPage() {
   /* keep selectedTask in sync with tasks array */
   const activeTask = useMemo(() => {
     if (!selectedTask) return null;
-    return tasks.find((t) => t.id === selectedTask.id) ?? null;
+    return tasks.find((t) => t.id === selectedTask.id && t.repo === selectedTask.repo) ?? null;
   }, [tasks, selectedTask]);
 
   /* ─── loading spinner ─── */
@@ -579,7 +579,7 @@ export default function TasksPage() {
 
             return (
               <motion.div
-                key={t.id}
+                key={`${t.repo}-${t.id}`}
                 layout
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
