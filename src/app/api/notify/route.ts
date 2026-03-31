@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: "ERPIDE <bildirim@erpide.com>",
+      from: process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>",
       to: [client.email],
       subject,
       html,

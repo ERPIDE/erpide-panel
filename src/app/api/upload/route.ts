@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del, list } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+const ORG = "ERPIDE";
+
+const repoMap: Record<string, string> = {
+  CANIAS: "erpide-canias-erp",
+  "1C ERP": "erpide-1c-erp",
+};
 
 // POST /api/upload — upload a file to Vercel Blob
 export async function POST(request: NextRequest) {
@@ -8,6 +16,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const taskId = formData.get("taskId") as string;
     const project = formData.get("project") as string;
+    const repo = formData.get("repo") as string;
 
     if (!file) {
       return NextResponse.json({ error: "Dosya gerekli" }, { status: 400 });
@@ -46,6 +55,28 @@ export async function POST(request: NextRequest) {
     // Determine attachment type
     let type: "image" | "document" | "screenshot" = "document";
     if (file.type.startsWith("image/")) type = "image";
+
+    // Save file URL as a comment on GitHub issue for persistence
+    const ghRepo = repo || repoMap[project];
+    if (ghRepo && taskId && GITHUB_TOKEN) {
+      const isImage = file.type.startsWith("image/");
+      const commentBody = isImage
+        ? `**Ek Dosya:** ${file.name}\n\n![${file.name}](${blob.url})`
+        : `**Ek Dosya:** [${file.name}](${blob.url})`;
+
+      await fetch(
+        `https://api.github.com/repos/${ORG}/${ghRepo}/issues/${taskId}/comments`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ body: commentBody }),
+        }
+      );
+    }
 
     return NextResponse.json({
       url: blob.url,

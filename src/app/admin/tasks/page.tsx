@@ -111,6 +111,12 @@ export default function TasksPage() {
   const [notifying, setNotifying] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState("");
 
+  // status change & dev note
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [editingDevNote, setEditingDevNote] = useState(false);
+  const [devNoteText, setDevNoteText] = useState("");
+  const [savingDevNote, setSavingDevNote] = useState(false);
+
   // create form
   const [creating, setCreating] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -233,6 +239,7 @@ export default function TasksPage() {
       formData.append("file", file);
       formData.append("taskId", String(task.id));
       formData.append("project", task.project);
+      if (task.repo) formData.append("repo", task.repo);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
@@ -293,6 +300,54 @@ export default function TasksPage() {
       console.error("Notify error:", err);
     } finally {
       setNotifying(false);
+    }
+  }
+
+  /* ─── update task status ─── */
+  async function updateTaskStatus(task: Task, newStatus: string) {
+    if (!task.repo) return;
+    try {
+      setUpdatingStatus(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, status: newStatus }),
+      });
+      if (res.ok) {
+        await fetchTasks();
+        // Auto send notification on completion
+        if (newStatus === "done") {
+          sendNotification("task_completed", task);
+        } else {
+          sendNotification("status_change", task, { status: newStatus });
+        }
+      }
+    } catch (err) {
+      console.error("Status update error:", err);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
+  /* ─── save dev note ─── */
+  async function saveDevNote(task: Task) {
+    if (!task.repo || !devNoteText.trim()) return;
+    try {
+      setSavingDevNote(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, devNote: devNoteText.trim() }),
+      });
+      if (res.ok) {
+        setEditingDevNote(false);
+        setDevNoteText("");
+        await fetchComments(task);
+      }
+    } catch (err) {
+      console.error("Dev note error:", err);
+    } finally {
+      setSavingDevNote(false);
     }
   }
 
@@ -605,62 +660,84 @@ export default function TasksPage() {
                   </p>
                 </div>
 
-                {/* dev note */}
+                {/* dev note (editable) */}
                 <div className="p-4 rounded-xl bg-[#111118] border border-white/5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <StickyNote size={14} className="text-yellow-500/60" />
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Gelistirici Notu</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <StickyNote size={14} className="text-yellow-500/60" />
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">Gelistirici Notu</p>
+                    </div>
+                    {!editingDevNote && activeTask.repo && (
+                      <button
+                        onClick={() => { setEditingDevNote(true); setDevNoteText(""); }}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 transition"
+                      >
+                        + Not Ekle
+                      </button>
+                    )}
                   </div>
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${activeTask.devNote ? "text-yellow-200/80" : "text-gray-600 italic"}`}>
-                    {activeTask.devNote || "Henuz gelistirici notu yok."}
-                  </p>
+                  {activeTask.devNote && (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-yellow-200/80 mb-2">
+                      {activeTask.devNote}
+                    </p>
+                  )}
+                  {!activeTask.devNote && !editingDevNote && (
+                    <p className="text-sm text-gray-600 italic">Henuz gelistirici notu yok.</p>
+                  )}
+                  {editingDevNote && (
+                    <div className="space-y-2 mt-2">
+                      <textarea
+                        value={devNoteText}
+                        onChange={(e) => setDevNoteText(e.target.value)}
+                        placeholder="Gelistirici notu yaz..."
+                        rows={3}
+                        className="w-full p-3 rounded-xl bg-[#0a0a12] border border-white/10 text-yellow-200/80 text-sm placeholder-gray-500 focus:border-yellow-500/30 focus:outline-none resize-none transition"
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => { setEditingDevNote(false); setDevNoteText(""); }}
+                          className="px-3 py-1.5 rounded-lg bg-white/5 text-gray-400 text-xs hover:bg-white/10 transition"
+                        >
+                          Iptal
+                        </button>
+                        <button
+                          onClick={() => saveDevNote(activeTask)}
+                          disabled={!devNoteText.trim() || savingDevNote}
+                          className="px-3 py-1.5 rounded-lg bg-yellow-600/20 text-yellow-400 text-xs font-medium hover:bg-yellow-600/30 transition disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {savingDevNote && <Loader2 size={10} className="animate-spin" />}
+                          Kaydet
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* status display (read-only) */}
+                {/* status change (clickable) */}
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Durum</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Durumu Degistir</p>
+                    {updatingStatus && <Loader2 size={12} className="text-blue-400 animate-spin" />}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {statuses.map((s) => {
                       const cfg = statusConfig[s];
                       const Icon = statusIcons[s];
                       const active = activeTask.status === s;
                       return (
-                        <div
+                        <button
                           key={s}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border ${
+                          onClick={() => { if (!active && activeTask.repo) updateTaskStatus(activeTask, s); }}
+                          disabled={active || updatingStatus || !activeTask.repo}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition ${
                             active
                               ? `${cfg.bg} ${cfg.color} border-current`
-                              : "bg-[#111118] text-gray-600 border-white/5"
+                              : "bg-[#111118] text-gray-600 border-white/5 hover:border-white/20 hover:text-gray-300 cursor-pointer disabled:cursor-not-allowed"
                           }`}
                         >
                           <Icon size={14} />
                           {cfg.label}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* priority display (read-only) */}
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Oncelik</p>
-                  <div className="flex flex-wrap gap-2">
-                    {priorities.map((p) => {
-                      const cfg = priorityConfig[p];
-                      const Icon = priorityIcons[p];
-                      const active = activeTask.priority === p;
-                      return (
-                        <div
-                          key={p}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border ${
-                            active
-                              ? `${cfg.bg} ${cfg.color} border-current`
-                              : "bg-[#111118] text-gray-600 border-white/5"
-                          }`}
-                        >
-                          <Icon size={14} />
-                          {cfg.label}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

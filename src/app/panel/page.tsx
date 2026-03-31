@@ -135,6 +135,7 @@ export default function PanelPage() {
       formData.append("file", file);
       formData.append("taskId", String(task.id));
       formData.append("project", task.project);
+      if (task.repo) formData.append("repo", task.repo);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
