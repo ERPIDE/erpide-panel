@@ -1,31 +1,21 @@
 // Shared email branding for all ERPIDE emails
-// Logo rendered as inline HTML to match website exactly (ERP+IDE bitisik)
+// Logo served as hosted PNG from erpide.com/logo.png for maximum email client compatibility
+
+const LOGO_URL = "https://erpide.com/logo.png";
 
 export const emailLogo = `
 <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-  <tr><td style="text-align:center;padding-bottom:6px">
-    <table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>
-      <td style="font-size:11px;color:#3b82f6;line-height:1">&#9650;</td>
-      <td style="font-size:14px;color:#3b82f6;line-height:1;padding:0 1px">&#9650;</td>
-      <td style="font-size:11px;color:#3b82f6;line-height:1">&#9650;</td>
-    </tr></table>
-  </td></tr>
-  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
-  <tr><td style="text-align:center;padding:6px 0 4px">
-    <span style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:bold;color:#0f172a;letter-spacing:3px">ERP</span><span style="font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:bold;color:#3b82f6;letter-spacing:2px">IDE</span>
-  </td></tr>
-  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
-  <tr><td style="text-align:center;padding-top:6px">
-    <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#94a3b8;text-transform:uppercase">ERP COZUMLERI HAKKINDA HER SEY</span>
+  <tr><td style="text-align:center">
+    <img src="${LOGO_URL}" alt="ERPIDE" width="180" height="70" style="display:block;margin:0 auto;max-width:180px;height:auto" />
   </td></tr>
 </table>`;
 
 export const emailSignature = `
 <table cellpadding="0" cellspacing="0" style="font-family:'Segoe UI',Arial,sans-serif;margin-top:28px;border-top:1px solid #e5e7eb;padding-top:20px;width:100%">
   <tr>
-    <td style="padding-right:20px;vertical-align:top;width:100px">
+    <td style="padding-right:20px;vertical-align:top;width:90px">
       <a href="https://erpide.com" style="text-decoration:none">
-        ${emailLogo}
+        <img src="${LOGO_URL}" alt="ERPIDE" width="80" height="31" style="display:block;max-width:80px;height:auto" />
       </a>
     </td>
     <td style="vertical-align:top;border-left:2px solid #3b82f6;padding-left:20px">
