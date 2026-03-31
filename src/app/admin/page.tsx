@@ -1,36 +1,57 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Lock, AlertCircle } from "lucide-react";
+import { Lock, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
-import { AdminUser, initialAdmins } from "@/lib/store";
-
-function getAdmins(): AdminUser[] {
-  try {
-    const saved = localStorage.getItem("erpide_admins");
-    return saved ? JSON.parse(saved) : [...initialAdmins];
-  } catch { return [...initialAdmins]; }
-}
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Check if already logged in
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => { if (res.ok) router.replace("/admin/dashboard"); })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const admins = getAdmins();
-    const user = admins.find(a => a.email === email && a.password === password);
-    if (user) {
-      localStorage.setItem("erpide_current_user", JSON.stringify({ name: user.name, email: user.email, role: user.role }));
-      router.push("/admin/dashboard");
-    } else {
-      setError("Hatalı email veya şifre!");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, type: "admin" }),
+      });
+      if (res.ok) {
+        router.push("/admin/dashboard");
+      } else {
+        const data = await res.json();
+        setError(data.error || "Hatalı email veya şifre!");
+      }
+    } catch {
+      setError("Bağlantı hatası");
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={24} className="text-blue-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
@@ -54,8 +75,10 @@ export default function AdminPage() {
             className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
           <input placeholder="Şifre" type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }}
             className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
-          <button type="submit" className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition">
-            <Lock size={16} /> Giriş Yap
+          <button type="submit" disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-50">
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>
         </form>
         <Link href="/" className="inline-block mt-4 text-sm text-gray-500 hover:text-white transition">&larr; Ana Sayfaya Dön</Link>

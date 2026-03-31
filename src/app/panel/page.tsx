@@ -87,6 +87,8 @@ export default function PanelPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loggedIn, setLoggedIn] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   // Dashboard state
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -128,14 +130,55 @@ export default function PanelPage() {
       .catch(() => setLoadingTasks(false));
   }, [loggedIn]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Check existing session on mount
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          if (data.userType === "customer" && data.customerCode) {
+            setLoggedIn(data.customerCode);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCheckingSession(false));
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const customer = customers[code.toUpperCase()];
-    if (customer && customer.password === password) {
-      setLoggedIn(code.toUpperCase());
-      setError("");
-    } else {
-      setError("Hatali musteri kodu veya sifre!");
+    setLoginLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.toUpperCase(), password, type: "customer" }),
+      });
+      if (res.ok) {
+        setLoggedIn(code.toUpperCase());
+        setError("");
+      } else {
+        // Fallback to local check for backwards compatibility
+        const customer = customers[code.toUpperCase()];
+        if (customer && customer.password === password) {
+          setLoggedIn(code.toUpperCase());
+          setError("");
+        } else {
+          setError("Hatali musteri kodu veya sifre!");
+        }
+      }
+    } catch {
+      // Fallback to local
+      const customer = customers[code.toUpperCase()];
+      if (customer && customer.password === password) {
+        setLoggedIn(code.toUpperCase());
+        setError("");
+      } else {
+        setError("Hatali musteri kodu veya sifre!");
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
