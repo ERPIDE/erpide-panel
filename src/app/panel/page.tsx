@@ -33,7 +33,7 @@ import {
   Label,
 } from "@/lib/store";
 
-const customers: Record<
+const defaultCustomers: Record<
   string,
   { password: string; name: string; project: string }
 > = {
@@ -48,6 +48,21 @@ const customers: Record<
     project: "1C ERP",
   },
 };
+
+function getCustomers(): Record<string, { password: string; name: string; project: string }> {
+  try {
+    const saved = localStorage.getItem("erpide_customers");
+    if (saved) {
+      const list = JSON.parse(saved);
+      const map: Record<string, { password: string; name: string; project: string }> = {};
+      for (const c of list) {
+        map[c.code] = { password: c.password, name: c.name, project: c.project };
+      }
+      return map;
+    }
+  } catch {}
+  return defaultCustomers;
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -67,6 +82,7 @@ function daysUntil(dateStr: string): number {
 }
 
 export default function PanelPage() {
+  const [customers] = useState(() => getCustomers());
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -76,10 +76,28 @@ export default function UsersPage() {
   // ── state ────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"customers" | "admins">("customers");
 
-  const [customers, setCustomers] = useState<CustomerUser[]>([
-    ...initialCustomers,
-  ]);
-  const [admins, setAdmins] = useState<AdminUser[]>([...initialAdmins]);
+  const [customers, setCustomers] = useState<CustomerUser[]>(() => {
+    if (typeof window === "undefined") return [...initialCustomers];
+    try {
+      const saved = localStorage.getItem("erpide_customers");
+      return saved ? JSON.parse(saved) : [...initialCustomers];
+    } catch { return [...initialCustomers]; }
+  });
+  const [admins, setAdmins] = useState<AdminUser[]>(() => {
+    if (typeof window === "undefined") return [...initialAdmins];
+    try {
+      const saved = localStorage.getItem("erpide_admins");
+      return saved ? JSON.parse(saved) : [...initialAdmins];
+    } catch { return [...initialAdmins]; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem("erpide_customers", JSON.stringify(customers)); } catch {}
+  }, [customers]);
+
+  useEffect(() => {
+    try { localStorage.setItem("erpide_admins", JSON.stringify(admins)); } catch {}
+  }, [admins]);
 
   // modal state
   const [modalOpen, setModalOpen] = useState(false);

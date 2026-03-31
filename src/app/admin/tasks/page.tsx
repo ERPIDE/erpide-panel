@@ -168,16 +168,24 @@ export default function TasksPage() {
     }
   }
 
-  const defaultEmails: Record<string, string> = {
-    CANIAS: "info@sirmersan.com",
-    "1C ERP": "info@atmconstructor.kz",
-  };
-
-  function getSavedEmail(project: string): string {
+  function getCustomerEmail(project: string): string {
+    const fallback: Record<string, string> = {
+      CANIAS: "info@sirmersan.com",
+      "1C ERP": "info@atmconstructor.kz",
+    };
     try {
-      const saved = localStorage.getItem(`erpide_email_${project}`);
-      return saved || defaultEmails[project] || "";
-    } catch { return defaultEmails[project] || ""; }
+      // First check task-specific override
+      const override = localStorage.getItem(`erpide_email_${project}`);
+      if (override) return override;
+      // Then check customer management data
+      const saved = localStorage.getItem("erpide_customers");
+      if (saved) {
+        const customers = JSON.parse(saved);
+        const match = customers.find((c: { project: string }) => c.project === project);
+        if (match?.contactEmail) return match.contactEmail;
+      }
+    } catch {}
+    return fallback[project] || "";
   }
 
   function saveEmail(project: string, email: string) {
@@ -188,7 +196,7 @@ export default function TasksPage() {
     setSelectedTask(task);
     setCommentText("");
     setComments([]);
-    setNotifyEmail(getSavedEmail(task.project));
+    setNotifyEmail(getCustomerEmail(task.project));
     setEditingDevNote(false);
     setNotifySuccess("");
     fetchComments(task);
