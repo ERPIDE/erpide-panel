@@ -128,58 +128,54 @@ export default function ReportsPage() {
     const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
     const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
     const dateRange = `${formatDateTR(startDate)} — ${formatDateTR(endDate)}`;
-    const clientInfo = clientOptions.find(c => c.value === selectedClient);
-    const clientLabel2 = clientInfo?.label || selectedClient;
 
-    let html = `<html><head><meta charset="utf-8"><style>
-      body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;margin:0;padding:32px;font-size:13px;line-height:1.5}
-      .header{text-align:center;margin-bottom:24px}
-      .logo-text{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:#0f172a;letter-spacing:2px}
-      .logo-ide{font-family:Georgia,serif;font-size:20px;font-weight:bold;color:#3b82f6;letter-spacing:1px}
-      .tagline{font-size:7px;letter-spacing:3px;color:#94a3b8;margin-top:4px}
-      .title{font-size:16px;font-weight:600;margin:8px 0 4px}
-      .subtitle{font-size:12px;color:#64748b}
-      .line{height:1px;background:linear-gradient(to right,transparent,rgba(59,130,246,0.4),transparent);margin:6px 0}
-      .stats{display:flex;gap:12px;margin:16px 0}
-      .stat{flex:1;text-align:center;padding:10px;border:1px solid #e2e8f0;border-radius:8px}
-      .stat-num{font-size:22px;font-weight:700}
-      .stat-label{font-size:10px;color:#64748b;margin-top:2px}
-      .task-item{padding:12px 0;border-bottom:1px solid #e2e8f0}
-      .task-item h3{font-size:13px;font-weight:600;margin:0 0 4px}
-      .field{font-size:12px;color:#475569;margin:2px 0}
-      .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
-      .badge-done{background:#f0fdf4;color:#16a34a}
-      .badge-progress{background:#fffbeb;color:#d97706}
-      .badge-review{background:#eff6ff;color:#3b82f6}
-      .badge-todo{background:#f1f5f9;color:#64748b}
-      .report-footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8}
-    </style></head><body>
-    <div class="header">
-      <div class="line"></div>
-      <span class="logo-text">ERP</span><span class="logo-ide">IDE</span>
-      <div class="line"></div>
-      <div class="tagline">ERP COZUMLERI HAKKINDA HER SEY</div>
-      <div class="title">Haftalik Gelistirme Dokumani</div>
-      <div class="subtitle">${dateRange} | ${clientLabel2}</div>
-    </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-num">${stats.total}</div><div class="stat-label">Toplam</div></div>
-      <div class="stat"><div class="stat-num" style="color:#16a34a">${stats.completed}</div><div class="stat-label">Tamamlanan</div></div>
-      <div class="stat"><div class="stat-num" style="color:#d97706">${stats.inProgress}</div><div class="stat-label">Devam Eden</div></div>
-      <div class="stat"><div class="stat-num">${stats.waiting}</div><div class="stat-label">Bekleyen</div></div>
-    </div>`;
+    // Same styles as print iframe
+    let html = `<div style="font-family:'Segoe UI',Tahoma,sans-serif;color:#1a1a1a;font-size:11pt;line-height:1.6">
+      <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:15px;margin-bottom:20px">
+        <svg viewBox="0 0 200 55" width="200" height="55" style="margin:0 auto 5px;display:block">
+          <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#8b5cf6"/></linearGradient></defs>
+          <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
+          <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+          <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
+          <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="url(#g1)" letter-spacing="2">IDE</text>
+          <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+        </svg>
+        <div style="font-size:7pt;letter-spacing:3px;color:#666;text-transform:uppercase">ERP Çözümleri Hakkında Her Şey</div>
+        <div style="font-size:12pt;margin-top:8px;font-weight:bold">Haftalık Geliştirme Dökümanı</div>
+        <div style="font-size:9pt;color:#666;margin-top:3px">${dateRange} | ${clientLabel}</div>
+      </div>
+      <div style="display:flex;gap:15px;margin:15px 0">
+        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold">${stats.total}</div><div style="font-size:8pt;color:#666">Toplam</div></div>
+        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#16a34a">${stats.completed}</div><div style="font-size:8pt;color:#666">Tamamlanan</div></div>
+        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#ca8a04">${stats.inProgress}</div><div style="font-size:8pt;color:#666">Devam Eden</div></div>
+        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#6b7280">${stats.waiting}</div><div style="font-size:8pt;color:#666">Bekleyen</div></div>
+      </div>`;
 
-    filteredTasks.forEach((task, i) => {
-      const sb = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";
-      html += `<div class="task-item">
-        <h3>Sorun ${i + 1}: ${task.title}</h3>
-        <div class="field"><strong>Aciklama:</strong> ${task.description}</div>
-        <div class="field"><strong>Cozum:</strong> ${task.devNote || "<em style='color:#999'>Cozum bekleniyor</em>"}</div>
-        <div class="field"><span class="badge ${sb}">${statusLabels[task.status] || task.status}</span> &nbsp; Oncelik: ${priorityLabels[task.priority] || task.priority}</div>
+    const tasksForPdf = filteredTasks.filter(t => t.status === "done");
+    tasksForPdf.forEach((task, i) => {
+      const statusBadge = task.status === "done" ? "background:#dcfce7;color:#166534" : task.status === "in_progress" ? "background:#fef9c3;color:#854d0e" : "background:#f3f4f6;color:#4b5563";
+      const attHtml = (task.attachments?.length > 0)
+        ? `<div style="margin-top:8px"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
+            a.type === "image"
+              ? `<div style="margin-bottom:8px"><img src="${a.url}" style="max-width:100%;max-height:300px;border:1px solid #ddd;border-radius:6px" crossorigin="anonymous"/><br><small style="color:#666">${a.name}</small></div>`
+              : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
+          ).join("")}</div></div>`
+        : "";
+
+      html += `<div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px">
+        <h3 style="font-size:11pt;font-weight:bold;margin:0 0 6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px">Sorun ${i + 1}: ${task.title}</h3>
+        <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Açıklama:</span> ${task.description}</div>
+        <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+        <div style="font-size:10pt"><span style="display:inline-block;padding:1px 8px;border-radius:3px;font-size:8pt;font-weight:600;${statusBadge}">${statusLabels[task.status]}</span>
+        &nbsp;&nbsp;<span style="font-weight:600;color:#444">Öncelik:</span> ${priorityLabels[task.priority]}</div>
+        ${attHtml}
       </div>`;
     });
 
-    html += `<div class="report-footer"><strong>ERPIDE YAZILIM A.S.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com</div></body></html>`;
+    html += `<div style="text-align:center;border-top:2px solid #1a1a1a;padding-top:10px;margin-top:25px;font-size:8pt;color:#666">
+      <strong>ERPIDE YAZILIM A.Ş.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com
+    </div></div>`;
     return html;
   }
 
@@ -189,121 +185,41 @@ export default function ReportsPage() {
       setEmailSending(true);
       toast("info", "PDF olusturuluyor...");
 
+      // Use the same HTML as print PDF (4th screenshot - the good one)
+      const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentW = pageW - margin * 2;
-      let y = margin;
 
-      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "Incelemede", done: "Tamamlandi" };
-      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yuksek", medium: "Orta", low: "Dusuk" };
       const clientInfo = clientOptions.find(c => c.value === selectedClient);
       const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
+      const pdfHtml = buildPdfHtml();
 
-      function checkPage(needed: number) {
-        if (y + needed > pageH - 20) { pdf.addPage(); y = margin; }
+      // Render HTML in hidden container
+      const container = document.createElement("div");
+      container.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;background:white;padding:30px";
+      container.innerHTML = pdfHtml;
+      document.body.appendChild(container);
+
+      await new Promise(r => setTimeout(r, 600));
+
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      document.body.removeChild(container);
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = (canvas.height * pdfW) / canvas.width;
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      let heightLeft = pdfH;
+      let pos = 0;
+      pdf.addImage(imgData, "JPEG", 0, pos, pdfW, pdfH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        pos -= pageH;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, pos, pdfW, pdfH);
+        heightLeft -= pageH;
       }
-
-      // Header
-      pdf.setDrawColor(59, 130, 246);
-      pdf.setLineWidth(0.5);
-      pdf.line(margin, y, pageW - margin, y);
-      y += 6;
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(22);
-      pdf.setTextColor(15, 23, 42);
-      pdf.text("ERP", pageW / 2 - 12, y, { align: "center" });
-      pdf.setFontSize(16);
-      pdf.setTextColor(59, 130, 246);
-      pdf.text("IDE", pageW / 2 + 15, y - 1, { align: "center" });
-      y += 4;
-      pdf.line(margin, y, pageW - margin, y);
-      y += 5;
-      pdf.setFontSize(7);
-      pdf.setTextColor(148, 163, 184);
-      pdf.text("ERP COZUMLERI HAKKINDA HER SEY", pageW / 2, y, { align: "center" });
-      y += 8;
-      pdf.setFontSize(14);
-      pdf.setTextColor(15, 23, 42);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Haftalik Gelistirme Dokumani", pageW / 2, y, { align: "center" });
-      y += 6;
-      pdf.setFontSize(10);
-      pdf.setTextColor(100, 116, 139);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`${dateRange} | ${clientInfo?.label || selectedClient}`, pageW / 2, y, { align: "center" });
-      y += 10;
-
-      // Stats
-      const statW = contentW / 4;
-      const statLabels = ["Toplam", "Tamamlanan", "Devam Eden", "Bekleyen"];
-      const statValues = [stats.total, stats.completed, stats.inProgress, stats.waiting];
-      const statColors: [number, number, number][] = [[15, 23, 42], [22, 163, 74], [217, 119, 6], [100, 116, 139]];
-      statLabels.forEach((label, i) => {
-        const x = margin + i * statW;
-        pdf.setDrawColor(226, 232, 240);
-        pdf.roundedRect(x + 2, y, statW - 4, 18, 2, 2, "S");
-        pdf.setFontSize(16);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(...statColors[i]);
-        pdf.text(String(statValues[i]), x + statW / 2, y + 10, { align: "center" });
-        pdf.setFontSize(7);
-        pdf.setTextColor(100, 116, 139);
-        pdf.setFont("helvetica", "normal");
-        pdf.text(label, x + statW / 2, y + 15, { align: "center" });
-      });
-      y += 24;
-
-      // Tasks
-      filteredTasks.forEach((task, i) => {
-        checkPage(30);
-        pdf.setDrawColor(226, 232, 240);
-        pdf.setLineWidth(0.3);
-        pdf.line(margin, y, pageW - margin, y);
-        y += 5;
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(10);
-        pdf.setTextColor(15, 23, 42);
-        const titleLines = pdf.splitTextToSize(`Sorun ${i + 1}: ${task.title}`, contentW);
-        pdf.text(titleLines, margin, y);
-        y += titleLines.length * 5;
-
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(9);
-        pdf.setTextColor(71, 85, 105);
-        const descLines = pdf.splitTextToSize(`Aciklama: ${task.description}`, contentW);
-        checkPage(descLines.length * 4 + 10);
-        pdf.text(descLines, margin, y);
-        y += descLines.length * 4 + 1;
-
-        const solText = task.devNote ? `Cozum: ${task.devNote}` : "Cozum: Cozum bekleniyor";
-        const solLines = pdf.splitTextToSize(solText, contentW);
-        checkPage(solLines.length * 4 + 8);
-        pdf.setTextColor(task.devNote ? 30 : 150, task.devNote ? 64 : 150, task.devNote ? 175 : 150);
-        pdf.text(solLines, margin, y);
-        y += solLines.length * 4 + 1;
-
-        pdf.setFontSize(8);
-        pdf.setTextColor(148, 163, 184);
-        pdf.text(`Durum: ${statusLabels[task.status] || task.status}  |  Oncelik: ${priorityLabels[task.priority] || task.priority}`, margin, y);
-        y += 6;
-      });
-
-      // Footer
-      checkPage(20);
-      y += 5;
-      pdf.setDrawColor(226, 232, 240);
-      pdf.line(margin, y, pageW - margin, y);
-      y += 6;
-      pdf.setFontSize(9);
-      pdf.setTextColor(148, 163, 184);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("ERPIDE YAZILIM A.S.", pageW / 2, y, { align: "center" });
-      y += 4;
-      pdf.setFont("helvetica", "normal");
-      pdf.text("info@erpide.com  -  0554 694 34 09  -  www.erpide.com", pageW / 2, y, { align: "center" });
 
       const pdfBase64 = pdf.output("datauristring").split(",")[1];
       const filename = `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`;

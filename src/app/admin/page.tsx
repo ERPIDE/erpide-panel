@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LayoutDashboard, Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ export default function AdminPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full p-8 rounded-2xl bg-[#111118] border border-white/5 text-center"
       >
-        <img src="/logo.png" alt="ERPIDE" className="h-16 mx-auto mb-6" />
+        <div className="flex justify-center mb-6"><Logo size="default" /></div>
         <h1 className="text-2xl font-bold mb-2">Yönetim Paneli</h1>
         <p className="text-gray-400 text-sm mb-6">Proje yönetimi, task takibi ve raporlama</p>
 

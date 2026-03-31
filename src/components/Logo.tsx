@@ -4,7 +4,7 @@ export default function Logo({ size = "default" }: { size?: "small" | "default" 
   const scale = size === "small" ? 0.6 : size === "large" ? 1.4 : 1;
 
   return (
-    <div className="flex flex-col items-center" style={{ transform: `scale(${scale})`, transformOrigin: "left center" }}>
+    <div className="flex flex-col items-center" style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
       {/* Crown */}
       <svg width="24" height="14" viewBox="0 0 24 14" fill="none" className="mb-0.5">
         <path d="M2 12L5 4L8.5 8L12 2L15.5 8L19 4L22 12" stroke="url(#crown-grad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
