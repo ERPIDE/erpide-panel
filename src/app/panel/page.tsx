@@ -52,8 +52,8 @@ const customers: Record<
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const months = [
-    "Ocak", "\u015Eubat", "Mart", "Nisan", "May\u0131s", "Haziran",
-    "Temmuz", "A\u011Fustos", "Eyl\u00FCl", "Ekim", "Kas\u0131m", "Aral\u0131k",
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
   ];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
