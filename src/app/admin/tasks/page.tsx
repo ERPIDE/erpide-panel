@@ -103,6 +103,14 @@ export default function TasksPage() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentPosting, setCommentPosting] = useState(false);
 
+  // file upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { url: string; name: string; type: string; date: string }[]>>({});
+
+  // notification state
+  const [notifying, setNotifying] = useState(false);
+  const [notifySuccess, setNotifySuccess] = useState("");
+
   // create form
   const [creating, setCreating] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -214,6 +222,77 @@ export default function TasksPage() {
       console.error("Error creating task:", err);
     } finally {
       setCreating(false);
+    }
+  }
+
+  /* ─── upload file ─── */
+  async function uploadFile(task: Task, file: File) {
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("taskId", String(task.id));
+      formData.append("project", task.project);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Dosya yuklenemedi");
+        return;
+      }
+
+      const result = await res.json();
+      const key = `${task.project}-${task.id}`;
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] || []), result],
+      }));
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Dosya yuklenemedi");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleFileSelect(task: Task) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) uploadFile(task, file);
+    };
+    input.click();
+  }
+
+  /* ─── send notification ─── */
+  async function sendNotification(type: string, task: Task, extra?: { comment?: string; status?: string }) {
+    try {
+      setNotifying(true);
+      const res = await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          taskTitle: task.title,
+          taskId: task.id,
+          project: task.project,
+          ...extra,
+        }),
+      });
+
+      if (res.ok) {
+        setNotifySuccess("Email gonderildi!");
+        setTimeout(() => setNotifySuccess(""), 3000);
+      } else {
+        const err = await res.json();
+        console.error("Notify error:", err.error);
+      }
+    } catch (err) {
+      console.error("Notify error:", err);
+    } finally {
+      setNotifying(false);
     }
   }
 
@@ -651,29 +730,90 @@ export default function TasksPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <Paperclip size={14} className="text-gray-500" />
                     <p className="text-[10px] uppercase tracking-wider text-gray-500">
-                      Ekler ({activeTask.attachments?.length ?? 0})
+                      Ekler ({(activeTask.attachments?.length ?? 0) + (uploadedFiles[`${activeTask.project}-${activeTask.id}`]?.length ?? 0)})
                     </p>
                   </div>
 
-                  {(activeTask.attachments?.length ?? 0) > 0 ? (
+                  {/* existing attachments from GitHub */}
+                  {(activeTask.attachments?.length ?? 0) > 0 && (
                     <div className="space-y-2 mb-3">
                       {activeTask.attachments.map((a) => (
-                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#111118] border border-white/5">
+                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/20 transition">
                           <Paperclip size={14} className="text-gray-500 shrink-0" />
                           <span className="text-sm text-white truncate flex-1">{a.name}</span>
                           <span className="text-[10px] text-gray-500">{a.type}</span>
                           <span className="text-[10px] text-gray-600">{formatDate(a.date)}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* uploaded files via Vercel Blob */}
+                  {(uploadedFiles[`${activeTask.project}-${activeTask.id}`]?.length ?? 0) > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {uploadedFiles[`${activeTask.project}-${activeTask.id}`].map((f, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-[#111118] border border-green-500/20">
+                          {f.type === "image" ? (
+                            <a href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 flex-1 min-w-0">
+                              <img src={f.url} alt={f.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                              <span className="text-sm text-white truncate">{f.name}</span>
+                            </a>
+                          ) : (
+                            <a href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 flex-1 min-w-0">
+                              <Paperclip size={14} className="text-green-400 shrink-0" />
+                              <span className="text-sm text-white truncate">{f.name}</span>
+                            </a>
+                          )}
+                          <span className="text-[10px] text-green-400">Yuklendi</span>
                         </div>
                       ))}
                     </div>
-                  ) : (
+                  )}
+
+                  {(activeTask.attachments?.length ?? 0) === 0 && (uploadedFiles[`${activeTask.project}-${activeTask.id}`]?.length ?? 0) === 0 && (
                     <p className="text-xs text-gray-600 mb-3 italic">Henuz ek dosya yok.</p>
                   )}
 
-                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm transition">
-                    <Upload size={14} />
-                    Dosya Yukle
+                  <button
+                    onClick={() => handleFileSelect(activeTask)}
+                    disabled={uploading}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 hover:border-blue-500/30 text-gray-400 hover:text-white text-sm transition disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {uploading ? "Yukleniyor..." : "Dosya Yukle"}
                   </button>
+                  <p className="text-[10px] text-gray-600 mt-1.5">PNG, JPEG, PDF, Word, Excel - Maks. 10MB</p>
+                </div>
+
+                {/* email notification */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Tag size={14} className="text-gray-500" />
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Bildirimler</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => sendNotification("task_completed", activeTask)}
+                      disabled={notifying}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50"
+                    >
+                      {notifying ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                      Tamamlandi Bildirimi
+                    </button>
+                    <button
+                      onClick={() => sendNotification("status_change", activeTask, { status: activeTask.status })}
+                      disabled={notifying}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-600/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-600/20 text-xs font-medium transition disabled:opacity-50"
+                    >
+                      {notifying ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
+                      Durum Bildirimi
+                    </button>
+                  </div>
+                  {notifySuccess && (
+                    <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
+                      <CheckCircle2 size={12} /> {notifySuccess}
+                    </p>
+                  )}
                 </div>
 
                 {/* GitHub link */}

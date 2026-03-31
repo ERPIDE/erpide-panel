@@ -93,6 +93,10 @@ export default function PanelPage() {
   const [newPriority, setNewPriority] = useState<Priority>("medium");
   const [newLabel, setNewLabel] = useState<Label>("feature");
 
+  // File upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { url: string; name: string; type: string; date: string }[]>>({});
+
   const customerData = loggedIn ? customers[loggedIn] : null;
 
   // Fetch tasks after login
@@ -123,6 +127,45 @@ export default function PanelPage() {
     if (!customerData) return [];
     return tasks.filter((t) => t.client === customerData.name);
   }, [tasks, customerData]);
+
+  async function uploadFile(task: Task, file: File) {
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("taskId", String(task.id));
+      formData.append("project", task.project);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Dosya yuklenemedi");
+        return;
+      }
+
+      const result = await res.json();
+      const key = `${task.project}-${task.id}`;
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] || []), result],
+      }));
+    } catch {
+      alert("Dosya yuklenemedi");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleFileSelect(task: Task) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) uploadFile(task, file);
+    };
+    input.click();
+  }
 
   const filteredTasks = useMemo(() => {
     return customerTasks.filter((t) => {
@@ -633,9 +676,9 @@ export default function PanelPage() {
                 {/* Attachments */}
                 <div className="mb-6">
                   <h3 className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                    <Paperclip size={14} /> Ekler
+                    <Paperclip size={14} /> Ekler ({selectedTask.attachments.length + (uploadedFiles[`${selectedTask.project}-${selectedTask.id}`]?.length ?? 0)})
                   </h3>
-                  {selectedTask.attachments.length === 0 ? (
+                  {selectedTask.attachments.length === 0 && (uploadedFiles[`${selectedTask.project}-${selectedTask.id}`]?.length ?? 0) === 0 ? (
                     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-gray-500 text-center">
                       Henuz ek bulunmuyor.
                     </div>
@@ -654,8 +697,34 @@ export default function PanelPage() {
                           <span className="text-[10px] text-gray-500 ml-auto">{att.date}</span>
                         </a>
                       ))}
+                      {(uploadedFiles[`${selectedTask.project}-${selectedTask.id}`] ?? []).map((f, i) => (
+                        <a
+                          key={`uploaded-${i}`}
+                          href={f.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-xl bg-green-500/5 border border-green-500/10 hover:border-green-500/20 transition text-sm"
+                        >
+                          {f.type === "image" ? (
+                            <img src={f.url} alt={f.name} className="w-8 h-8 rounded object-cover" />
+                          ) : (
+                            <FileText size={16} className="text-green-400" />
+                          )}
+                          <span className="text-gray-300">{f.name}</span>
+                          <span className="text-[10px] text-green-400 ml-auto">Yuklendi</span>
+                        </a>
+                      ))}
                     </div>
                   )}
+                  <button
+                    onClick={() => handleFileSelect(selectedTask)}
+                    disabled={uploading}
+                    className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-blue-500/30 text-gray-400 hover:text-white text-sm transition disabled:opacity-50 w-full justify-center"
+                  >
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+                    {uploading ? "Yukleniyor..." : "Dosya Yukle"}
+                  </button>
+                  <p className="text-[10px] text-gray-600 mt-1 text-center">PNG, JPEG, PDF, Word, Excel - Maks. 10MB</p>
                 </div>
 
                 {/* Comments */}
