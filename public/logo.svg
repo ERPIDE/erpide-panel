@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 115" width="300" height="115">
+  <!-- Crown -->
+  <g transform="translate(118, 4)">
+    <path d="M6 24L12 8L19 17L26 3L33 17L40 8L46 24" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="12" cy="7.5" r="1.8" fill="#3b82f6"/>
+    <circle cx="26" cy="2.5" r="1.8" fill="#7c3aed"/>
+    <circle cx="40" cy="7.5" r="1.8" fill="#3b82f6"/>
+  </g>
+
+  <!-- Top line -->
+  <rect x="70" y="33" width="160" height="1" rx="0.5" fill="#3b82f6" opacity="0.4"/>
+
+  <!-- ERP text -->
+  <text x="78" y="68" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="bold" letter-spacing="3" fill="#0f172a">ERP</text>
+
+  <!-- IDE text -->
+  <text x="189" y="65" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="bold" letter-spacing="2" fill="#3b82f6">IDE</text>
+
+  <!-- Bottom line -->
+  <rect x="70" y="75" width="160" height="1" rx="0.5" fill="#3b82f6" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text x="150" y="94" font-family="'Segoe UI', Arial, sans-serif" font-size="7.5" letter-spacing="3.2" fill="#94a3b8" text-anchor="middle">ERP ÇÖZÜMLERI HAKKINDA HER ŞEY</text>
+</svg>

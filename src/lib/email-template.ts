@@ -1,6 +1,6 @@
 // Shared email branding for all ERPIDE emails
 
-export const LOGO_URL = "https://6eu3nbfqivqzghex.public.blob.vercel-storage.com/brand/erpide-logo.png";
+export const LOGO_URL = "https://6eu3nbfqivqzghex.public.blob.vercel-storage.com/brand/erpide-logo-new.png";
 
 export const emailSignature = `
 <table cellpadding="0" cellspacing="0" style="font-family:'Segoe UI',Arial,sans-serif;margin-top:28px;border-top:1px solid #e5e7eb;padding-top:20px;width:100%">
