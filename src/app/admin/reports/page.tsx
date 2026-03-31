@@ -62,6 +62,7 @@ export default function ReportsPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [emailSending, setEmailSending] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,174 +125,27 @@ export default function ReportsPage() {
     setShowEmailModal(true);
   };
 
-  // SVG logo as base64 PNG-equivalent for html2canvas compatibility
-  const logoBase64 = "data:image/svg+xml;base64," + btoa(`<svg viewBox="0 0 200 55" width="200" height="55" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
-    <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
-    <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
-    <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
-    <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#3b82f6" letter-spacing="2">IDE</text>
-    <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
-  </svg>`);
 
-  function buildPdfHtml(): string {
-    const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
-    const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
-    const dateRange = `${formatDateTR(startDate)} — ${formatDateTR(endDate)}`;
-
-    // Use <img> with base64 SVG instead of inline <svg> for html2canvas compatibility
-    let html = `<div style="font-family:'Segoe UI',Tahoma,sans-serif;color:#1a1a1a;font-size:11pt;line-height:1.6">
-      <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:15px;margin-bottom:20px">
-        <img src="${logoBase64}" width="200" height="55" style="margin:0 auto 5px;display:block" />
-        <div style="font-size:7pt;letter-spacing:3px;color:#666;text-transform:uppercase">ERP Çözümleri Hakkında Her Şey</div>
-        <div style="font-size:12pt;margin-top:8px;font-weight:bold">Haftalık Geliştirme Dökümanı</div>
-        <div style="font-size:9pt;color:#666;margin-top:3px">${dateRange} | ${clientLabel}</div>
-      </div>
-      <div style="display:flex;gap:15px;margin:15px 0">
-        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold">${stats.total}</div><div style="font-size:8pt;color:#666">Toplam</div></div>
-        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#16a34a">${stats.completed}</div><div style="font-size:8pt;color:#666">Tamamlanan</div></div>
-        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#ca8a04">${stats.inProgress}</div><div style="font-size:8pt;color:#666">Devam Eden</div></div>
-        <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#6b7280">${stats.waiting}</div><div style="font-size:8pt;color:#666">Bekleyen</div></div>
-      </div>`;
-
-    const tasksForPdf = filteredTasks.filter(t => t.status === "done");
-    tasksForPdf.forEach((task, i) => {
-      const statusBadge = task.status === "done" ? "background:#dcfce7;color:#166534" : task.status === "in_progress" ? "background:#fef9c3;color:#854d0e" : "background:#f3f4f6;color:#4b5563";
-      const attHtml = (task.attachments?.length > 0)
-        ? `<div style="margin-top:10px;page-break-inside:avoid"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
-            a.type === "image"
-              ? `<div style="margin-bottom:10px;page-break-inside:avoid"><img src="${a.url}" style="max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:block" crossorigin="anonymous"/><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
-              : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
-          ).join("")}</div></div>`
-        : "";
-
-      html += `<div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px;page-break-inside:avoid">
-        <h3 style="font-size:11pt;font-weight:bold;margin:0 0 6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px">Sorun ${i + 1}: ${task.title}</h3>
-        <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Açıklama:</span> ${task.description}</div>
-        <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
-        <div style="font-size:10pt"><span style="display:inline-block;padding:1px 8px;border-radius:3px;font-size:8pt;font-weight:600;${statusBadge}">${statusLabels[task.status]}</span>
-        &nbsp;&nbsp;<span style="font-weight:600;color:#444">Öncelik:</span> ${priorityLabels[task.priority]}</div>
-        ${attHtml}
-      </div>`;
-    });
-
-    html += `<div style="text-align:center;border-top:2px solid #1a1a1a;padding-top:10px;margin-top:25px;font-size:8pt;color:#666">
-      <strong>ERPIDE YAZILIM A.Ş.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com
-    </div></div>`;
-    return html;
-  }
 
   async function sendReportEmail() {
-    if (!emailTo.trim()) return;
+    if (!emailTo.trim() || !pdfFile) return;
     try {
       setEmailSending(true);
-      toast("info", "PDF olusturuluyor...");
-
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      toast("info", "Email gonderiliyor...");
 
       const clientInfo = clientOptions.find(c => c.value === selectedClient);
       const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
 
-      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
-      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
-
-      const baseStyle = `font-family:'Segoe UI',Tahoma,sans-serif;color:#1a1a1a;font-size:11pt;line-height:1.6;`;
-
-      // Build separate HTML blocks: header+stats, then each task, then footer
-      const headerHtml = `<div style="${baseStyle}">
-        <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:15px;margin-bottom:20px">
-          <img src="${logoBase64}" width="200" height="55" style="margin:0 auto 5px;display:block" />
-          <div style="font-size:7pt;letter-spacing:3px;color:#666;text-transform:uppercase">ERP Çözümleri Hakkında Her Şey</div>
-          <div style="font-size:12pt;margin-top:8px;font-weight:bold">Haftalık Geliştirme Dökümanı</div>
-          <div style="font-size:9pt;color:#666;margin-top:3px">${formatDateTR(startDate)} — ${formatDateTR(endDate)} | ${clientLabel}</div>
-        </div>
-        <div style="display:flex;gap:15px;margin:15px 0">
-          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold">${stats.total}</div><div style="font-size:8pt;color:#666">Toplam</div></div>
-          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#16a34a">${stats.completed}</div><div style="font-size:8pt;color:#666">Tamamlanan</div></div>
-          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#ca8a04">${stats.inProgress}</div><div style="font-size:8pt;color:#666">Devam Eden</div></div>
-          <div style="flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:bold;color:#6b7280">${stats.waiting}</div><div style="font-size:8pt;color:#666">Bekleyen</div></div>
-        </div>
-      </div>`;
-
-      const tasksForPdf = filteredTasks.filter(t => t.status === "done");
-      const taskHtmls = tasksForPdf.map((task, i) => {
-        const statusBadge = task.status === "done" ? "background:#dcfce7;color:#166534" : task.status === "in_progress" ? "background:#fef9c3;color:#854d0e" : "background:#f3f4f6;color:#4b5563";
-        const attHtml = (task.attachments?.length > 0)
-          ? `<div style="margin-top:10px"><strong style="color:#444">Ekler:</strong><div style="margin-top:6px">${task.attachments.map(a =>
-              a.type === "image"
-                ? `<div style="margin-bottom:10px"><img src="${a.url}" style="max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:block" crossorigin="anonymous"/><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
-                : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
-            ).join("")}</div></div>`
-          : "";
-
-        return `<div style="${baseStyle}">
-          <div style="border:1px solid #eee;border-radius:6px;padding:12px;margin-bottom:10px">
-            <h3 style="font-size:11pt;font-weight:bold;margin:0 0 6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px">Sorun ${i + 1}: ${task.title}</h3>
-            <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Açıklama:</span> ${task.description}</div>
-            <div style="margin-bottom:4px;font-size:10pt"><span style="font-weight:600;color:#444">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
-            <div style="font-size:10pt"><span style="display:inline-block;padding:1px 8px;border-radius:3px;font-size:8pt;font-weight:600;${statusBadge}">${statusLabels[task.status]}</span>
-            &nbsp;&nbsp;<span style="font-weight:600;color:#444">Öncelik:</span> ${priorityLabels[task.priority]}</div>
-            ${attHtml}
-          </div>
-        </div>`;
-      });
-
-      const footerHtml = `<div style="${baseStyle}">
-        <div style="text-align:center;border-top:2px solid #1a1a1a;padding-top:10px;margin-top:25px;font-size:8pt;color:#666">
-          <strong>ERPIDE YAZILIM A.Ş.</strong><br>info@erpide.com — 0554 694 34 09<br>www.erpide.com
-        </div>
-      </div>`;
-
-      // Render each block separately with html2canvas, then place on PDF pages
-      const allBlocks = [headerHtml, ...taskHtmls, footerHtml];
-
-      async function renderBlock(html: string): Promise<HTMLCanvasElement> {
-        const el = document.createElement("div");
-        el.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;background:white;padding:20px 30px";
-        el.innerHTML = html;
-        document.body.appendChild(el);
-        await new Promise(r => setTimeout(r, 300));
-        const c = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-        document.body.removeChild(el);
-        return c;
+      // Read the uploaded PDF as base64
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
       }
+      const pdfBase64 = btoa(binary);
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const marginMm = 10;
-      const usableH = pageH - marginMm * 2;
-      let cursorMm = marginMm; // current Y position on page in mm
-
-      for (let i = 0; i < allBlocks.length; i++) {
-        const canvas = await renderBlock(allBlocks[i]);
-        const scaleFactor = pdfW / canvas.width;
-        const blockHeightMm = canvas.height * scaleFactor;
-
-        // If block doesn't fit on current page, start a new page
-        if (cursorMm + blockHeightMm > pageH - marginMm && cursorMm > marginMm + 1) {
-          pdf.addPage();
-          cursorMm = marginMm;
-        }
-
-        // If a single block is taller than one page, scale it down to fit
-        if (blockHeightMm > usableH) {
-          const fitScale = usableH / blockHeightMm;
-          const fitW = pdfW * fitScale;
-          const offsetX = (pdfW - fitW) / 2;
-          pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", offsetX, cursorMm, fitW, usableH);
-          cursorMm = marginMm;
-          if (i < allBlocks.length - 1) pdf.addPage();
-        } else {
-          pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, cursorMm, pdfW, blockHeightMm);
-          cursorMm += blockHeightMm + 2; // 2mm gap between blocks
-        }
-      }
-
-      const pdfBase64 = pdf.output("datauristring").split(",")[1];
-      const filename = `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`;
+      const filename = pdfFile.name || `ERPIDE_Haftalik_Dokum_${(clientInfo?.value || "Rapor").replace(/\s/g, "_")}_${startDate}_${endDate}.pdf`;
 
       const res = await fetch("/api/report-email", {
         method: "POST",
@@ -309,13 +163,14 @@ export default function ReportsPage() {
       if (res.ok) {
         toast("success", `Rapor PDF olarak ${emailTo} adresine gonderildi`);
         setShowEmailModal(false);
+        setPdfFile(null);
       } else {
         const err = await res.json();
         toast("error", err.error || "Email gonderilemedi");
       }
     } catch (e) {
       console.error(e);
-      toast("error", "PDF olusturulamadi veya email gonderilemedi");
+      toast("error", "Email gonderilemedi");
     } finally {
       setEmailSending(false);
     }
@@ -845,6 +700,41 @@ export default function ReportsPage() {
                   <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de kopya gonderilir</p>
                 </div>
 
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">PDF Dosyasi</label>
+                  <p className="text-[10px] text-gray-600 mb-2">Önce &quot;PDF İndir / Yazdır&quot; ile PDF oluşturun, sonra buraya yükleyin</p>
+                  <label className={`flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border-2 border-dashed transition cursor-pointer ${pdfFile ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-[#111118] hover:border-blue-500/30"}`}>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.type === "application/pdf") {
+                          setPdfFile(file);
+                        }
+                      }}
+                    />
+                    {pdfFile ? (
+                      <>
+                        <FileText size={15} className="text-green-400" />
+                        <span className="text-sm text-green-400 truncate max-w-[250px]">{pdfFile.name}</span>
+                        <button
+                          onClick={(e) => { e.preventDefault(); setPdfFile(null); }}
+                          className="ml-auto p-1 rounded hover:bg-white/10 text-gray-400"
+                        >
+                          <X size={14} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={15} className="text-gray-400" />
+                        <span className="text-sm text-gray-400">PDF dosyası seçin</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+
                 <div className="p-3 rounded-xl bg-[#111118] border border-white/5 space-y-1.5">
                   <p className="text-[10px] uppercase tracking-wider text-gray-500">Rapor Detaylari</p>
                   <p className="text-sm text-white">{clientLabel}</p>
@@ -861,7 +751,7 @@ export default function ReportsPage() {
                   </button>
                   <button
                     onClick={sendReportEmail}
-                    disabled={!emailTo.trim() || emailSending}
+                    disabled={!emailTo.trim() || !pdfFile || emailSending}
                     className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
                   >
                     {emailSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}

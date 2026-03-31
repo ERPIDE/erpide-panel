@@ -1,12 +1,15 @@
 // Shared email branding for all ERPIDE emails
-// Logo served as hosted PNG from erpide.com/logo.png for maximum email client compatibility
-
-const LOGO_URL = "https://erpide.com/logo.png";
+// Pure text logo — no images, works in every email client
 
 export const emailLogo = `
 <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-  <tr><td style="text-align:center">
-    <img src="${LOGO_URL}" alt="ERPIDE" width="180" height="70" style="display:block;margin:0 auto;max-width:180px;height:auto" />
+  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
+  <tr><td style="text-align:center;padding:8px 0 6px">
+    <span style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:bold;color:#0f172a;letter-spacing:3px">ERP</span><span style="font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:bold;color:#3b82f6;letter-spacing:2px">IDE</span>
+  </td></tr>
+  <tr><td style="text-align:center;padding:0"><table cellpadding="0" cellspacing="0" style="margin:0 auto;width:120px"><tr><td style="height:1px;background-color:#3b82f6;font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
+  <tr><td style="text-align:center;padding-top:6px">
+    <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#94a3b8;text-transform:uppercase">ERP COZUMLERI HAKKINDA HER SEY</span>
   </td></tr>
 </table>`;
 
@@ -15,7 +18,7 @@ export const emailSignature = `
   <tr>
     <td style="padding-right:20px;vertical-align:top;width:90px">
       <a href="https://erpide.com" style="text-decoration:none">
-        <img src="${LOGO_URL}" alt="ERPIDE" width="80" height="31" style="display:block;max-width:80px;height:auto" />
+        <span style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:bold;color:#0f172a;letter-spacing:2px">ERP</span><span style="font-family:Georgia,'Times New Roman',serif;font-size:14px;font-weight:bold;color:#3b82f6;letter-spacing:1px">IDE</span>
       </a>
     </td>
     <td style="vertical-align:top;border-left:2px solid #3b82f6;padding-left:20px">
