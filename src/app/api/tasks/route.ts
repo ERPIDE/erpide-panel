@@ -46,8 +46,17 @@ function parseBody(body: string) {
   const sepIdx = description.indexOf("\n---\n");
   if (sepIdx > -1) description = description.substring(0, sepIdx).trim();
 
-  // Clean markdown headers
-  description = description.replace(/^## Açıklama\n?/m, "").trim();
+  // Clean markdown
+  description = description
+    .replace(/^##\s+.+$/gm, "")
+    .replace(/\*\*Müşteri:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Deadline:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Öncelik:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Oluşturan:\*\*\s*.+$/gm, "")
+    .replace(/\|[^\n]+\|/g, "")
+    .replace(/[-]{3,}/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 
   return { client, deadline, description };
 }

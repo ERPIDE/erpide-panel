@@ -286,7 +286,15 @@ export default function ReportsPage() {
 
                   win.document.write(`
                     <div class="report-header">
-                      <div class="logo-text">ERP<span>IDE</span></div>
+                      <svg viewBox="0 0 200 55" width="200" height="55" style="margin:0 auto 5px;display:block;">
+                        <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#8b5cf6"/></linearGradient></defs>
+                        <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
+                        <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+                        <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
+                        <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="url(#g1)" letter-spacing="2">IDE</text>
+                        <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+                      </svg>
                       <div class="tagline">ERP Çözümleri Hakkında Her Şey</div>
                       <div class="subtitle">Haftalık Geliştirme Dökümanı</div>
                       <div class="date-range">${formatDateTR(startDate)} — ${formatDateTR(endDate)} | ${clientLabel}</div>
