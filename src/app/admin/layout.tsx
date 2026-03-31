@@ -8,6 +8,7 @@ import {
   Menu, X, ChevronRight
 } from "lucide-react";
 import Logo from "@/components/Logo";
+import { ToastProvider } from "@/components/Toast";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
+    <ToastProvider>
     <div className="min-h-screen flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -85,5 +87,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

@@ -38,6 +38,7 @@ import {
   statusConfig,
   labelConfig,
 } from "@/lib/store";
+import { useToast } from "@/components/Toast";
 
 /* ─── constants ─── */
 const statuses: Status[] = ["todo", "in_progress", "review", "done"];
@@ -85,6 +86,7 @@ function todayISO(): string {
 
 /* ─── main component ─── */
 export default function TasksPage() {
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -219,10 +221,10 @@ export default function TasksPage() {
       });
       if (!res.ok) throw new Error("Failed to post comment");
       setCommentText("");
-      // refresh comments
+      toast("success", "Yorum eklendi");
       await fetchComments(task);
     } catch (err) {
-      console.error("Error posting comment:", err);
+      toast("error", "Yorum gonderilemedi");
     } finally {
       setCommentPosting(false);
     }
@@ -250,10 +252,10 @@ export default function TasksPage() {
       if (!res.ok) throw new Error("Failed to create task");
       setNewTask({ title: "", description: "", project: "CANIAS", label: "feature", priority: "medium", deadline: "" });
       setShowCreateModal(false);
-      // refresh the list
+      toast("success", "Gorev olusturuldu");
       await fetchTasks();
     } catch (err) {
-      console.error("Error creating task:", err);
+      toast("error", "Gorev olusturulamadi");
     } finally {
       setCreating(false);
     }
@@ -272,7 +274,7 @@ export default function TasksPage() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "Dosya yuklenemedi");
+        toast("error", err.error || "Dosya yuklenemedi");
         return;
       }
 
@@ -282,9 +284,9 @@ export default function TasksPage() {
         ...prev,
         [key]: [...(prev[key] || []), result],
       }));
+      toast("success", `${result.name} yuklendi`);
     } catch (err) {
-      console.error("Upload error:", err);
-      alert("Dosya yuklenemedi");
+      toast("error", "Dosya yuklenemedi");
     } finally {
       setUploading(false);
     }
@@ -319,14 +321,13 @@ export default function TasksPage() {
       });
 
       if (res.ok) {
-        setNotifySuccess("Email gonderildi!");
-        setTimeout(() => setNotifySuccess(""), 3000);
+        toast("success", "Email gonderildi!");
       } else {
         const err = await res.json();
-        console.error("Notify error:", err.error);
+        toast("error", err.error || "Email gonderilemedi");
       }
     } catch (err) {
-      console.error("Notify error:", err);
+      toast("error", "Email gonderilemedi");
     } finally {
       setNotifying(false);
     }
@@ -343,16 +344,18 @@ export default function TasksPage() {
         body: JSON.stringify({ repo: task.repo, issueNumber: task.id, status: newStatus }),
       });
       if (res.ok) {
+        toast("success", `Durum guncellendi: ${statusConfig[newStatus as Status]?.label || newStatus}`);
         await fetchTasks();
-        // Auto send notification on completion
         if (newStatus === "done") {
           sendNotification("task_completed", task);
         } else {
           sendNotification("status_change", task, { status: newStatus });
         }
+      } else {
+        toast("error", "Durum guncellenemedi");
       }
     } catch (err) {
-      console.error("Status update error:", err);
+      toast("error", "Durum guncellenemedi");
     } finally {
       setUpdatingStatus(false);
     }
@@ -371,10 +374,13 @@ export default function TasksPage() {
       if (res.ok) {
         setEditingDevNote(false);
         setDevNoteText("");
+        toast("success", "Gelistirici notu kaydedildi");
         await fetchComments(task);
+      } else {
+        toast("error", "Not kaydedilemedi");
       }
     } catch (err) {
-      console.error("Dev note error:", err);
+      toast("error", "Not kaydedilemedi");
     } finally {
       setSavingDevNote(false);
     }
@@ -929,11 +935,6 @@ export default function TasksPage() {
                       Durum Bildirimi
                     </button>
                   </div>
-                  {notifySuccess && (
-                    <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
-                      <CheckCircle2 size={12} /> {notifySuccess}
-                    </p>
-                  )}
                 </div>
 
                 {/* GitHub link */}

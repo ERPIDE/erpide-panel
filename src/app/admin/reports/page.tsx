@@ -17,9 +17,11 @@ import {
   FileDown,
   Send,
   Loader2,
+  X,
 } from "lucide-react";
 import { Task, statusConfig, priorityConfig, labelConfig } from "@/lib/store";
 import Logo from "@/components/Logo";
+import { useToast } from "@/components/Toast";
 
 interface PastReport {
   id: string;
@@ -57,6 +59,10 @@ export default function ReportsPage() {
   const [selectedClient, setSelectedClient] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showReport, setShowReport] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -104,6 +110,73 @@ export default function ReportsPage() {
   const handleGenerate = () => {
     setShowReport(true);
   };
+
+  const openEmailModal = () => {
+    // Auto-fill email from customer management localStorage
+    try {
+      const saved = localStorage.getItem("erpide_customers");
+      if (saved && selectedClient !== "all") {
+        const customers = JSON.parse(saved);
+        const match = customers.find((c: { name: string }) => c.name === selectedClient);
+        if (match?.contactEmail) { setEmailTo(match.contactEmail); }
+      }
+    } catch {}
+    setShowEmailModal(true);
+  };
+
+  async function sendReportEmail() {
+    if (!emailTo.trim()) return;
+    try {
+      setEmailSending(true);
+      const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "Incelemede", done: "Tamamlandi" };
+      const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yuksek", medium: "Orta", low: "Dusuk" };
+
+      const reportHtml = `
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+          <tr>
+            <td style="text-align:center;padding:8px;background:#f1f5f9;border-radius:8px;width:25%"><strong style="font-size:20px;color:#1e293b">${stats.total}</strong><br><span style="font-size:11px;color:#64748b">Toplam</span></td>
+            <td style="text-align:center;padding:8px;background:#f0fdf4;border-radius:8px;width:25%"><strong style="font-size:20px;color:#16a34a">${stats.completed}</strong><br><span style="font-size:11px;color:#64748b">Tamamlanan</span></td>
+            <td style="text-align:center;padding:8px;background:#fffbeb;border-radius:8px;width:25%"><strong style="font-size:20px;color:#d97706">${stats.inProgress}</strong><br><span style="font-size:11px;color:#64748b">Devam Eden</span></td>
+            <td style="text-align:center;padding:8px;background:#fef2f2;border-radius:8px;width:25%"><strong style="font-size:20px;color:#6b7280">${stats.waiting}</strong><br><span style="font-size:11px;color:#64748b">Bekleyen</span></td>
+          </tr>
+        </table>
+        ${filteredTasks.map((t, i) => `
+          <div style="padding:12px 0;border-bottom:1px solid #e2e8f0">
+            <p style="margin:0 0 4px;font-weight:600;color:#1e293b;font-size:14px">${i + 1}. ${t.title}</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#475569">${t.description}</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#475569"><strong>Cozum:</strong> ${t.devNote || "<em style='color:#9ca3af'>Cozum bekleniyor</em>"}</p>
+            <p style="margin:0;font-size:12px;color:#94a3b8">Durum: ${statusLabels[t.status] || t.status} | Oncelik: ${priorityLabels[t.priority] || t.priority}</p>
+            ${(t.attachments?.length > 0) ? t.attachments.map(a => a.type === "image" ? `<img src="${a.url}" alt="${a.name}" style="max-width:100%;max-height:200px;border-radius:8px;margin-top:8px;border:1px solid #e2e8f0" />` : `<a href="${a.url}" style="color:#3b82f6;font-size:12px">${a.name}</a>`).join("") : ""}
+          </div>
+        `).join("")}
+      `;
+
+      const clientInfo = clientOptions.find(c => c.value === selectedClient);
+      const res = await fetch("/api/report-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toEmail: emailTo.trim(),
+          clientName: clientInfo?.value || selectedClient,
+          project: clientInfo?.project || "",
+          dateRange: `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`,
+          reportHtml,
+        }),
+      });
+
+      if (res.ok) {
+        toast("success", `Rapor ${emailTo} adresine gonderildi`);
+        setShowEmailModal(false);
+      } else {
+        const err = await res.json();
+        toast("error", err.error || "Email gonderilemedi");
+      }
+    } catch {
+      toast("error", "Email gonderilemedi");
+    } finally {
+      setEmailSending(false);
+    }
+  }
 
   const getLatestDevComment = (task: Task) => {
     const devComments = task.comments.filter((c) => c.authorRole === "developer");
@@ -361,7 +434,7 @@ export default function ReportsPage() {
                 PDF İndir / Yazdır
               </button>
               <button
-                onClick={() => alert("Email gönderme özelliği yakında aktif olacak.\ninfo@erpide.com adresine bildirim gönderilecek.")}
+                onClick={openEmailModal}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/10 text-purple-400 text-sm hover:bg-purple-600/20 transition border border-purple-500/10"
               >
                 <Send size={15} />
@@ -589,6 +662,74 @@ export default function ReportsPage() {
           ))}
         </div>
       </motion.div>
+      {/* Email Modal */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEmailModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Raporu Email ile Gonder</h3>
+                    <p className="text-xs text-gray-500 mt-1">Haftalik dokum musteriye gonderilecek</p>
+                  </div>
+                  <button onClick={() => setShowEmailModal(false)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri Email</label>
+                  <input
+                    type="email"
+                    value={emailTo}
+                    onChange={(e) => setEmailTo(e.target.value)}
+                    placeholder="ornek@firma.com"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
+                  />
+                  <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de kopya gonderilir</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#111118] border border-white/5 space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500">Rapor Detaylari</p>
+                  <p className="text-sm text-white">{clientLabel}</p>
+                  <p className="text-xs text-gray-400">{formatDateTR(startDate)} - {formatDateTR(endDate)}</p>
+                  <p className="text-xs text-gray-500">{filteredTasks.length} gorev ({stats.completed} tamamlandi)</p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition"
+                  >
+                    Iptal
+                  </button>
+                  <button
+                    onClick={sendReportEmail}
+                    disabled={!emailTo.trim() || emailSending}
+                    className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
+                  >
+                    {emailSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                    {emailSending ? "Gonderiliyor..." : "Gonder"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
