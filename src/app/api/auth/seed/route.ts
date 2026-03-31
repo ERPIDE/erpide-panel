@@ -1,65 +1,40 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { getAdmins, saveAdmins, getCustomers, saveCustomers } from "@/lib/auth";
 import { initialAdmins, initialCustomers } from "@/lib/store";
 
-async function blobExists(key: string): Promise<boolean> {
-  try {
-    const res = await fetch(
-      `https://${process.env.VERCEL_BLOB_STORE_ID ?? "blob"}.public.blob.vercel-storage.com/${key}`,
-      { cache: "no-store" }
-    );
-    if (!res.ok) return false;
-    const data = await res.json();
-    return Array.isArray(data) && data.length > 0;
-  } catch {
-    return false;
-  }
-}
+// All admin users that should exist
+const allAdmins = [
+  ...initialAdmins,
+  { id: "a2", name: "berkay.yasar", email: "berkayyasar0@gmail.com", password: "berkay2024", role: "developer" as const },
+  { id: "a3", name: "mustafa.el", email: "m.el@erpide.com", password: "mustafa2024", role: "developer" as const },
+  { id: "a4", name: "dilyar.yussupov", email: "yusupovdilyar@gmail.com", password: "dilyar2024", role: "developer" as const },
+];
 
 export async function POST() {
   try {
-    const [adminsExist, customersExist] = await Promise.all([
-      blobExists("data/admins.json"),
-      blobExists("data/customers.json"),
-    ]);
-
-    const seeded: string[] = [];
-
-    if (!adminsExist) {
-      await put("data/admins.json", JSON.stringify(initialAdmins, null, 2), {
-        access: "public",
-        contentType: "application/json",
-        addRandomSuffix: false,
-      });
-      seeded.push("admins");
+    // Write all admins (merge with existing, don't duplicate)
+    const existing = await getAdmins();
+    const merged = [...allAdmins];
+    for (const e of existing) {
+      if (!merged.find(a => a.email === e.email)) {
+        merged.push(e);
+      }
     }
+    await saveAdmins(merged);
 
-    if (!customersExist) {
-      await put(
-        "data/customers.json",
-        JSON.stringify(initialCustomers, null, 2),
-        {
-          access: "public",
-          contentType: "application/json",
-          addRandomSuffix: false,
-        }
-      );
-      seeded.push("customers");
-    }
-
-    if (seeded.length === 0) {
-      return NextResponse.json({
-        message: "Veriler zaten mevcut, seed yapılmadı",
-      });
+    // Write customers if empty
+    const customers = await getCustomers();
+    if (customers.length <= 2) {
+      await saveCustomers(initialCustomers);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Seed tamamlandı: ${seeded.join(", ")}`,
+      message: `Seed tamamlandi: ${merged.length} admin, ${customers.length} musteri`,
     });
-  } catch {
+  } catch (e) {
     return NextResponse.json(
-      { error: "Seed sırasında hata oluştu" },
+      { error: "Seed hatasi", detail: String(e) },
       { status: 500 }
     );
   }
