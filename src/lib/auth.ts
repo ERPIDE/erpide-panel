@@ -40,7 +40,7 @@ async function readBlob<T>(key: string, fallback: T): Promise<T> {
     const baseUrl = getBlobBaseUrl();
     if (!baseUrl) return fallback;
 
-    const res = await fetch(`${baseUrl}/${key}`, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/${key}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
   } catch {
@@ -80,18 +80,7 @@ export async function saveCustomers(
   await writeBlob("data/customers.json", customers);
 }
 
-// ── Session management ────────────────────────────────────────────
-
-async function getSessions(): Promise<Session[]> {
-  return readBlob<Session[]>("data/sessions.json", []);
-}
-
-async function saveSessions(sessions: Session[]): Promise<void> {
-  // Clean expired sessions before writing
-  const now = new Date().toISOString();
-  const active = sessions.filter((s) => s.expiresAt > now);
-  await writeBlob("data/sessions.json", active);
-}
+// ── Session management (each session = separate blob file) ───────
 
 export async function createSession(data: {
   userId: string;
@@ -117,22 +106,18 @@ export async function createSession(data: {
     expiresAt: expiresAt.toISOString(),
   };
 
-  const sessions = await getSessions();
-  sessions.push(session);
-  await saveSessions(sessions);
+  // Each session is its own blob — no cache conflict
+  await writeBlob(`sessions/${token}.json`, session);
 
   return token;
 }
 
 export async function getSession(token: string): Promise<Session | null> {
-  const sessions = await getSessions();
-  const session = sessions.find((s) => s.token === token);
+  const session = await readBlob<Session | null>(`sessions/${token}.json`, null);
   if (!session) return null;
 
   // Check expiry
   if (new Date(session.expiresAt) < new Date()) {
-    // Expired — clean up
-    await saveSessions(sessions.filter((s) => s.token !== token));
     return null;
   }
 
@@ -140,6 +125,11 @@ export async function getSession(token: string): Promise<Session | null> {
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  const sessions = await getSessions();
-  await saveSessions(sessions.filter((s) => s.token !== token));
+  try {
+    const { del } = await import("@vercel/blob");
+    const baseUrl = getBlobBaseUrl();
+    if (baseUrl) {
+      await del(`${baseUrl}/sessions/${token}.json`);
+    }
+  } catch {}
 }
