@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { repo, issueNumber, status, devNote } = body;
+    const { repo, issueNumber, status, devNote, customDate } = body;
 
     if (!repo || !issueNumber) {
       return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
@@ -63,6 +63,38 @@ export async function PATCH(request: NextRequest) {
           {
             method: "PATCH",
             body: JSON.stringify({ labels: newLabels, state }),
+          }
+        );
+      }
+    }
+
+    // Update custom date in issue body
+    if (customDate) {
+      const issueRes2 = await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+      );
+      if (issueRes2.ok) {
+        const issue = await issueRes2.json();
+        let issueBody: string = issue.body || "";
+
+        // Replace or add **Tarih:** field
+        if (issueBody.match(/\*\*Tarih:\*\*\s*.+/)) {
+          issueBody = issueBody.replace(/\*\*Tarih:\*\*\s*.+/, `**Tarih:** ${customDate}`);
+        } else {
+          // Add before --- separator or at end
+          const sepIdx = issueBody.indexOf("\n---\n");
+          if (sepIdx > -1) {
+            issueBody = issueBody.substring(0, sepIdx) + `\n**Tarih:** ${customDate}` + issueBody.substring(sepIdx);
+          } else {
+            issueBody += `\n\n---\n**Tarih:** ${customDate}`;
+          }
+        }
+
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ body: issueBody }),
           }
         );
       }

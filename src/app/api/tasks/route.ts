@@ -34,6 +34,7 @@ async function ghFetch(url: string, options?: RequestInit) {
 function parseBody(body: string) {
   let client = "";
   let deadline = "";
+  let customDate = "";
   let description = body || "";
 
   const clientMatch = body.match(/\*\*Müşteri:\*\*\s*(.+?)(?:\n|\||$)/);
@@ -41,6 +42,9 @@ function parseBody(body: string) {
 
   const deadlineMatch = body.match(/\*\*Deadline:\*\*\s*(.+?)(?:\n|\||$)/);
   if (deadlineMatch) deadline = deadlineMatch[1].trim();
+
+  const dateMatch = body.match(/\*\*Tarih:\*\*\s*(.+?)(?:\n|\||$)/);
+  if (dateMatch) customDate = dateMatch[1].trim();
 
   // Clean description — remove metadata section
   const sepIdx = description.indexOf("\n---\n");
@@ -53,12 +57,13 @@ function parseBody(body: string) {
     .replace(/\*\*Deadline:\*\*\s*.+$/gm, "")
     .replace(/\*\*Öncelik:\*\*\s*.+$/gm, "")
     .replace(/\*\*Oluşturan:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Tarih:\*\*\s*.+$/gm, "")
     .replace(/\|[^\n]+\|/g, "")
     .replace(/[-]{3,}/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return { client, deadline, description };
+  return { client, deadline, customDate, description };
 }
 
 // GET /api/tasks
@@ -143,7 +148,7 @@ export async function GET() {
           status,
           priority,
           deadline: parsed.deadline || undefined,
-          createdAt: issue.created_at.split("T")[0],
+          createdAt: parsed.customDate || issue.created_at.split("T")[0],
           createdBy: issue.user?.login || "unknown",
           url: issue.html_url,
           commentsCount: issue.comments,

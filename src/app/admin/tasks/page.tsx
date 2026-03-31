@@ -120,6 +120,11 @@ export default function TasksPage() {
   const [devNoteText, setDevNoteText] = useState("");
   const [savingDevNote, setSavingDevNote] = useState(false);
 
+  // date editing
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateValue, setDateValue] = useState("");
+  const [savingDate, setSavingDate] = useState(false);
+
   // create form
   const [creating, setCreating] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -200,6 +205,7 @@ export default function TasksPage() {
     setComments([]);
     setNotifyEmail(getCustomerEmail(task.project));
     setEditingDevNote(false);
+    setEditingDate(false);
     setNotifySuccess("");
     fetchComments(task);
   }
@@ -383,6 +389,30 @@ export default function TasksPage() {
       toast("error", "Not kaydedilemedi");
     } finally {
       setSavingDevNote(false);
+    }
+  }
+
+  /* ─── update task date ─── */
+  async function saveTaskDate(task: Task) {
+    if (!task.repo || !dateValue) return;
+    try {
+      setSavingDate(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, customDate: dateValue }),
+      });
+      if (res.ok) {
+        toast("success", "Tarih guncellendi");
+        setEditingDate(false);
+        await fetchTasks();
+      } else {
+        toast("error", "Tarih guncellenemedi");
+      }
+    } catch {
+      toast("error", "Tarih guncellenemedi");
+    } finally {
+      setSavingDate(false);
     }
   }
 
@@ -672,10 +702,34 @@ export default function TasksPage() {
                       {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemis"}
                     </span>
                   </div>
-                  {/* created */}
+                  {/* created - editable */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Olusturulma</p>
-                    <span className="text-sm text-white">{formatDate(activeTask.createdAt)}</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">Olusturulma</p>
+                      {activeTask.repo && !editingDate && (
+                        <button onClick={() => { setEditingDate(true); setDateValue(activeTask.createdAt); }} className="text-[10px] text-blue-400 hover:text-blue-300">Duzenle</button>
+                      )}
+                    </div>
+                    {editingDate ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="date"
+                          value={dateValue}
+                          onChange={(e) => setDateValue(e.target.value)}
+                          className="flex-1 px-2 py-1 rounded-lg bg-[#0a0a12] border border-white/10 text-white text-xs focus:border-blue-500/50 focus:outline-none [color-scheme:dark]"
+                        />
+                        <button
+                          onClick={() => saveTaskDate(activeTask)}
+                          disabled={savingDate}
+                          className="px-2 py-1 rounded-lg bg-blue-600 text-white text-[10px] hover:bg-blue-500 disabled:opacity-50"
+                        >
+                          {savingDate ? "..." : "Kaydet"}
+                        </button>
+                        <button onClick={() => setEditingDate(false)} className="px-2 py-1 rounded-lg bg-white/5 text-gray-400 text-[10px]">X</button>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-white">{formatDate(activeTask.createdAt)}</span>
+                    )}
                   </div>
                   {/* created by */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
