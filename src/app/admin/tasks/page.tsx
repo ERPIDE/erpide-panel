@@ -96,7 +96,7 @@ export default function TasksPage() {
   // filters
   const [search, setSearch] = useState("");
   const [fProject, setFProject] = useState("all");
-  const [fStatus, setFStatus] = useState("all");
+  const [fStatus, setFStatus] = useState("todo");
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
 
@@ -558,7 +558,7 @@ export default function TasksPage() {
         <span>{filtered.length} gorev listeleniyor</span>
         {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all") && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFStatus("all"); setFPriority("all"); setFLabel("all"); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
