@@ -2,9 +2,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Lock, AlertCircle } from "lucide-react";
+import { Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { AdminUser, initialAdmins } from "@/lib/store";
+
+function getAdmins(): AdminUser[] {
+  try {
+    const saved = localStorage.getItem("erpide_admins");
+    return saved ? JSON.parse(saved) : [...initialAdmins];
+  } catch { return [...initialAdmins]; }
+}
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +22,10 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin@erpide.com" && password === "erpide2024") {
+    const admins = getAdmins();
+    const user = admins.find(a => a.email === email && a.password === password);
+    if (user) {
+      localStorage.setItem("erpide_current_user", JSON.stringify({ name: user.name, email: user.email, role: user.role }));
       router.push("/admin/dashboard");
     } else {
       setError("Hatalı email veya şifre!");
