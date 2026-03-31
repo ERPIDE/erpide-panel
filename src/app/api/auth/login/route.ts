@@ -115,9 +115,10 @@ export async function POST(req: NextRequest) {
       { error: "Geçersiz kullanıcı tipi" },
       { status: 400 }
     );
-  } catch {
+  } catch (e) {
+    console.error("Login error:", e);
     return NextResponse.json(
-      { error: "Sunucu hatası" },
+      { error: "Sunucu hatası", detail: String(e) },
       { status: 500 }
     );
   }
