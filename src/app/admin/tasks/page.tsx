@@ -110,6 +110,7 @@ export default function TasksPage() {
   // notification state
   const [notifying, setNotifying] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
 
   // status change & dev note
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -167,10 +168,18 @@ export default function TasksPage() {
     }
   }
 
+  const defaultEmails: Record<string, string> = {
+    CANIAS: "info@sirmersan.com",
+    "1C ERP": "info@atmconstructor.kz",
+  };
+
   function openTaskDetail(task: Task) {
     setSelectedTask(task);
     setCommentText("");
     setComments([]);
+    setNotifyEmail(defaultEmails[task.project] || "");
+    setEditingDevNote(false);
+    setNotifySuccess("");
     fetchComments(task);
   }
 
@@ -285,6 +294,7 @@ export default function TasksPage() {
           taskTitle: task.title,
           taskId: task.id,
           project: task.project,
+          toEmail: notifyEmail.trim() || undefined,
           ...extra,
         }),
       });
@@ -866,12 +876,23 @@ export default function TasksPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Tag size={14} className="text-gray-500" />
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Bildirimler</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Email Bildirimi</p>
+                  </div>
+                  <div className="mb-3">
+                    <label className="text-[10px] text-gray-500 block mb-1">Musteri Email</label>
+                    <input
+                      type="email"
+                      value={notifyEmail}
+                      onChange={(e) => setNotifyEmail(e.target.value)}
+                      placeholder="ornek@firma.com"
+                      className="w-full px-3 py-2 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
+                    />
+                    <p className="text-[10px] text-gray-600 mt-1">CC: info@erpide.com</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => sendNotification("task_completed", activeTask)}
-                      disabled={notifying}
+                      disabled={notifying || !notifyEmail.trim()}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50"
                     >
                       {notifying ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
@@ -879,7 +900,7 @@ export default function TasksPage() {
                     </button>
                     <button
                       onClick={() => sendNotification("status_change", activeTask, { status: activeTask.status })}
-                      disabled={notifying}
+                      disabled={notifying || !notifyEmail.trim()}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-600/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-600/20 text-xs font-medium transition disabled:opacity-50"
                     >
                       {notifying ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}

@@ -21,11 +21,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { type, taskTitle, taskId, project, status, comment } = body;
+    const { type, taskTitle, taskId, project, status, comment, toEmail } = body;
 
     const client = clientEmails[project];
-    if (!client) {
-      return NextResponse.json({ error: "Bilinmeyen proje" }, { status: 400 });
+    const recipientEmail = toEmail || client?.email;
+    const recipientName = client?.name || "Musteri";
+
+    if (!recipientEmail) {
+      return NextResponse.json({ error: "Email adresi belirtilmedi" }, { status: 400 });
     }
 
     let subject = "";
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Gorev Tamamlandi</p>
           </div>
           <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${client.name},</p>
+            <p>Sayin ${recipientName},</p>
             <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
               <p style="margin: 0; font-weight: 600; color: #166534;">#${taskId} - ${taskTitle}</p>
               <p style="margin: 8px 0 0; color: #15803d;">Durum: Tamamlandi &#10003;</p>
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Yeni Yorum</p>
           </div>
           <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${client.name},</p>
+            <p>Sayin ${recipientName},</p>
             <p><strong>#${taskId} - ${taskTitle}</strong> gorevine yeni bir yorum eklendi:</p>
             <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
               <p style="margin: 0; color: #1e40af;">${comment || ""}</p>
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
             <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0;">Durum Guncellendi</p>
           </div>
           <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px;">
-            <p>Sayin ${client.name},</p>
+            <p>Sayin ${recipientName},</p>
             <div style="background: #fefce8; border-left: 4px solid #eab308; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
               <p style="margin: 0; font-weight: 600;">#${taskId} - ${taskTitle}</p>
               <p style="margin: 8px 0 0;">Yeni durum: <strong>${statusLabels[status] || status}</strong></p>
@@ -104,7 +107,8 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || "ERPIDE <onboarding@resend.dev>",
-      to: [client.email],
+      to: [recipientEmail],
+      cc: ["info@erpide.com"],
       subject,
       html,
     });
