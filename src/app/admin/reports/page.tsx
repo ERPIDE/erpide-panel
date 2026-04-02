@@ -19,7 +19,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { Task, statusConfig, priorityConfig, labelConfig } from "@/lib/store";
+import { Task, statusConfig, priorityConfig, labelConfig, cleanMarkdown } from "@/lib/store";
 import Logo from "@/components/Logo";
 import { useToast } from "@/components/Toast";
 
@@ -403,7 +403,7 @@ export default function ReportsPage() {
                       <div class="task-item">
                         <h3>Sorun ${i + 1}: ${task.title}</h3>
                         <div class="field"><span class="label">Açıklama:</span> ${task.description}</div>
-                        <div class="field"><span class="label">Çözüm:</span> ${task.devNote || "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+                        <div class="field"><span class="label">Çözüm:</span> ${task.devNote ? cleanMarkdown(task.devNote) : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
                         <div class="field">
                           <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
                           &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
@@ -541,7 +541,7 @@ export default function ReportsPage() {
                         <div className="text-sm text-gray-400">
                           <span className="text-gray-500 font-medium">Çözüm: </span>
                           <span className={task.devNote ? "text-blue-300" : "text-gray-500 italic"}>
-                            {task.devNote || "Çözüm bekleniyor"}
+                            {task.devNote ? cleanMarkdown(task.devNote) : "Çözüm bekleniyor"}
                           </span>
                         </div>
 

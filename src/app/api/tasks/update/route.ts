@@ -123,17 +123,46 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Add dev note as a comment
+    // Add or update dev note comment
     if (devNote !== undefined) {
-      await ghFetch(
-        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}/comments`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            body: `**ERPIDE Dev Notu:**\n\n${devNote}`,
-          }),
+      // Find existing dev note comment to update
+      let existingCommentId: number | null = null;
+      try {
+        const commentsRes = await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}/comments?per_page=100`
+        );
+        if (commentsRes.ok) {
+          const comments = await commentsRes.json();
+          const devComment = comments.find((c: { body: string }) =>
+            c.body?.startsWith("**ERPIDE Dev Notu:**")
+          );
+          if (devComment) existingCommentId = devComment.id;
         }
-      );
+      } catch {}
+
+      if (existingCommentId) {
+        // Update existing comment
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/comments/${existingCommentId}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({
+              body: `**ERPIDE Dev Notu:**\n\n${devNote}`,
+            }),
+          }
+        );
+      } else {
+        // Create new comment
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}/comments`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              body: `**ERPIDE Dev Notu:**\n\n${devNote}`,
+            }),
+          }
+        );
+      }
     }
 
     return NextResponse.json({ message: "Guncellendi" });

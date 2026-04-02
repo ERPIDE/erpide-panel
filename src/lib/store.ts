@@ -91,6 +91,22 @@ export const labelConfig: Record<Label, { label: string; color: string; bg: stri
   urgent: { label: "Acil", color: "text-red-500", bg: "bg-red-500/10" },
 };
 
+export function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*ERPIDE Dev Notu:\*\*/gi, "")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/^[-*+]\s+/gm, "• ")
+    .replace(/^\d+\.\s+/gm, "")
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+    .replace(/^>\s+/gm, "")
+    .replace(/---+/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export const initialTasks: Task[] = [
   // CANIAS ERP - Sirmersan
   { id: 1, title: "SIRPRD05: Parti numarası detay ve performans iyileştirmesi", description: "SIRPRD05 uygulamasında Kasa No ve Adet girildikten sonra Part Numarası Detayına tıklanıyor. Sağ taraftaki pencere ilk açılanın detay ekranı olarak kalıyor. Kaydet'e basıldığında çok yavaş çalışıyor.", project: "CANIAS", client: "Sirmersan", label: "bug", status: "todo", priority: "high", createdAt: "2026-03-28", createdBy: "Sirmersan", comments: [{ id: "c1", author: "Sirmersan", authorRole: "customer", text: "Bu sorun üretimi çok yavaşlatıyor, acil çözülmesi gerekiyor.", date: "2026-03-28" }], attachments: [] },

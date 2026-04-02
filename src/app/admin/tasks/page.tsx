@@ -38,6 +38,7 @@ import {
   priorityConfig,
   statusConfig,
   labelConfig,
+  cleanMarkdown,
 } from "@/lib/store";
 import { useToast } from "@/components/Toast";
 
@@ -794,16 +795,16 @@ export default function TasksPage() {
                     </div>
                     {!editingDevNote && activeTask.repo && (
                       <button
-                        onClick={() => { setEditingDevNote(true); setDevNoteText(""); }}
+                        onClick={() => { setEditingDevNote(true); setDevNoteText(activeTask.devNote ? cleanMarkdown(activeTask.devNote) : ""); }}
                         className="text-[10px] text-blue-400 hover:text-blue-300 transition"
                       >
-                        + Not Ekle
+                        {activeTask.devNote ? "Duzenle" : "+ Not Ekle"}
                       </button>
                     )}
                   </div>
-                  {activeTask.devNote && (
+                  {activeTask.devNote && !editingDevNote && (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-yellow-200/80 mb-2">
-                      {activeTask.devNote}
+                      {cleanMarkdown(activeTask.devNote)}
                     </p>
                   )}
                   {!activeTask.devNote && !editingDevNote && (
