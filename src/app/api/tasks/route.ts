@@ -74,12 +74,16 @@ export async function GET() {
 
   try {
     const allTasks = [];
+    const debugInfo: string[] = [];
 
     for (const [project, repo] of Object.entries(repoMap)) {
       const res = await ghFetch(
         `https://api.github.com/repos/${ORG}/${repo}/issues?state=all&per_page=100`
       );
-      if (!res.ok) continue;
+      if (!res.ok) {
+        debugInfo.push(`${repo}: ${res.status} ${res.statusText}`);
+        continue;
+      }
 
       const issues = await res.json();
       for (const issue of issues) {
@@ -161,9 +165,12 @@ export async function GET() {
       }
     }
 
+    if (allTasks.length === 0 && debugInfo.length > 0) {
+      return NextResponse.json({ error: "GitHub API errors", debug: debugInfo, hasToken: !!GITHUB_TOKEN }, { status: 200 });
+    }
     return NextResponse.json(allTasks);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch tasks", detail: String(error) }, { status: 500 });
   }
 }
 
