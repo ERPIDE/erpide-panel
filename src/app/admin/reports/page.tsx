@@ -6,6 +6,7 @@ import {
   FileText,
   Download,
   Calendar,
+  RefreshCw,
   Mail,
   Filter,
   CheckCircle2,
@@ -54,8 +55,11 @@ const clientOptions = [
 export default function ReportsPage() {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState("2026-03-09");
-  const [endDate, setEndDate] = useState("2026-03-30");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [selectedClient, setSelectedClient] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showReport, setShowReport] = useState(false);
@@ -63,6 +67,7 @@ export default function ReportsPage() {
   const [emailTo, setEmailTo] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [activeReportTask, setActiveReportTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -196,11 +201,20 @@ export default function ReportsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Page Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-white">Raporlar</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Haftalık geliştirme dökümanları ve proje raporları oluşturun
-        </p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Raporlar</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Haftalık geliştirme dökümanları ve proje raporları oluşturun
+          </p>
+        </div>
+        <button
+          onClick={() => { setLoading(true); setShowReport(false); fetch("/api/tasks").then(r => r.json()).then((data: Task[]) => { setAllTasks(data); setLoading(false); }).catch(() => setLoading(false)); }}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10"
+          title="Yenile"
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+        </button>
       </motion.div>
 
       {/* 1. Report Configuration Section */}
@@ -524,7 +538,8 @@ export default function ReportsPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 + index * 0.04 }}
-                        className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3"
+                        onClick={() => setActiveReportTask(task)}
+                        className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3 cursor-pointer hover:border-blue-500/30 hover:bg-white/[0.04] transition"
                       >
                         {/* Task Title */}
                         <h3 className="text-sm font-semibold text-white">
@@ -758,6 +773,83 @@ export default function ReportsPage() {
                     {emailSending ? "Gonderiliyor..." : "Gonder"}
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Task Detail Modal */}
+      <AnimatePresence>
+        {activeReportTask && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveReportTask(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">#{activeReportTask.id} — {activeReportTask.title}</h3>
+                  <button onClick={() => setActiveReportTask(null)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400"><X size={18} /></button>
+                </div>
+                <div className="text-sm text-gray-400">
+                  <span className="text-gray-500 font-medium">Açıklama: </span>{activeReportTask.description}
+                </div>
+                <div className="text-sm">
+                  <span className="text-gray-500 font-medium">Çözüm: </span>
+                  <span className={activeReportTask.devNote ? "text-blue-300" : "text-gray-500 italic"}>
+                    {activeReportTask.devNote ? cleanMarkdown(activeReportTask.devNote) : "Çözüm bekleniyor"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <span className={`text-xs px-2.5 py-1 rounded-md ${statusConfig[activeReportTask.status].bg} ${statusConfig[activeReportTask.status].color}`}>
+                    {statusConfig[activeReportTask.status].label}
+                  </span>
+                  <span className={`text-xs px-2.5 py-1 rounded-md ${priorityConfig[activeReportTask.priority].bg} ${priorityConfig[activeReportTask.priority].color}`}>
+                    {priorityConfig[activeReportTask.priority].label}
+                  </span>
+                  <span className={`text-xs px-2.5 py-1 rounded-md ${labelConfig[activeReportTask.label].bg} ${labelConfig[activeReportTask.label].color}`}>
+                    {labelConfig[activeReportTask.label].label}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <div>Oluşturan: {activeReportTask.createdBy} — {formatDateTR(activeReportTask.createdAt)}</div>
+                  <div>Proje: {activeReportTask.project} — {activeReportTask.client}</div>
+                </div>
+                {activeReportTask.comments.filter(c => c.authorRole === "developer").length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">Geliştirmeci Notları:</p>
+                    {activeReportTask.comments.filter(c => c.authorRole === "developer").map((c, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                        <p className="text-xs text-gray-300">{c.text}</p>
+                        <p className="text-[10px] text-gray-600 mt-1">{c.author} — {formatDateTR(c.date)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {activeReportTask.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 font-medium flex items-center gap-1"><Paperclip size={12} /> Ekler ({activeReportTask.attachments.length})</p>
+                    {activeReportTask.attachments.map((att) => (
+                      att.type === "image" ? (
+                        <a key={att.id} href={att.url} target="_blank" rel="noreferrer" className="block">
+                          <img src={att.url} alt={att.name} className="max-w-full max-h-48 rounded-lg border border-white/10" />
+                        </a>
+                      ) : (
+                        <a key={att.id} href={att.url} target="_blank" rel="noreferrer" className="text-xs px-2 py-1 rounded bg-white/5 text-blue-400 border border-white/5 inline-block">{att.name}</a>
+                      )
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
