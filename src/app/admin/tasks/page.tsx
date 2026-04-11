@@ -28,6 +28,7 @@ import {
   ListTodo,
   Loader2,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import {
   Task,
@@ -93,6 +94,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState("Admin");
 
   // filters
   const [search, setSearch] = useState("");
@@ -159,6 +161,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
+    fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.userName) setCurrentUserName(d.userName); }).catch(() => {});
   }, []);
 
   /* ─── fetch comments when task detail opens ─── */
@@ -182,10 +185,6 @@ export default function TasksPage() {
   }
 
   function getCustomerEmail(project: string): string {
-    const fallback: Record<string, string> = {
-      CANIAS: "info@sirmersan.com",
-      "1C ERP": "info@atmconstructor.kz",
-    };
     try {
       // First check task-specific override
       const override = localStorage.getItem(`erpide_email_${project}`);
@@ -198,7 +197,7 @@ export default function TasksPage() {
         if (match?.contactEmail) return match.contactEmail;
       }
     } catch {}
-    return fallback[project] || "";
+    return "";
   }
 
   function saveEmail(project: string, email: string) {
@@ -255,6 +254,7 @@ export default function TasksPage() {
         label: newTask.label,
         priority: newTask.priority,
         deadline: newTask.deadline || undefined,
+        createdBy: currentUserName,
       };
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -358,11 +358,6 @@ export default function TasksPage() {
       if (res.ok) {
         toast("success", `Durum guncellendi: ${statusConfig[newStatus as Status]?.label || newStatus}`);
         await fetchTasks();
-        if (newStatus === "done") {
-          sendNotification("task_completed", task);
-        } else {
-          sendNotification("status_change", task, { status: newStatus });
-        }
       } else {
         toast("error", "Durum guncellenemedi");
       }
@@ -549,6 +544,13 @@ export default function TasksPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
           >
             <Plus size={16} /> Yeni Gorev
+          </button>
+          <button
+            onClick={() => { setLoading(true); fetchTasks(); }}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10"
+            title="Yenile"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>

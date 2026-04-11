@@ -8,9 +8,9 @@ function getResend() {
   return new Resend(key);
 }
 
-const clientEmails: Record<string, { name: string; email: string }> = {
-  CANIAS: { name: "Sirmersan", email: "info@sirmersan.com" },
-  "1C ERP": { name: "ATM Constructor", email: "info@atmconstructor.kz" },
+const clientNames: Record<string, string> = {
+  CANIAS: "Sirmersan",
+  "1C ERP": "ATM Constructor",
 };
 
 // POST /api/notify — send email notification
@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, taskTitle, taskId, project, status, comment, toEmail } = body;
 
-    const client = clientEmails[project];
-    const recipientEmail = toEmail || client?.email;
-    const recipientName = client?.name || "Musteri";
+    const recipientEmail = toEmail;
+    const recipientName = clientNames[project] || "Musteri";
 
     if (!recipientEmail) {
       return NextResponse.json({ error: "Email adresi belirtilmedi" }, { status: 400 });

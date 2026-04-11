@@ -18,6 +18,13 @@ const clientMap: Record<string, string> = {
   "1C ERP": "ATM Constructor",
 };
 
+const userDisplayNames: Record<string, string> = {
+  alimuratel: "Ali Murat EL",
+};
+function displayName(login: string): string {
+  return userDisplayNames[login] || login;
+}
+
 async function ghFetch(url: string, options?: RequestInit) {
   return fetch(url, {
     ...options,
@@ -35,6 +42,7 @@ function parseBody(body: string) {
   let client = "";
   let deadline = "";
   let customDate = "";
+  let creator = "";
   let description = body || "";
 
   const clientMatch = body.match(/\*\*Müşteri:\*\*\s*(.+?)(?:\n|\||$)/);
@@ -45,6 +53,9 @@ function parseBody(body: string) {
 
   const dateMatch = body.match(/\*\*Tarih:\*\*\s*(.+?)(?:\n|\||$)/);
   if (dateMatch) customDate = dateMatch[1].trim();
+
+  const creatorMatch = body.match(/\*\*Oluşturan:\*\*\s*(.+?)(?:\n|\||$)/);
+  if (creatorMatch) creator = creatorMatch[1].trim();
 
   // Clean description — remove metadata section
   const sepIdx = description.indexOf("\n---\n");
@@ -63,7 +74,7 @@ function parseBody(body: string) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return { client, deadline, customDate, description };
+  return { client, deadline, customDate, creator, description };
 }
 
 // GET /api/tasks
@@ -155,7 +166,7 @@ export async function GET() {
           priority,
           deadline: parsed.deadline || undefined,
           createdAt: parsed.customDate || issue.created_at.split("T")[0],
-          createdBy: issue.user?.login || "unknown",
+          createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
           url: issue.html_url,
           commentsCount: issue.comments,
           comments: [],
@@ -182,7 +193,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, description, project, label, priority, client } = body;
+    const { title, description, project, label, priority, client, createdBy } = body;
 
     const repo = repoMap[project];
     if (!repo) {
@@ -192,7 +203,7 @@ export async function POST(request: NextRequest) {
     const labels = [label || "feature"];
     if (priority === "critical" || priority === "high") labels.push("urgent");
 
-    const issueBody = `${description}\n\n---\n**Müşteri:** ${client || clientMap[project] || "N/A"}\n**Öncelik:** ${priority}\n**Oluşturan:** Panel`;
+    const issueBody = `${description}\n\n---\n**Müşteri:** ${client || clientMap[project] || "N/A"}\n**Öncelik:** ${priority}\n**Oluşturan:** ${createdBy || "Panel"}`;
 
     const res = await ghFetch(
       `https://api.github.com/repos/${ORG}/${repo}/issues`,
