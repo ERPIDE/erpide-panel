@@ -35,6 +35,7 @@ import {
   Label,
   scoreColor,
   scoreToPriority,
+  cleanMarkdown,
 } from "@/lib/store";
 
 const defaultCustomers: Record<
@@ -371,73 +372,138 @@ export default function PanelPage() {
     } catch {}
   }
 
-  // PDF download
+  // PDF download — same format as admin reports
   function handleDownloadPDF() {
-    const tasksForPDF = filteredTasks.sort((a, b) => b.priorityScore - a.priorityScore);
+    const tasksForPDF = [...sortedFilteredTasks];
     const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
-    const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, "0")}.${(now.getMonth() + 1).toString().padStart(2, "0")}.${now.getFullYear()}`;
+    const priorityLabels: Record<string, string> = { critical: "Kritik", high: "Yüksek", medium: "Orta", low: "Düşük" };
 
-    const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><title>Task Listesi - ${customerData!.name}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-  .header h1 { font-size: 24px; color: #1a1a2e; }
-  .header .info { text-align: right; font-size: 12px; color: #666; }
-  .stats { display: flex; gap: 16px; margin-bottom: 24px; }
-  .stat { flex: 1; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb; }
-  .stat .num { font-size: 22px; font-weight: bold; }
-  .stat .lbl { font-size: 11px; color: #666; margin-top: 2px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: #6366f1; color: white; padding: 10px 8px; text-align: left; font-weight: 600; }
-  td { padding: 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-  tr:nth-child(even) { background: #f9fafb; }
-  .score { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: bold; font-size: 11px; color: white; }
-  .score-high { background: #ef4444; }
-  .score-med { background: #f59e0b; }
-  .score-low { background: #9ca3af; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
-  .status-todo { background: #f3f4f6; color: #6b7280; }
-  .status-in_progress { background: #fef3c7; color: #d97706; }
-  .status-review { background: #dbeafe; color: #2563eb; }
-  .status-done { background: #d1fae5; color: #059669; }
-  .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #999; text-align: center; }
-  @media print { body { padding: 20px; } }
-</style></head><body>
-<div class="header">
-  <div><h1>ERPIDE — Task Listesi</h1><p style="color:#6366f1;font-size:13px;margin-top:4px">${customerData!.name} | ${customerData!.project}</p></div>
-  <div class="info"><div>${dateStr}</div><div>${tasksForPDF.length} task</div></div>
-</div>
-<div class="stats">
-  <div class="stat"><div class="num">${stats.total}</div><div class="lbl">Toplam</div></div>
-  <div class="stat"><div class="num">${stats.todo}</div><div class="lbl">Bekliyor</div></div>
-  <div class="stat"><div class="num">${stats.inProgress}</div><div class="lbl">Devam Ediyor</div></div>
-  <div class="stat"><div class="num">${stats.done}</div><div class="lbl">Tamamlandı</div></div>
-</div>
-<table>
-<thead><tr><th style="width:40px">#</th><th style="width:50px">Puan</th><th>Task</th><th style="width:90px">Durum</th><th style="width:80px">Etiket</th><th style="width:90px">Tarih</th></tr></thead>
-<tbody>
-${tasksForPDF.map((t, i) => `<tr>
-  <td>${i + 1}</td>
-  <td><span class="score ${t.priorityScore >= 7 ? "score-high" : t.priorityScore >= 4 ? "score-med" : "score-low"}">${t.priorityScore}</span></td>
-  <td><strong>${t.title}</strong>${t.description ? `<br/><span style="color:#666;font-size:11px">${t.description.substring(0, 120)}${t.description.length > 120 ? "..." : ""}</span>` : ""}</td>
-  <td><span class="badge status-${t.status}">${statusLabels[t.status] || t.status}</span></td>
-  <td style="font-size:11px">${t.label}</td>
-  <td style="font-size:11px">${t.createdAt}</td>
-</tr>`).join("")}
-</tbody></table>
-<div class="footer">ERPIDE — Kurumsal ERP Çözümleri ve Yazılım Danışmanlığı | www.erpide.com | ${dateStr}</div>
-</body></html>`;
+    const formatDateTR = (dateStr: string) => {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    };
+    const today = formatDateTR(new Date().toISOString().split("T")[0]);
 
-    const blob = new Blob([html], { type: "text/html" });
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      setTimeout(() => printWindow.print(), 500);
+    const oldFrame = document.getElementById("print-frame");
+    if (oldFrame) oldFrame.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "print-frame";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const win = iframe.contentWindow;
+    if (!win) return;
+    win.document.open();
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>ERPIDE Rapor - ${customerData!.name}</title><style>
+      @page { margin: 20mm 15mm; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; background: #fff; font-size: 11pt; line-height: 1.6; }
+      .report-header { text-align: center; border-bottom: 2px solid #1a1a1a; padding-bottom: 15px; margin-bottom: 20px; }
+      .report-header h1 { font-size: 14pt; font-weight: bold; letter-spacing: 2px; margin-bottom: 2px; }
+      .report-header .tagline { font-size: 7pt; letter-spacing: 3px; color: #666; text-transform: uppercase; }
+      .report-header .subtitle { font-size: 12pt; margin-top: 8px; }
+      .report-header .date-range { font-size: 9pt; color: #666; margin-top: 3px; }
+      .stats-row { display: flex; gap: 15px; margin: 15px 0; }
+      .stat-box { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 10px; text-align: center; }
+      .stat-box .val { font-size: 18pt; font-weight: bold; }
+      .stat-box .lbl { font-size: 8pt; color: #666; }
+      .task-item { border: 1px solid #eee; border-radius: 6px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
+      .task-item h3 { font-size: 11pt; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+      .task-item .field { margin-bottom: 4px; font-size: 10pt; }
+      .task-item .field .label { font-weight: 600; color: #444; }
+      .task-item .dev-note { background: #f0f7ff; border-left: 3px solid #3b82f6; padding: 8px 10px; margin-top: 6px; font-size: 9pt; border-radius: 3px; }
+      .badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 8pt; font-weight: 600; }
+      .badge-done { background: #dcfce7; color: #166534; }
+      .badge-progress { background: #fef9c3; color: #854d0e; }
+      .badge-todo { background: #f3f4f6; color: #4b5563; }
+      .badge-review { background: #dbeafe; color: #1e40af; }
+      .badge-critical { background: #fee2e2; color: #991b1b; }
+      .badge-high { background: #ffedd5; color: #9a3412; }
+      .badge-medium { background: #fef9c3; color: #854d0e; }
+      .badge-low { background: #f3f4f6; color: #4b5563; }
+      .score-badge { display: inline-block; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-weight: bold; font-size: 9pt; color: white; margin-right: 6px; }
+      .score-high { background: #ef4444; }
+      .score-med { background: #f59e0b; }
+      .score-low { background: #9ca3af; }
+      .report-footer { text-align: center; border-top: 2px solid #1a1a1a; padding-top: 10px; margin-top: 25px; font-size: 8pt; color: #666; }
+      img.attachment { max-width: 100%; max-height: 250px; width: auto; height: auto; object-fit: contain; border: 1px solid #ddd; border-radius: 6px; display: block; margin-top: 6px; }
+    </style></head><body>`);
+
+    win.document.write(`
+      <div class="report-header">
+        <svg viewBox="0 0 200 55" width="200" height="55" style="margin:0 auto 5px;display:block;">
+          <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#8b5cf6"/></linearGradient></defs>
+          <path d="M78 15L85 6L92 12L100 0L108 12L115 6L122 15" stroke="url(#g1)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="85" cy="5.5" r="1.5" fill="url(#g1)"/><circle cx="100" cy="0" r="1.5" fill="url(#g1)"/><circle cx="115" cy="5.5" r="1.5" fill="url(#g1)"/>
+          <line x1="60" y1="20" x2="140" y2="20" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+          <text x="88" y="42" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="end" letter-spacing="3">ERP</text>
+          <text x="90" y="42" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="url(#g1)" letter-spacing="2">IDE</text>
+          <line x1="60" y1="47" x2="140" y2="47" stroke="#1a1a1a" stroke-width="0.8" opacity="0.3"/>
+        </svg>
+        <div class="tagline">ERP Çözümleri Hakkında Her Şey</div>
+        <div class="subtitle">${customerData!.name} — Task Raporu</div>
+        <div class="date-range">${today} | ${customerData!.project} | ${tasksForPDF.length} görev</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="val">${stats.total}</div><div class="lbl">Toplam</div></div>
+        <div class="stat-box"><div class="val" style="color:#16a34a">${stats.done}</div><div class="lbl">Tamamlanan</div></div>
+        <div class="stat-box"><div class="val" style="color:#ca8a04">${stats.inProgress}</div><div class="lbl">Devam Eden</div></div>
+        <div class="stat-box"><div class="val" style="color:#6b7280">${stats.todo}</div><div class="lbl">Bekleyen</div></div>
+      </div>
+    `);
+
+    if (tasksForPDF.length === 0) {
+      win.document.write('<p style="text-align:center;color:#999;padding:30px;">Filtrelere uygun görev bulunamadı.</p>');
     }
+
+    tasksForPDF.forEach((task, i) => {
+      const statusBadge = task.status === "done" ? "badge-done" : task.status === "in_progress" ? "badge-progress" : task.status === "review" ? "badge-review" : "badge-todo";
+      const priorityBadge = `badge-${task.priority}`;
+      const scoreCls = task.priorityScore >= 7 ? "score-high" : task.priorityScore >= 4 ? "score-med" : "score-low";
+
+      const attachmentHtml = (task.attachments && task.attachments.length > 0)
+        ? `<div class="field" style="margin-top:10px;page-break-inside:avoid">
+            <span class="label">Ekler:</span>
+            <div style="margin-top:6px">${task.attachments.map(a =>
+              a.type === "image"
+                ? `<div style="margin-bottom:10px;page-break-inside:avoid"><img class="attachment" src="${a.url}" alt="${a.name}" /><small style="color:#666;display:block;margin-top:3px">${a.name}</small></div>`
+                : `<div style="margin-bottom:4px"><a href="${a.url}" style="color:#2563eb">${a.name}</a></div>`
+            ).join("")}</div>
+          </div>`
+        : "";
+
+      win.document.write(`
+        <div class="task-item">
+          <h3><span class="score-badge ${scoreCls}">${task.priorityScore}</span> ${task.title}</h3>
+          <div class="field"><span class="label">Açıklama:</span> ${task.description || "<em style='color:#999'>Açıklama eklenmemiş</em>"}</div>
+          <div class="field"><span class="label">Çözüm:</span> ${task.devNote ? task.devNote.replace(/\*\*ERPIDE Dev Notu:\*\*/gi, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/`(.+?)`/g, "$1").trim() : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+          <div class="field">
+            <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
+            &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span> (${task.priorityScore}/10)
+            ${task.deadline ? `&nbsp;&nbsp;<span class="label">Deadline:</span> ${formatDateTR(task.deadline)}` : ""}
+          </div>
+          ${attachmentHtml}
+        </div>
+      `);
+    });
+
+    win.document.write(`
+      <div class="report-footer">
+        <strong>ERPIDE YAZILIM A.Ş.</strong><br>
+        info@erpide.com — 0554 694 34 09<br>
+        www.erpide.com
+      </div>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => {
+      try { win.print(); } catch { window.print(); }
+    }, 600);
   }
 
   // Sort tasks by priority score (highest first)
