@@ -19,6 +19,8 @@ import {
   Loader2,
   FileText,
   ArrowLeft,
+  Download,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
@@ -31,6 +33,8 @@ import {
   Priority,
   Status,
   Label,
+  scoreColor,
+  scoreToPriority,
 } from "@/lib/store";
 
 const defaultCustomers: Record<
@@ -344,6 +348,103 @@ export default function PanelPage() {
     }
   };
 
+  // Priority score update
+  async function handlePriorityScoreChange(task: Task, newScore: number) {
+    if (newScore < 1 || newScore > 10) return;
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id && t.repo === task.repo
+          ? { ...t, priorityScore: newScore, priority: scoreToPriority(newScore) }
+          : t
+      )
+    );
+    if (selectedTask?.id === task.id) {
+      setSelectedTask({ ...task, priorityScore: newScore, priority: scoreToPriority(newScore) });
+    }
+    try {
+      await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, priorityScore: newScore }),
+      });
+    } catch {}
+  }
+
+  // PDF download
+  function handleDownloadPDF() {
+    const tasksForPDF = filteredTasks.sort((a, b) => b.priorityScore - a.priorityScore);
+    const statusLabels: Record<string, string> = { todo: "Bekliyor", in_progress: "Devam Ediyor", review: "İncelemede", done: "Tamamlandı" };
+    const now = new Date();
+    const dateStr = `${now.getDate().toString().padStart(2, "0")}.${(now.getMonth() + 1).toString().padStart(2, "0")}.${now.getFullYear()}`;
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Task Listesi - ${customerData!.name}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
+  .header h1 { font-size: 24px; color: #1a1a2e; }
+  .header .info { text-align: right; font-size: 12px; color: #666; }
+  .stats { display: flex; gap: 16px; margin-bottom: 24px; }
+  .stat { flex: 1; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb; }
+  .stat .num { font-size: 22px; font-weight: bold; }
+  .stat .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #6366f1; color: white; padding: 10px 8px; text-align: left; font-weight: 600; }
+  td { padding: 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) { background: #f9fafb; }
+  .score { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: bold; font-size: 11px; color: white; }
+  .score-high { background: #ef4444; }
+  .score-med { background: #f59e0b; }
+  .score-low { background: #9ca3af; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .status-todo { background: #f3f4f6; color: #6b7280; }
+  .status-in_progress { background: #fef3c7; color: #d97706; }
+  .status-review { background: #dbeafe; color: #2563eb; }
+  .status-done { background: #d1fae5; color: #059669; }
+  .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #999; text-align: center; }
+  @media print { body { padding: 20px; } }
+</style></head><body>
+<div class="header">
+  <div><h1>ERPIDE — Task Listesi</h1><p style="color:#6366f1;font-size:13px;margin-top:4px">${customerData!.name} | ${customerData!.project}</p></div>
+  <div class="info"><div>${dateStr}</div><div>${tasksForPDF.length} task</div></div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="num">${stats.total}</div><div class="lbl">Toplam</div></div>
+  <div class="stat"><div class="num">${stats.todo}</div><div class="lbl">Bekliyor</div></div>
+  <div class="stat"><div class="num">${stats.inProgress}</div><div class="lbl">Devam Ediyor</div></div>
+  <div class="stat"><div class="num">${stats.done}</div><div class="lbl">Tamamlandı</div></div>
+</div>
+<table>
+<thead><tr><th style="width:40px">#</th><th style="width:50px">Puan</th><th>Task</th><th style="width:90px">Durum</th><th style="width:80px">Etiket</th><th style="width:90px">Tarih</th></tr></thead>
+<tbody>
+${tasksForPDF.map((t, i) => `<tr>
+  <td>${i + 1}</td>
+  <td><span class="score ${t.priorityScore >= 7 ? "score-high" : t.priorityScore >= 4 ? "score-med" : "score-low"}">${t.priorityScore}</span></td>
+  <td><strong>${t.title}</strong>${t.description ? `<br/><span style="color:#666;font-size:11px">${t.description.substring(0, 120)}${t.description.length > 120 ? "..." : ""}</span>` : ""}</td>
+  <td><span class="badge status-${t.status}">${statusLabels[t.status] || t.status}</span></td>
+  <td style="font-size:11px">${t.label}</td>
+  <td style="font-size:11px">${t.createdAt}</td>
+</tr>`).join("")}
+</tbody></table>
+<div class="footer">ERPIDE — Kurumsal ERP Çözümleri ve Yazılım Danışmanlığı | www.erpide.com | ${dateStr}</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    }
+  }
+
+  // Sort tasks by priority score (highest first)
+  const sortedFilteredTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => b.priorityScore - a.priorityScore);
+  }, [filteredTasks]);
+
   // LOGIN SCREEN
   if (!loggedIn) {
     return (
@@ -561,6 +662,12 @@ export default function PanelPage() {
             ))}
           </select>
           <button
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium transition whitespace-nowrap"
+          >
+            <Download size={16} /> PDF İndir
+          </button>
+          <button
             onClick={() => setShowCreateForm(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition whitespace-nowrap"
           >
@@ -575,13 +682,13 @@ export default function PanelPage() {
           transition={{ delay: 0.3 }}
           className="space-y-2"
         >
-          {filteredTasks.length === 0 ? (
+          {sortedFilteredTasks.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <FileText size={40} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm">Filtrelere uygun task bulunamadi.</p>
             </div>
           ) : (
-            filteredTasks.map((task, i) => (
+            sortedFilteredTasks.map((task, i) => (
               <motion.div
                 key={task.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -590,18 +697,12 @@ export default function PanelPage() {
                 onClick={() => handleOpenTask(task)}
                 className="flex items-center gap-4 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-white/10 cursor-pointer group transition"
               >
-                {/* Priority Indicator */}
+                {/* Priority Score Badge */}
                 <div
-                  className={`w-1 h-10 rounded-full ${
-                    task.priority === "critical"
-                      ? "bg-red-500"
-                      : task.priority === "high"
-                      ? "bg-orange-400"
-                      : task.priority === "medium"
-                      ? "bg-yellow-400"
-                      : "bg-gray-500"
-                  }`}
-                />
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${scoreColor(task.priorityScore).bg} ${scoreColor(task.priorityScore).color}`}
+                >
+                  {task.priorityScore}
+                </div>
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -681,16 +782,41 @@ export default function PanelPage() {
                 {/* Task Info */}
                 <h2 className="text-xl font-bold mb-4">{selectedTask.title}</h2>
 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${priorityConfig[selectedTask.priority].bg} ${priorityConfig[selectedTask.priority].color}`}>
-                    {priorityConfig[selectedTask.priority].label} Oncelik
-                  </span>
+                <div className="flex flex-wrap gap-2 mb-4">
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusConfig[selectedTask.status].bg} ${statusConfig[selectedTask.status].color}`}>
                     {statusConfig[selectedTask.status].label}
                   </span>
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${labelConfig[selectedTask.label].bg} ${labelConfig[selectedTask.label].color}`}>
                     {labelConfig[selectedTask.label].label}
                   </span>
+                </div>
+
+                {/* Priority Score Editor */}
+                <div className="mb-6 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                      <Star size={14} /> Oncelik Puani
+                    </h3>
+                    <span className={`text-2xl font-bold ${scoreColor(selectedTask.priorityScore).color}`}>
+                      {selectedTask.priorityScore}/10
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                      <button
+                        key={score}
+                        onClick={(e) => { e.stopPropagation(); handlePriorityScoreChange(selectedTask, score); }}
+                        className={`flex-1 h-8 rounded-lg text-xs font-bold transition ${
+                          score <= selectedTask.priorityScore
+                            ? score >= 9 ? "bg-red-500/80 text-white" : score >= 7 ? "bg-orange-500/80 text-white" : score >= 4 ? "bg-yellow-500/80 text-white" : "bg-gray-500/80 text-white"
+                            : "bg-white/5 text-gray-600 hover:bg-white/10"
+                        }`}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-600 mt-2 text-center">Puani degistirmek icin tiklayiniz (1=Dusuk, 10=Kritik)</p>
                 </div>
 
                 {/* Meta */}

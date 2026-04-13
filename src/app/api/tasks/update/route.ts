@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { repo, issueNumber, status, devNote, customDate, title, description } = body;
+    const { repo, issueNumber, status, devNote, customDate, title, description, priorityScore } = body;
 
     if (!repo || !issueNumber) {
       return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
@@ -118,6 +118,42 @@ export async function PATCH(request: NextRequest) {
           {
             method: "PATCH",
             body: JSON.stringify({ body: issueBody }),
+          }
+        );
+      }
+    }
+
+    // Update priority score in issue body
+    if (priorityScore !== undefined) {
+      const issueRes3 = await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+      );
+      if (issueRes3.ok) {
+        const issue = await issueRes3.json();
+        let issueBody: string = issue.body || "";
+        const currentLabels: string[] = issue.labels.map((l: { name: string }) => l.name);
+
+        // Replace or add **Öncelik Puanı:** field
+        if (issueBody.match(/\*\*Öncelik Puanı:\*\*\s*\d+/)) {
+          issueBody = issueBody.replace(/\*\*Öncelik Puanı:\*\*\s*\d+/, `**Öncelik Puanı:** ${priorityScore}`);
+        } else {
+          const sepIdx = issueBody.indexOf("\n---\n");
+          if (sepIdx > -1) {
+            issueBody = issueBody.substring(0, sepIdx) + `\n**Öncelik Puanı:** ${priorityScore}` + issueBody.substring(sepIdx);
+          } else {
+            issueBody += `\n\n---\n**Öncelik Puanı:** ${priorityScore}`;
+          }
+        }
+
+        // Also update urgent label based on score
+        let newLabels = currentLabels.filter((l) => l !== "urgent");
+        if (priorityScore >= 7) newLabels.push("urgent");
+
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ body: issueBody, labels: newLabels }),
           }
         );
       }

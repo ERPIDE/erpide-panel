@@ -43,6 +43,7 @@ function parseBody(body: string) {
   let deadline = "";
   let customDate = "";
   let creator = "";
+  let priorityScore = 0;
   let description = body || "";
 
   const clientMatch = body.match(/\*\*Müşteri:\*\*\s*(.+?)(?:\n|\||$)/);
@@ -57,6 +58,9 @@ function parseBody(body: string) {
   const creatorMatch = body.match(/\*\*Oluşturan:\*\*\s*(.+?)(?:\n|\||$)/);
   if (creatorMatch) creator = creatorMatch[1].trim();
 
+  const scoreMatch = body.match(/\*\*Öncelik Puanı:\*\*\s*(\d+)/);
+  if (scoreMatch) priorityScore = parseInt(scoreMatch[1], 10);
+
   // Clean description — remove metadata section
   const sepIdx = description.indexOf("\n---\n");
   if (sepIdx > -1) description = description.substring(0, sepIdx).trim();
@@ -69,12 +73,13 @@ function parseBody(body: string) {
     .replace(/\*\*Öncelik:\*\*\s*.+$/gm, "")
     .replace(/\*\*Oluşturan:\*\*\s*.+$/gm, "")
     .replace(/\*\*Tarih:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Öncelik Puanı:\*\*\s*.+$/gm, "")
     .replace(/\|[^\n]+\|/g, "")
     .replace(/[-]{3,}/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return { client, deadline, customDate, creator, description };
+  return { client, deadline, customDate, creator, description, priorityScore };
 }
 
 // GET /api/tasks
@@ -106,7 +111,7 @@ export async function GET() {
         const label = labels.find((l: string) =>
           ["bug", "feature", "improvement", "docs", "urgent"].includes(l)
         ) || "feature";
-        const priority = labels.includes("urgent") ? "high" : "medium";
+        const defaultPriority = labels.includes("urgent") ? "high" : "medium";
         const status = issue.state === "closed"
           ? "done"
           : labels.includes("in-progress")
@@ -163,7 +168,10 @@ export async function GET() {
           description: parsed.description,
           label,
           status,
-          priority,
+          priority: parsed.priorityScore > 0
+            ? (parsed.priorityScore >= 9 ? "critical" : parsed.priorityScore >= 7 ? "high" : parsed.priorityScore >= 4 ? "medium" : "low")
+            : defaultPriority,
+          priorityScore: parsed.priorityScore || (defaultPriority === "high" ? 7 : 5),
           deadline: parsed.deadline || undefined,
           createdAt: parsed.customDate || issue.created_at.split("T")[0],
           createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
@@ -193,17 +201,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, description, project, label, priority, client, createdBy } = body;
+    const { title, description, project, label, priority, priorityScore, client, createdBy } = body;
 
     const repo = repoMap[project];
     if (!repo) {
       return NextResponse.json({ error: "Invalid project" }, { status: 400 });
     }
 
+    const score = priorityScore || (priority === "critical" ? 10 : priority === "high" ? 7 : priority === "medium" ? 5 : 2);
     const labels = [label || "feature"];
-    if (priority === "critical" || priority === "high") labels.push("urgent");
+    if (score >= 7) labels.push("urgent");
 
-    const issueBody = `${description}\n\n---\n**Müşteri:** ${client || clientMap[project] || "N/A"}\n**Öncelik:** ${priority}\n**Oluşturan:** ${createdBy || "Panel"}`;
+    const issueBody = `${description}\n\n---\n**Müşteri:** ${client || clientMap[project] || "N/A"}\n**Öncelik:** ${priority}\n**Öncelik Puanı:** ${score}\n**Oluşturan:** ${createdBy || "Panel"}`;
 
     const res = await ghFetch(
       `https://api.github.com/repos/${ORG}/${repo}/issues`,

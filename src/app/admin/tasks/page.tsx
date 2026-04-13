@@ -40,6 +40,8 @@ import {
   statusConfig,
   labelConfig,
   cleanMarkdown,
+  scoreColor,
+  scoreToPriority,
 } from "@/lib/store";
 import { useToast } from "@/components/Toast";
 
@@ -448,7 +450,7 @@ export default function TasksPage() {
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
       return true;
-    });
+    }).sort((a, b) => b.priorityScore - a.priorityScore);
   }, [tasks, search, fProject, fStatus, fPriority, fLabel]);
 
   const stats = useMemo(() => {
@@ -591,9 +593,9 @@ export default function TasksPage() {
                 onClick={() => openTaskDetail(t)}
                 className="flex items-center gap-3 p-4 rounded-xl bg-[#111118] border border-white/5 hover:border-blue-500/20 cursor-pointer transition group"
               >
-                {/* status icon (read-only) */}
-                <div className="shrink-0" title={`Durum: ${sc.label}`}>
-                  <StatusIcon size={20} className={`${sc.color} transition-colors`} />
+                {/* priority score badge */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${scoreColor(t.priorityScore).bg} ${scoreColor(t.priorityScore).color}`} title={`Öncelik: ${t.priorityScore}/10`}>
+                  {t.priorityScore}
                 </div>
 
                 {/* main content */}
@@ -720,12 +722,34 @@ export default function TasksPage() {
                       {statusConfig[activeTask.status].label}
                     </span>
                   </div>
-                  {/* priority */}
-                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Oncelik</p>
-                    <span className={`text-sm font-medium ${priorityConfig[activeTask.priority].color}`}>
-                      {priorityConfig[activeTask.priority].label}
-                    </span>
+                  {/* priority score */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5 col-span-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">Oncelik Puani</p>
+                      <span className={`text-lg font-bold ${scoreColor(activeTask.priorityScore).color}`}>{activeTask.priorityScore}/10</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                        <button
+                          key={score}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setTasks((prev: Task[]) => prev.map((tt: Task) => tt.id === activeTask.id && tt.repo === activeTask.repo ? { ...tt, priorityScore: score, priority: scoreToPriority(score) } : tt));
+                            setSelectedTask({ ...activeTask, priorityScore: score, priority: scoreToPriority(score) });
+                            if (activeTask.repo) {
+                              await fetch("/api/tasks/update", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ repo: activeTask.repo, issueNumber: activeTask.id, priorityScore: score }) });
+                            }
+                          }}
+                          className={`flex-1 h-7 rounded text-[11px] font-bold transition ${
+                            score <= activeTask.priorityScore
+                              ? score >= 9 ? "bg-red-500/80 text-white" : score >= 7 ? "bg-orange-500/80 text-white" : score >= 4 ? "bg-yellow-500/80 text-white" : "bg-gray-500/80 text-white"
+                              : "bg-white/5 text-gray-600 hover:bg-white/10"
+                          }`}
+                        >
+                          {score}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {/* label */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
