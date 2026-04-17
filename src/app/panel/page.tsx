@@ -135,17 +135,9 @@ export default function PanelPage() {
       .catch(() => setLoadingTasks(false));
   }, [loggedIn]);
 
-  // Check existing session on mount
+  // Always clear session on panel page — force fresh login every time
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          if (data.userType === "customer" && data.customerCode) {
-            setLoggedIn(data.customerCode);
-          }
-        }
-      })
+    fetch("/api/auth/logout", { method: "POST" })
       .catch(() => {})
       .finally(() => setCheckingSession(false));
   }, []);

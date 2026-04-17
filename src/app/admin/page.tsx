@@ -14,13 +14,12 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
 
-  // Check if already logged in
+  // Always clear session on admin login page — force fresh login every time
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => { if (res.ok) router.replace("/admin/dashboard"); })
+    fetch("/api/auth/logout", { method: "POST" })
       .catch(() => {})
       .finally(() => setChecking(false));
-  }, [router]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
