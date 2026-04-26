@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Shield, Key, Users, RefreshCw, Copy, Plus, Power, ExternalLink } from "lucide-react";
 
-const CAPTCHA_API = "http://captcha.erpide.com";
+const CAPTCHA_API = "https://captcha.erpide.com";
 
 export default function CaptchaAdminPage() {
   const [adminToken, setAdminToken] = useState("");
