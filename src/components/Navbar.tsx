@@ -67,7 +67,7 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <Link
-            href="https://captcha.erpide.com:8000"
+            href="http://captcha.erpide.com"
             target="_blank"
             className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white hover:opacity-90 transition flex items-center gap-1.5"
           >
@@ -112,7 +112,7 @@ export default function Navbar() {
                   </button>
                 ))}
               </div>
-              <Link href="https://captcha.erpide.com:8000" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white flex items-center justify-center gap-1.5">
+              <Link href="http://captcha.erpide.com" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white flex items-center justify-center gap-1.5">
                 <Shield size={14} /> Captcha Panel
               </Link>
               <Link href="/panel" className="text-center py-2 rounded-lg border border-white/10 text-gray-300">{t("nav.customer_panel")}</Link>
