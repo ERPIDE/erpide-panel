@@ -1,8 +1,9 @@
 "use client";
-import { motion, useMotionValue, useInView, animate } from "framer-motion";
+import { motion, useInView, animate } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 function AnimatedStat({ value, suffix, label }: { value: number; suffix: string; label: string }) {
   const ref = useRef(null);
@@ -30,9 +31,10 @@ function AnimatedStat({ value, suffix, label }: { value: number; suffix: string;
 }
 
 export default function Hero() {
+  const { t } = useTranslation();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden grid-bg">
-      {/* Floating orbs */}
       <motion.div
         animate={{ x: [0, 50, 0], y: [0, -30, 0], scale: [1, 1.2, 1] }}
         transition={{ duration: 8, repeat: Infinity }}
@@ -56,9 +58,7 @@ export default function Hero() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
-            İşletmenizi{" "}
-            <span className="gradient-text">Geleceğe</span>{" "}
-            Taşıyoruz
+            <span className="gradient-text">{t("hero.title")}</span>
           </h1>
         </motion.div>
 
@@ -68,8 +68,7 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-10"
         >
-          CANIAS ERP, 1C ERP ve özel yazılım çözümleriyle işletmenizi dijital çağa hazırlıyoruz.
-          Türkiye ve Kazakistan&apos;da güvenilir çözüm ortağınız.
+          {t("hero.subtitle")}
         </motion.p>
 
         <motion.div
@@ -82,13 +81,13 @@ export default function Hero() {
             href="/hizmetler"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-lg"
           >
-            Hizmetlerimizi İnceleyin <ArrowRight size={20} />
+            {t("hero.cta1")} <ArrowRight size={20} />
           </Link>
           <Link
             href="/iletisim"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition text-lg"
           >
-            <Phone size={20} /> Bize Ulaşın
+            <Phone size={20} /> {t("hero.cta2")}
           </Link>
         </motion.div>
 
@@ -98,10 +97,10 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/5"
         >
-          <AnimatedStat value={150} suffix="+" label="Tamamlanan Proje" />
-          <AnimatedStat value={12} suffix="+" label="Yıllık Deneyim" />
-          <AnimatedStat value={50} suffix="+" label="Mutlu Müşteri" />
-          <AnimatedStat value={7} suffix="/24" label="Destek" />
+          <AnimatedStat value={150} suffix="+" label={t("hero.stat1")} />
+          <AnimatedStat value={12} suffix="+" label={t("hero.stat2")} />
+          <AnimatedStat value={50} suffix="+" label={t("hero.stat3")} />
+          <AnimatedStat value={7} suffix="/24" label={t("hero.stat4")} />
         </motion.div>
       </div>
     </section>

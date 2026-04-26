@@ -1,20 +1,25 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Plug } from "lucide-react";
-
-const services = [
-  { icon: Settings, title: "CANIAS ERP Danışmanlığı", desc: "TROIA diliyle özel geliştirme, modül entegrasyonu, performans optimizasyonu ve raporlama çözümleri." },
-  { icon: Database, title: "1C ERP Çözümleri", desc: "1C:ERP kurulum, lokalizasyon, muhasebe entegrasyonu, web servis geliştirme ve ACC senkronizasyonu." },
-  { icon: Code2, title: "Özel Yazılım Geliştirme", desc: "Python, Node.js, React ile özel otomasyon, bot geliştirme ve API entegrasyon çözümleri." },
-  { icon: Globe, title: "Web Sitesi Geliştirme", desc: "Kurumsal web siteleri, e-ticaret platformları, müşteri panelleri ve yönetim dashboardları." },
-  { icon: Smartphone, title: "Mobil Uygulama", desc: "iOS ve Android için native ve cross-platform mobil uygulama geliştirme çözümleri." },
-  { icon: Plug, title: "API Entegrasyonları", desc: "Üçüncü parti sistemlerle REST/SOAP API entegrasyonu, veri senkronizasyonu ve otomasyon." },
-  { icon: Rocket, title: "Dijital Dönüşüm", desc: "İş süreçlerinizi dijitalleştirin. Verimlilik artışı ve maliyet optimizasyonu sağlayalım." },
-  { icon: Headset, title: "7/24 Bakım ve Destek", desc: "Kesintisiz teknik destek, proaktif izleme, hızlı müdahale ve düzeltici aksiyonlar." },
-  { icon: GraduationCap, title: "Eğitim ve Danışmanlık", desc: "Son kullanıcı eğitimleri, süreç danışmanlığı ve teknik dokümantasyon hizmetleri." },
-];
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Shield, Wallet } from "lucide-react";
+import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 export default function Services() {
+  const { t } = useTranslation();
+
+  const services = [
+    { icon: Settings, titleKey: "svc.canias.title", descKey: "svc.canias.desc" },
+    { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc" },
+    { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc" },
+    { icon: Database, titleKey: "svc.1cdrive.title", descKey: "svc.1cdrive.desc" },
+    { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", link: "https://captcha.erpide.com", highlight: true },
+    { icon: Wallet, titleKey: "svc.erpocket.title", descKey: "svc.erpocket.desc", badge: "Coming Soon" },
+    { icon: Code2, titleKey: "svc.custom.title", descKey: "svc.custom.desc" },
+    { icon: Rocket, titleKey: "svc.digital.title", descKey: "svc.digital.desc" },
+    { icon: Headset, titleKey: "svc.support.title", descKey: "svc.support.desc" },
+    { icon: GraduationCap, titleKey: "svc.training.title", descKey: "svc.training.desc" },
+  ];
+
   return (
     <section className="py-24 px-6 relative">
       <div className="max-w-7xl mx-auto">
@@ -25,31 +30,51 @@ export default function Services() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Çözümlerimiz</span>
+            <span className="gradient-text">{t("services.title")}</span>
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            İşletmenizin ihtiyaçlarına özel, uçtan uca ERP ve yazılım çözümleri sunuyoruz.
+            {t("services.subtitle")}
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ scale: 1.03, y: -5 }}
-              className="p-6 rounded-2xl bg-[#111118] border border-white/5 hover:border-blue-500/30 hover:glow-blue transition-all duration-300 group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-4 group-hover:from-blue-600/40 group-hover:to-purple-600/40 transition">
-                <s.icon size={24} className="text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">{s.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{s.desc}</p>
-            </motion.div>
-          ))}
+          {services.map((s, i) => {
+            const card = (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ scale: 1.03, y: -5 }}
+                className={`p-6 rounded-2xl bg-[#111118] border transition-all duration-300 group relative ${
+                  s.highlight
+                    ? "border-blue-500/40 hover:border-blue-400/60 hover:glow-blue"
+                    : "border-white/5 hover:border-blue-500/30 hover:glow-blue"
+                }`}
+              >
+                {s.badge && (
+                  <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                    {s.badge}
+                  </span>
+                )}
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-4 group-hover:from-blue-600/40 group-hover:to-purple-600/40 transition">
+                  <s.icon size={24} className="text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-white">{t(s.titleKey)}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{t(s.descKey)}</p>
+              </motion.div>
+            );
+
+            if (s.link) {
+              return (
+                <Link key={i} href={s.link} target="_blank" rel="noopener noreferrer">
+                  {card}
+                </Link>
+              );
+            }
+            return card;
+          })}
         </div>
       </div>
     </section>

@@ -2,11 +2,13 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Phone } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 export default function CTA() {
+  const { t } = useTranslation();
+
   return (
     <section className="py-24 px-6 relative overflow-hidden">
-      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-950/50 via-purple-950/30 to-transparent" />
       <motion.div
         animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
@@ -21,8 +23,7 @@ export default function CTA() {
           viewport={{ once: true }}
           className="text-3xl md:text-5xl font-bold mb-6"
         >
-          Dijital Dönüşüm Yolculuğunuza{" "}
-          <span className="gradient-text">Başlayın</span>
+          <span className="gradient-text">{t("cta.title")}</span>
         </motion.h2>
 
         <motion.p
@@ -32,8 +33,7 @@ export default function CTA() {
           transition={{ delay: 0.1 }}
           className="text-lg text-gray-400 mb-10 max-w-2xl mx-auto"
         >
-          İşletmenizi bir sonraki seviyeye taşımak için hemen iletişime geçin.
-          Uzman ekibimiz sizin için en uygun çözümü tasarlasın.
+          {t("cta.subtitle")}
         </motion.p>
 
         <motion.div
@@ -47,7 +47,7 @@ export default function CTA() {
             href="/iletisim"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-lg"
           >
-            Ücretsiz Danışmanlık Alın <ArrowRight size={20} />
+            {t("cta.button")} <ArrowRight size={20} />
           </Link>
           <a
             href="tel:05546943409"

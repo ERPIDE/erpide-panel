@@ -1,13 +1,16 @@
 "use client";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/lib/i18n";
 
 const clients = [
   "Sirmersan", "ATM Constructor", "YDA Group",
   "LC Waikiki", "LUKOIL", "OKT TRAILER",
-  "Gelişim OFSET", "CAST ANB",
+  "Gelisim OFSET", "CAST ANB",
 ];
 
 export default function Clients() {
+  const { t } = useTranslation();
+
   return (
     <section className="py-24 px-6">
       <div className="max-w-7xl mx-auto">
@@ -18,9 +21,9 @@ export default function Clients() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Çözüm Ortakları</span>
+            <span className="gradient-text">{t("clients.title")}</span>
           </h2>
-          <p className="text-gray-400">Türkiye ve Kazakistan&apos;da öncü firmaların güvenilir teknoloji ortağı</p>
+          <p className="text-gray-400">{t("clients.subtitle")}</p>
         </motion.div>
 
         <div className="flex justify-center gap-6 flex-wrap">

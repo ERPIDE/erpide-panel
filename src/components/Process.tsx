@@ -1,16 +1,19 @@
 "use client";
 import { motion } from "framer-motion";
-
-const steps = [
-  { n: "01", title: "İhtiyaç Analizi", desc: "Mevcut iş süreçlerinizi detaylı analiz ediyoruz." },
-  { n: "02", title: "Çözüm Tasarımı", desc: "Firmanıza özel mimari ve çözüm tasarlıyoruz." },
-  { n: "03", title: "Geliştirme", desc: "Uzman ekibimiz kodlama ve entegrasyonu gerçekleştiriyor." },
-  { n: "04", title: "Test ve Kalite", desc: "Kapsamlı test süreciyle kaliteyi garanti ediyoruz." },
-  { n: "05", title: "Devreye Alma", desc: "Sorunsuz geçiş için kademeli devreye alma yapıyoruz." },
-  { n: "06", title: "Destek", desc: "Sürekli destek ve optimizasyonla yanınızda oluyoruz." },
-];
+import { useTranslation } from "@/lib/i18n";
 
 export default function Process() {
+  const { t } = useTranslation();
+
+  const steps = [
+    { n: "01", titleKey: "process.s1.title", descKey: "process.s1.desc" },
+    { n: "02", titleKey: "process.s2.title", descKey: "process.s2.desc" },
+    { n: "03", titleKey: "process.s3.title", descKey: "process.s3.desc" },
+    { n: "04", titleKey: "process.s4.title", descKey: "process.s4.desc" },
+    { n: "05", titleKey: "process.s5.title", descKey: "process.s5.desc" },
+    { n: "06", titleKey: "process.s6.title", descKey: "process.s6.desc" },
+  ];
+
   return (
     <section className="py-24 px-6 relative overflow-hidden">
       <div className="max-w-4xl mx-auto">
@@ -21,12 +24,12 @@ export default function Process() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Başarılı Proje Süreci</span>
+            <span className="gradient-text">{t("process.title")}</span>
           </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">{t("process.subtitle")}</p>
         </motion.div>
 
         <div className="relative">
-          {/* Vertical line */}
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600 hidden md:block" />
 
           {steps.map((s, i) => (
@@ -40,8 +43,8 @@ export default function Process() {
             >
               <div className={`flex-1 ${i % 2 === 0 ? "md:text-right" : "md:text-left"}`}>
                 <div className="p-6 rounded-2xl bg-[#111118] border border-white/5 hover:border-blue-500/20 transition">
-                  <h3 className="text-lg font-semibold text-white mb-2">{s.title}</h3>
-                  <p className="text-gray-400 text-sm">{s.desc}</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">{t(s.titleKey)}</h3>
+                  <p className="text-gray-400 text-sm">{t(s.descKey)}</p>
                 </div>
               </div>
 
