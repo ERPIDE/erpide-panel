@@ -16,7 +16,6 @@ export default function HakkimizdaPage() {
   ];
 
   const team = [
-    { nameKey: "about.team1.name", roleKey: "about.team1.role", descKey: "about.team1.desc" },
     { nameKey: "about.team2.name", roleKey: "about.team2.role", descKey: "about.team2.desc" },
     { nameKey: "about.team3.name", roleKey: "about.team3.role", descKey: "about.team3.desc" },
     { nameKey: "about.team4.name", roleKey: "about.team4.role", descKey: "about.team4.desc" },
@@ -63,7 +62,7 @@ export default function HakkimizdaPage() {
 
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">{t("about.team.title")}</h2>
-            <div className="grid md:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               {team.map((tm, i) => (
                 <motion.div
                   key={i}

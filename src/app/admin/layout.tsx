@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
-  Menu, ChevronRight, Loader2
+  Menu, ChevronRight, Loader2, Shield, Key
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
   { href: "/admin/reports", label: "Raporlar", icon: FileText },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users },
+  { href: "/admin/captcha", label: "Captcha Panel", icon: Shield },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
