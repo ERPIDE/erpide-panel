@@ -488,7 +488,7 @@ export default function PanelPage() {
     win.document.write(`
       <div class="report-footer">
         <strong>ERPIDE YAZILIM A.Ş.</strong><br>
-        info@erpide.com — 0554 694 34 09<br>
+        info@erpide.com — +7 771 138 66 35<br>
         www.erpide.com
       </div>
     </body></html>`);

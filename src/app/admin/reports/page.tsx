@@ -431,7 +431,7 @@ export default function ReportsPage() {
                   win.document.write(`
                     <div class="report-footer">
                       <strong>ERPIDE YAZILIM A.Ş.</strong><br>
-                      info@erpide.com — 0554 694 34 09<br>
+                      info@erpide.com — +7 771 138 66 35<br>
                       www.erpide.com
                     </div>
                   </body></html>`);
@@ -632,7 +632,7 @@ export default function ReportsPage() {
               {/* Report Footer */}
               <div className="px-8 py-5 border-t border-white/5 text-center">
                 <p className="text-xs text-gray-600">
-                  ERPIDE YAZILIM A.Ş. — info@erpide.com — 0554 694 34 09
+                  ERPIDE YAZILIM A.Ş. — info@erpide.com — +7 771 138 66 35
                 </p>
               </div>
             </motion.div>

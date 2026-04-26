@@ -50,10 +50,10 @@ export default function CTA() {
             {t("cta.button")} <ArrowRight size={20} />
           </Link>
           <a
-            href="tel:05546943409"
+            href="tel:+77711386635"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition text-lg"
           >
-            <Phone size={20} /> 0554 694 34 09
+            <Phone size={20} /> +7 771 138 66 35
           </a>
         </motion.div>
       </div>

@@ -46,8 +46,8 @@ export default function Footer() {
               <a href="mailto:info@erpide.com" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
                 <Mail size={16} /> info@erpide.com
               </a>
-              <a href="tel:05546943409" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
-                <Phone size={16} /> 0554 694 34 09
+              <a href="tel:+77711386635" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                <Phone size={16} /> +7 771 138 66 35
               </a>
               <span className="flex items-center gap-2 text-sm text-gray-400">
                 <MapPin size={16} /> {t("contact.info.location.val")}

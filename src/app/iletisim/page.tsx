@@ -90,7 +90,7 @@ export default function IletisimPage() {
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <Phone size={24} className="text-blue-400 mb-3" />
                 <h3 className="font-semibold text-white mb-1">{t("contact.info.phone")}</h3>
-                <a href="tel:05546943409" className="text-gray-400 text-sm hover:text-white transition">0554 694 34 09</a>
+                <a href="tel:+77711386635" className="text-gray-400 text-sm hover:text-white transition">+7 771 138 66 35</a>
               </div>
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <MapPin size={24} className="text-blue-400 mb-3" />
