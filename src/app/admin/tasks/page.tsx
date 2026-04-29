@@ -130,6 +130,9 @@ export default function TasksPage() {
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState("");
   const [savingDate, setSavingDate] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState(false);
+  const [deadlineValue, setDeadlineValue] = useState("");
+  const [savingDeadline, setSavingDeadline] = useState(false);
 
   // delete
   const [deleteConfirm, setDeleteConfirm] = useState<Task | null>(null);
@@ -392,6 +395,30 @@ export default function TasksPage() {
       toast("error", "Not kaydedilemedi");
     } finally {
       setSavingDevNote(false);
+    }
+  }
+
+  /* ─── update task deadline ─── */
+  async function saveTaskDeadline(task: Task) {
+    if (!task.repo) return;
+    try {
+      setSavingDeadline(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, deadline: deadlineValue || null }),
+      });
+      if (res.ok) {
+        toast("success", "Son tarih guncellendi");
+        setEditingDeadline(false);
+        await fetchTasks();
+      } else {
+        toast("error", "Son tarih guncellenemedi");
+      }
+    } catch {
+      toast("error", "Son tarih guncellenemedi");
+    } finally {
+      setSavingDeadline(false);
     }
   }
 
@@ -758,12 +785,36 @@ export default function TasksPage() {
                       {labelConfig[activeTask.label].label}
                     </span>
                   </div>
-                  {/* deadline */}
+                  {/* deadline - editable */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Son Tarih</p>
-                    <span className={`text-sm font-medium ${activeTask.deadline ? (isOverdue(activeTask.deadline) && activeTask.status !== "done" ? "text-red-400" : "text-white") : "text-gray-600"}`}>
-                      {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemis"}
-                    </span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">Son Tarih</p>
+                      {activeTask.repo && !editingDeadline && (
+                        <button onClick={() => { setEditingDeadline(true); setDeadlineValue(activeTask.deadline || ""); }} className="text-[10px] text-blue-400 hover:text-blue-300">Duzenle</button>
+                      )}
+                    </div>
+                    {editingDeadline ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="date"
+                          value={deadlineValue}
+                          onChange={(e) => setDeadlineValue(e.target.value)}
+                          className="flex-1 px-2 py-1 rounded-lg bg-[#0a0a12] border border-white/10 text-white text-xs focus:border-blue-500/50 focus:outline-none [color-scheme:dark]"
+                        />
+                        <button
+                          onClick={() => saveTaskDeadline(activeTask)}
+                          disabled={savingDeadline}
+                          className="px-2 py-1 rounded-lg bg-blue-600 text-white text-[10px] hover:bg-blue-500 disabled:opacity-50"
+                        >
+                          {savingDeadline ? "..." : "Kaydet"}
+                        </button>
+                        <button onClick={() => setEditingDeadline(false)} className="px-2 py-1 rounded-lg bg-white/5 text-gray-400 text-[10px]">X</button>
+                      </div>
+                    ) : (
+                      <span className={`text-sm font-medium ${activeTask.deadline ? (isOverdue(activeTask.deadline) && activeTask.status !== "done" ? "text-red-400" : "text-white") : "text-gray-600"}`}>
+                        {activeTask.deadline ? formatDate(activeTask.deadline) : "Belirtilmemis"}
+                      </span>
+                    )}
                   </div>
                   {/* created - editable */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">

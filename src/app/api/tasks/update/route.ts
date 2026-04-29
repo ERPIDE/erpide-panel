@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { repo, issueNumber, status, devNote, customDate, title, description, priorityScore } = body;
+    const { repo, issueNumber, status, devNote, customDate, deadline, title, description, priorityScore } = body;
 
     if (!repo || !issueNumber) {
       return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
@@ -110,6 +110,39 @@ export async function PATCH(request: NextRequest) {
             issueBody = issueBody.substring(0, sepIdx) + `\n**Tarih:** ${customDate}` + issueBody.substring(sepIdx);
           } else {
             issueBody += `\n\n---\n**Tarih:** ${customDate}`;
+          }
+        }
+
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ body: issueBody }),
+          }
+        );
+      }
+    }
+
+    // Update deadline in issue body
+    if (deadline !== undefined) {
+      const issueResD = await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+      );
+      if (issueResD.ok) {
+        const issue = await issueResD.json();
+        let issueBody: string = issue.body || "";
+
+        if (deadline === null || deadline === "") {
+          // Remove deadline line entirely
+          issueBody = issueBody.replace(/\n?\*\*Deadline:\*\*\s*.+/g, "");
+        } else if (issueBody.match(/\*\*Deadline:\*\*\s*.+/)) {
+          issueBody = issueBody.replace(/\*\*Deadline:\*\*\s*.+/, `**Deadline:** ${deadline}`);
+        } else {
+          const sepIdx = issueBody.indexOf("\n---\n");
+          if (sepIdx > -1) {
+            issueBody = issueBody.substring(0, sepIdx) + `\n**Deadline:** ${deadline}` + issueBody.substring(sepIdx);
+          } else {
+            issueBody += `\n\n---\n**Deadline:** ${deadline}`;
           }
         }
 
