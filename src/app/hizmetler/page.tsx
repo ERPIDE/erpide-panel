@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Shield, Briefcase } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Shield, Briefcase, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,12 +10,12 @@ export default function HizmetlerPage() {
   const { t } = useTranslation();
 
   const services = [
+    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", features: ["svc.finanserpide.f1", "svc.finanserpide.f2", "svc.finanserpide.f3", "svc.finanserpide.f4"], link: "https://finans.erpide.com", buyHref: "/fiyatlandirma", badge: "Beta" },
+    { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", features: ["svc.captcha.f1", "svc.captcha.f2", "svc.captcha.f3", "svc.captcha.f4"], link: "https://captcha.erpide.com", buyHref: "/fiyatlandirma" },
     { icon: Settings, titleKey: "svc.canias.title", descKey: "svc.canias.desc", features: ["svc.canias.f1", "svc.canias.f2", "svc.canias.f3", "svc.canias.f4"] },
     { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc", features: ["svc.1cerp.f1", "svc.1cerp.f2", "svc.1cerp.f3", "svc.1cerp.f4"] },
     { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc", features: ["svc.1cacc.f1", "svc.1cacc.f2", "svc.1cacc.f3", "svc.1cacc.f4"] },
     { icon: Database, titleKey: "svc.1cdrive.title", descKey: "svc.1cdrive.desc", features: ["svc.1cdrive.f1", "svc.1cdrive.f2", "svc.1cdrive.f3", "svc.1cdrive.f4"] },
-    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", features: ["svc.finanserpide.f1", "svc.finanserpide.f2", "svc.finanserpide.f3", "svc.finanserpide.f4"], link: "https://finans.erpide.com", badge: "Beta" },
-    { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", features: ["svc.captcha.f1", "svc.captcha.f2", "svc.captcha.f3", "svc.captcha.f4"], link: "https://captcha.erpide.com" },
     { icon: Code2, titleKey: "svc.custom.title", descKey: "svc.custom.desc", features: ["svc.custom.f1", "svc.custom.f2", "svc.custom.f3", "svc.custom.f4"] },
     { icon: Rocket, titleKey: "svc.digital.title", descKey: "svc.digital.desc", features: ["svc.digital.f1", "svc.digital.f2", "svc.digital.f3", "svc.digital.f4"] },
     { icon: Headset, titleKey: "svc.support.title", descKey: "svc.support.desc", features: ["svc.support.f1", "svc.support.f2", "svc.support.f3", "svc.support.f4"] },
@@ -61,10 +61,26 @@ export default function HizmetlerPage() {
                     </li>
                   ))}
                 </ul>
-                {s.link && (
-                  <Link href={s.link} target="_blank" className="inline-flex items-center gap-2 mt-4 text-sm text-blue-400 hover:text-blue-300 transition">
-                    Visit Panel &rarr;
-                  </Link>
+                {(s.buyHref || s.link) && (
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2">
+                    {s.buyHref && (
+                      <Link
+                        href={s.buyHref}
+                        className="flex-1 text-center text-sm py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition flex items-center justify-center gap-1.5"
+                      >
+                        Satın Al <ArrowRight size={13} />
+                      </Link>
+                    )}
+                    {s.link && (
+                      <Link
+                        href={s.link}
+                        target="_blank"
+                        className="text-sm py-2.5 px-4 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition whitespace-nowrap"
+                      >
+                        Panele Git →
+                      </Link>
+                    )}
+                  </div>
                 )}
               </motion.div>
             ))}
