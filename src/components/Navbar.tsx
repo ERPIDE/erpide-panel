@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Shield } from "lucide-react";
+import { Menu, X, Globe, Shield, Briefcase } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 
@@ -67,11 +67,18 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <Link
+            href="https://finans.erpide.com"
+            target="_blank"
+            className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-white hover:opacity-90 transition flex items-center gap-1.5"
+          >
+            <Briefcase size={14} /> FinansERPIDE
+          </Link>
+          <Link
             href="https://captcha.erpide.com/login"
             target="_blank"
             className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white hover:opacity-90 transition flex items-center gap-1.5"
           >
-            <Shield size={14} /> Captcha Panel
+            <Shield size={14} /> CaptchaERPIDE
           </Link>
           <Link href="/panel" className="text-sm px-4 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition">
             {t("nav.customer_panel")}
@@ -112,8 +119,11 @@ export default function Navbar() {
                   </button>
                 ))}
               </div>
+              <Link href="https://finans.erpide.com" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-white flex items-center justify-center gap-1.5">
+                <Briefcase size={14} /> FinansERPIDE
+              </Link>
               <Link href="https://captcha.erpide.com/login" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white flex items-center justify-center gap-1.5">
-                <Shield size={14} /> Captcha Panel
+                <Shield size={14} /> CaptchaERPIDE
               </Link>
               <Link href="/panel" className="text-center py-2 rounded-lg border border-white/10 text-gray-300">{t("nav.customer_panel")}</Link>
               <Link href="/admin" className="text-center py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">{t("nav.admin")}</Link>

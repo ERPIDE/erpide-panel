@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Shield, Wallet } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Shield, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
@@ -12,8 +12,8 @@ export default function Services() {
     { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc" },
     { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc" },
     { icon: Database, titleKey: "svc.1cdrive.title", descKey: "svc.1cdrive.desc" },
+    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", link: "https://finans.erpide.com", highlight: true, badge: "Beta" },
     { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", link: "https://captcha.erpide.com", highlight: true },
-    { icon: Wallet, titleKey: "svc.erpocket.title", descKey: "svc.erpocket.desc", badge: "Coming Soon" },
     { icon: Code2, titleKey: "svc.custom.title", descKey: "svc.custom.desc" },
     { icon: Rocket, titleKey: "svc.digital.title", descKey: "svc.digital.desc" },
     { icon: Headset, titleKey: "svc.support.title", descKey: "svc.support.desc" },

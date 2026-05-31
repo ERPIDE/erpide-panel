@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Shield, Wallet } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Shield, Briefcase } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,8 +14,8 @@ export default function HizmetlerPage() {
     { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc", features: ["svc.1cerp.f1", "svc.1cerp.f2", "svc.1cerp.f3", "svc.1cerp.f4"] },
     { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc", features: ["svc.1cacc.f1", "svc.1cacc.f2", "svc.1cacc.f3", "svc.1cacc.f4"] },
     { icon: Database, titleKey: "svc.1cdrive.title", descKey: "svc.1cdrive.desc", features: ["svc.1cdrive.f1", "svc.1cdrive.f2", "svc.1cdrive.f3", "svc.1cdrive.f4"] },
+    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", features: ["svc.finanserpide.f1", "svc.finanserpide.f2", "svc.finanserpide.f3", "svc.finanserpide.f4"], link: "https://finans.erpide.com", badge: "Beta" },
     { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", features: ["svc.captcha.f1", "svc.captcha.f2", "svc.captcha.f3", "svc.captcha.f4"], link: "https://captcha.erpide.com" },
-    { icon: Wallet, titleKey: "svc.erpocket.title", descKey: "svc.erpocket.desc", features: ["svc.erpocket.f1", "svc.erpocket.f2", "svc.erpocket.f3", "svc.erpocket.f4"], badge: "Coming Soon" },
     { icon: Code2, titleKey: "svc.custom.title", descKey: "svc.custom.desc", features: ["svc.custom.f1", "svc.custom.f2", "svc.custom.f3", "svc.custom.f4"] },
     { icon: Rocket, titleKey: "svc.digital.title", descKey: "svc.digital.desc", features: ["svc.digital.f1", "svc.digital.f2", "svc.digital.f3", "svc.digital.f4"] },
     { icon: Headset, titleKey: "svc.support.title", descKey: "svc.support.desc", features: ["svc.support.f1", "svc.support.f2", "svc.support.f3", "svc.support.f4"] },
