@@ -14,6 +14,7 @@ export default function Navbar() {
   const links = [
     { href: "/", label: t("nav.home") },
     { href: "/hizmetler", label: t("nav.services") },
+    { href: "/fiyatlandirma", label: "Fiyatlandırma" },
     { href: "/hakkimizda", label: t("nav.about") },
     { href: "/iletisim", label: t("nav.contact") },
   ];

@@ -25,6 +25,12 @@ export default function OdemePage({ params }: { params: Promise<{ plan: string }
     address: "",
     city: "İstanbul",
   });
+  const [consents, setConsents] = useState({
+    distance: false,
+    preInfo: false,
+    kvkk: false,
+    digitalDelivery: false,
+  });
 
   if (!plan) {
     return (
@@ -43,15 +49,21 @@ export default function OdemePage({ params }: { params: Promise<{ plan: string }
 
   const isFinans = plan.productId === "finanserpide";
 
+  const allConsentsGiven = consents.distance && consents.preInfo && consents.kvkk && consents.digitalDelivery;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!allConsentsGiven) {
+      setError("Devam edebilmek için tüm onay kutularını işaretlemeniz gerekir.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, buyer: form }),
+        body: JSON.stringify({ planId, buyer: form, consents }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -122,6 +134,22 @@ export default function OdemePage({ params }: { params: Promise<{ plan: string }
                 />
               </div>
 
+              <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                <p className="text-xs font-semibold text-gray-300 uppercase tracking-wide mb-2">Yasal Onaylar (Zorunlu)</p>
+                <ConsentBox checked={consents.preInfo} onChange={(v) => setConsents({ ...consents, preInfo: v })}>
+                  <Link href="/sozlesmeler/on-bilgilendirme" target="_blank" className="text-blue-400 hover:underline">Ön Bilgilendirme Formu</Link>'nu okudum, anladım.
+                </ConsentBox>
+                <ConsentBox checked={consents.distance} onChange={(v) => setConsents({ ...consents, distance: v })}>
+                  <Link href="/sozlesmeler/mesafeli-satis" target="_blank" className="text-blue-400 hover:underline">Mesafeli Satış Sözleşmesi</Link>'ni okudum, kabul ediyorum.
+                </ConsentBox>
+                <ConsentBox checked={consents.kvkk} onChange={(v) => setConsents({ ...consents, kvkk: v })}>
+                  <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">KVKK Aydınlatma Metni</Link> ve <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı okudum.
+                </ConsentBox>
+                <ConsentBox checked={consents.digitalDelivery} onChange={(v) => setConsents({ ...consents, digitalDelivery: v })}>
+                  Hizmetin dijital içerik olduğunu, anında teslim edileceğini ve <strong>cayma hakkımdan feragat ettiğimi</strong> kabul ediyorum.
+                </ConsentBox>
+              </div>
+
               {error && (
                 <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
                   {error}
@@ -130,8 +158,8 @@ export default function OdemePage({ params }: { params: Promise<{ plan: string }
 
               <button
                 type="submit"
-                disabled={loading}
-                className="mt-6 w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2"
+                disabled={loading || !allConsentsGiven}
+                className="mt-6 w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
               >
                 {loading ? <><Loader2 size={18} className="animate-spin" /> Yönlendiriliyor...</> : "Ödemeye Geç (iyzico)"}
               </button>
@@ -172,6 +200,28 @@ export default function OdemePage({ params }: { params: Promise<{ plan: string }
       </main>
       <Footer />
     </>
+  );
+}
+
+function ConsentBox({
+  checked, onChange, children,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex items-start gap-3 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+      />
+      <span className="text-xs text-gray-300 leading-relaxed group-hover:text-white transition">
+        {children}
+      </span>
+    </label>
   );
 }
 
