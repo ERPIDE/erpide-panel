@@ -35,8 +35,8 @@ export default function Footer() {
               <span className="text-sm text-gray-400">1C:ERP</span>
               <span className="text-sm text-gray-400">1C:Accounting</span>
               <span className="text-sm text-gray-400">1C:Drive</span>
-              <Link href="https://captcha.erpide.com" target="_blank" className="text-sm text-gray-400 hover:text-blue-400 transition">ERPIDE Captcha</Link>
-              <span className="text-sm text-gray-400">ERPocket</span>
+              <Link href="https://finans.erpide.com" target="_blank" className="text-sm text-gray-400 hover:text-blue-400 transition">FinansERPIDE</Link>
+              <Link href="https://captcha.erpide.com" target="_blank" className="text-sm text-gray-400 hover:text-blue-400 transition">CaptchaERPIDE</Link>
             </div>
           </div>
 

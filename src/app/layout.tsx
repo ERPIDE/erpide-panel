@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
   title: "ERPIDE - Enterprise ERP Solutions & Software Consulting",
-  description: "ERPIDE Software - CANIAS ERP, 1C ERP, ERPIDE Captcha, ERPocket, custom software development, automation and digital transformation solutions.",
-  keywords: ["ERP", "CANIAS", "1C ERP", "software consulting", "digital transformation", "captcha solver", "ERPocket", "1C Accounting"],
+  description: "ERPIDE Software - FinansERPIDE multi-tenant ERP SaaS, CaptchaERPIDE solver API, CANIAS ERP, 1C ERP, custom software development, automation and digital transformation.",
+  keywords: ["ERP", "FinansERPIDE", "CaptchaERPIDE", "CANIAS", "1C ERP", "software consulting", "digital transformation", "captcha solver", "1C Accounting", "e-fatura", "eFinans"],
   openGraph: {
     title: "ERPIDE - Enterprise ERP Solutions",
     description: "Empowering your business for the digital age.",
