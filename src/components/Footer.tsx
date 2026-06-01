@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Mail, MapPin, Shield } from "lucide-react";
+import { Mail, MapPin, Shield, Lock } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation } from "@/lib/i18n";
 import { COMPANY } from "@/lib/company-info";
@@ -12,41 +12,55 @@ export default function Footer() {
   return (
     <footer className="border-t border-white/5 bg-[#08080d]">
       <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-10">
-          <div className="lg:col-span-2">
+        <div className="grid md:grid-cols-2 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-4">
             <Link href="/"><Logo size="small" /></Link>
             <p className="text-gray-500 text-sm mt-3 leading-relaxed max-w-xs">
               {t("footer.brand.desc")}
             </p>
-            <div className="mt-5 flex items-center gap-2 text-xs text-gray-500">
-              <Shield size={12} className="text-green-500" />
-              <span>iyzico güvenli ödeme altyapısı ile çalışır</span>
+            <div className="mt-5 space-y-1.5 text-sm text-gray-400">
+              <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-2 hover:text-white transition">
+                <Mail size={14} /> {COMPANY.email}
+              </a>
+              <span className="flex items-start gap-2">
+                <MapPin size={14} className="mt-0.5 flex-shrink-0" />
+                <span>{COMPANY.address.district} / {COMPANY.address.city}</span>
+              </span>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-4">{t("footer.links")}</h4>
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-white mb-4 text-sm">Kurumsal</h4>
             <div className="flex flex-col gap-2">
-              <Link href="/" className="text-sm text-gray-400 hover:text-white transition">{t("nav.home")}</Link>
-              <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">Ürünler</Link>
-              <Link href="/hizmetler" className="text-sm text-gray-400 hover:text-white transition">{t("nav.services")}</Link>
-              <Link href="/hakkimizda" className="text-sm text-gray-400 hover:text-white transition">{t("nav.about")}</Link>
-              <Link href="/iletisim" className="text-sm text-gray-400 hover:text-white transition">{t("nav.contact")}</Link>
+              <Link href="/hakkimizda" className="text-sm text-gray-400 hover:text-white transition">Hakkımızda</Link>
+              <Link href="/iletisim" className="text-sm text-gray-400 hover:text-white transition">İletişim</Link>
+              <Link href="/kunye" className="text-sm text-gray-400 hover:text-white transition">Künye</Link>
+              <Link href="/hizmetler" className="text-sm text-gray-400 hover:text-white transition">Hizmetlerimiz</Link>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-4">Ürünler</h4>
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-white mb-4 text-sm">Ürünler</h4>
             <div className="flex flex-col gap-2">
-              <Link href="https://finans.erpide.com" target="_blank" className="text-sm text-gray-400 hover:text-blue-400 transition">FinansERPIDE</Link>
-              <Link href="https://captcha.erpide.com" target="_blank" className="text-sm text-gray-400 hover:text-blue-400 transition">CaptchaERPIDE</Link>
-              <span className="text-sm text-gray-400">CANIAS ERP</span>
-              <span className="text-sm text-gray-400">1C:ERP / Accounting / Drive</span>
+              <Link href="/urunler/finanserpide" className="text-sm text-gray-400 hover:text-blue-400 transition">FinansERPIDE</Link>
+              <Link href="/urunler/captchaerpide" className="text-sm text-gray-400 hover:text-blue-400 transition">CaptchaERPIDE</Link>
+              <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">Tüm Ürünler</Link>
+              <Link href="/sepet" className="text-sm text-gray-400 hover:text-white transition">Sepetim</Link>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-4">Yasal</h4>
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-white mb-4 text-sm">Destek</h4>
+            <div className="flex flex-col gap-2">
+              <Link href="/giris" className="text-sm text-gray-400 hover:text-white transition">Giriş Yap</Link>
+              <Link href="/uye-ol" className="text-sm text-gray-400 hover:text-white transition">Üye Ol</Link>
+              <Link href="/hesabim" className="text-sm text-gray-400 hover:text-white transition">Hesabım</Link>
+              <a href={`mailto:${COMPANY.email}?subject=Destek%20Talebi`} className="text-sm text-gray-400 hover:text-white transition">Yardım</a>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-white mb-4 text-sm">Yasal</h4>
             <div className="flex flex-col gap-2">
               {LEGAL_LINKS.map((l) => (
                 <Link key={l.href} href={l.href} className="text-sm text-gray-400 hover:text-white transition">
@@ -58,15 +72,21 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/5 mt-12 pt-8">
-          <h5 className="text-xs uppercase tracking-wider text-gray-500 mb-2">İletişim</h5>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-1.5 text-sm text-gray-400">
-            <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-2 hover:text-white transition">
-              <Mail size={14} /> {COMPANY.email}
-            </a>
-            <span className="flex items-start gap-2">
-              <MapPin size={14} className="mt-0.5 flex-shrink-0" />
-              <span>{COMPANY.address.district} / {COMPANY.address.city}</span>
-            </span>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Shield size={14} className="text-green-500" />
+              <span>iyzico güvenli ödeme altyapısı ile çalışır</span>
+              <span className="text-gray-700 mx-1">•</span>
+              <Lock size={12} className="text-gray-500" />
+              <span>256-bit SSL</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <PaymentBadge label="iyzico" color="from-sky-500 to-blue-600" />
+              <PaymentBadge label="VISA" color="from-blue-700 to-indigo-700" />
+              <PaymentBadge label="MasterCard" color="from-orange-500 to-red-600" />
+              <PaymentBadge label="Troy" color="from-cyan-600 to-teal-600" />
+              <PaymentBadge label="American Express" color="from-blue-600 to-blue-800" />
+            </div>
           </div>
         </div>
 
@@ -75,8 +95,6 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} {COMPANY.shortName}. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-3 text-[11px] text-gray-600">
-            <Link href="/kunye" className="hover:text-gray-300 transition">Künye</Link>
-            <span className="text-gray-700">·</span>
             <Link href="/panel" className="hover:text-gray-300 transition">Müşteri Paneli</Link>
             <span className="text-gray-700">·</span>
             <Link href="/admin" className="hover:text-gray-300 transition">Yönetim</Link>
@@ -84,5 +102,13 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+function PaymentBadge({ label, color }: { label: string; color: string }) {
+  return (
+    <span className={`text-[10px] font-bold px-2.5 py-1 rounded text-white bg-gradient-to-br ${color} opacity-80`}>
+      {label}
+    </span>
   );
 }
