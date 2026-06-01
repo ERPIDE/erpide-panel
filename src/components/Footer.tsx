@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Shield } from "lucide-react";
+import { Mail, MapPin, Shield } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation } from "@/lib/i18n";
 import { COMPANY } from "@/lib/company-info";
@@ -57,30 +57,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/5 mt-12 pt-8 grid md:grid-cols-2 gap-6">
-          <div>
-            <h5 className="text-xs uppercase tracking-wider text-gray-500 mb-2">İletişim</h5>
-            <div className="space-y-1.5 text-sm text-gray-400">
-              <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-2 hover:text-white transition">
-                <Mail size={14} /> {COMPANY.email}
-              </a>
-              <a href={`tel:${COMPANY.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 hover:text-white transition">
-                <Phone size={14} /> {COMPANY.phone}
-              </a>
-              <span className="flex items-start gap-2">
-                <MapPin size={14} className="mt-0.5 flex-shrink-0" />
-                <span>{COMPANY.address.full}</span>
-              </span>
-            </div>
-          </div>
-          <div>
-            <h5 className="text-xs uppercase tracking-wider text-gray-500 mb-2">Şirket Bilgileri</h5>
-            <div className="space-y-1 text-xs text-gray-500">
-              <p><span className="text-gray-400">{COMPANY.name}</span></p>
-              <p>VKN: {COMPANY.taxNumber} • MERSİS: {COMPANY.mersisNumber}</p>
-              <p>Ticaret Sicil No: {COMPANY.tradeRegistryNumber}</p>
-              <p>KEP: {COMPANY.kepAddress}</p>
-            </div>
+        <div className="border-t border-white/5 mt-12 pt-8">
+          <h5 className="text-xs uppercase tracking-wider text-gray-500 mb-2">İletişim</h5>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-1.5 text-sm text-gray-400">
+            <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-2 hover:text-white transition">
+              <Mail size={14} /> {COMPANY.email}
+            </a>
+            <span className="flex items-start gap-2">
+              <MapPin size={14} className="mt-0.5 flex-shrink-0" />
+              <span>{COMPANY.address.district} / {COMPANY.address.city}</span>
+            </span>
           </div>
         </div>
 
@@ -89,6 +75,8 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} {COMPANY.shortName}. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-3 text-[11px] text-gray-600">
+            <Link href="/kunye" className="hover:text-gray-300 transition">Künye</Link>
+            <span className="text-gray-700">·</span>
             <Link href="/panel" className="hover:text-gray-300 transition">Müşteri Paneli</Link>
             <span className="text-gray-700">·</span>
             <Link href="/admin" className="hover:text-gray-300 transition">Yönetim</Link>
