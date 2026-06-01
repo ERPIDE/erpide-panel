@@ -26,7 +26,7 @@ export default function SepetOdemePage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const res = await fetch("/api/shop/auth/me", { cache: "no-store" });
         const data = await res.json();
         if (!data.user) {
           router.push("/giris?next=/sepet/odeme");

@@ -17,9 +17,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
-    }
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     const { name, surname, email, password } = parsed.data;
 
     const pwdError = validatePassword(password);

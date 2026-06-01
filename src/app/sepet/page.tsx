@@ -17,7 +17,7 @@ export default function SepetPage() {
   async function startCheckout() {
     setLoading(true);
     try {
-      const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+      const meRes = await fetch("/api/shop/auth/me", { cache: "no-store" });
       const meData = await meRes.json();
       if (!meData.user) {
         router.push("/giris?next=/sepet/odeme");

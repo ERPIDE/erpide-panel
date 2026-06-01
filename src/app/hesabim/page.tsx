@@ -65,7 +65,7 @@ export default async function HesabimPage() {
             )}
           </div>
 
-          <form action="/api/auth/logout" method="POST" className="mt-8 text-center">
+          <form action="/api/shop/auth/logout" method="POST" className="mt-8 text-center">
             <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-red-400 hover:bg-red-500/5 transition">
               <LogOut size={14} /> Çıkış Yap
             </button>

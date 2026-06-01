@@ -18,7 +18,7 @@ export default function Navbar() {
   const { itemCount } = useCart();
 
   useEffect(() => {
-    fetch("/api/auth/me", { cache: "no-store" })
+    fetch("/api/shop/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setUser(d.user || null))
       .catch(() => {});
@@ -112,7 +112,7 @@ export default function Navbar() {
                     <Package size={14} /> Siparişlerim
                   </Link>
                   <div className="border-t border-white/5">
-                    <form action="/api/auth/logout" method="POST">
+                    <form action="/api/shop/auth/logout" method="POST">
                       <button type="submit" className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition">
                         <LogOut size={14} /> Çıkış
                       </button>
@@ -160,7 +160,7 @@ export default function Navbar() {
                   <>
                     <Link href="/hesabim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Hesabım</Link>
                     <Link href="/hesabim/lisanslarim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Lisanslarım</Link>
-                    <form action="/api/auth/logout" method="POST">
+                    <form action="/api/shop/auth/logout" method="POST">
                       <button type="submit" className="py-2 text-red-400 text-left">Çıkış</button>
                     </form>
                   </>
