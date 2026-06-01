@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from "crypto";
-import type { ProductId } from "./plans";
+import type { ProductId } from "../products";
 
 const PREFIX: Record<ProductId, string> = {
   finanserpide: "FRP",

@@ -1,20 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Shield, Briefcase } from "lucide-react";
+import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
+import { useCart } from "./CartProvider";
+
+interface MeUser { id: string; email: string; name: string; surname: string }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [user, setUser] = useState<MeUser | null>(null);
   const { t, locale, setLocale } = useTranslation();
+  const { itemCount } = useCart();
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setUser(d.user || null))
+      .catch(() => {});
+  }, []);
 
   const links = [
     { href: "/", label: t("nav.home") },
+    { href: "/urunler", label: "Ürünler" },
     { href: "/hizmetler", label: t("nav.services") },
-    { href: "/fiyatlandirma", label: "Fiyatlandırma" },
     { href: "/hakkimizda", label: t("nav.about") },
     { href: "/iletisim", label: t("nav.contact") },
   ];
@@ -26,7 +39,6 @@ export default function Navbar() {
       transition={{ duration: 0.6 }}
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-black/60 border-b border-white/5"
     >
-      {/* Top bar - Language switcher */}
       <div className="border-b border-white/5 bg-black/40">
         <div className="max-w-7xl mx-auto px-6 h-8 flex items-center justify-end gap-2">
           <div className="relative">
@@ -54,7 +66,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Main navbar */}
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/"><Logo size="small" /></Link>
 
@@ -66,27 +77,60 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2">
           <Link
-            href="https://finans.erpide.com"
-            target="_blank"
-            className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-white hover:opacity-90 transition flex items-center gap-1.5"
+            href="/sepet"
+            className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition"
           >
-            <Briefcase size={14} /> FinansERPIDE
+            <ShoppingCart size={18} />
+            {itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {itemCount}
+              </span>
+            )}
           </Link>
-          <Link
-            href="https://captcha.erpide.com/login"
-            target="_blank"
-            className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white hover:opacity-90 transition flex items-center gap-1.5"
-          >
-            <Shield size={14} /> CaptchaERPIDE
-          </Link>
-          <Link href="/panel" className="text-sm px-4 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition">
-            {t("nav.customer_panel")}
-          </Link>
-          <Link href="/admin" className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition">
-            {t("nav.admin")}
-          </Link>
+
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setAccountOpen(!accountOpen)}
+                className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
+              >
+                <User size={14} />
+                <span className="max-w-[100px] truncate">{user.name}</span>
+                <ChevronDown size={12} />
+              </button>
+              {accountOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[180px]">
+                  <Link href="/hesabim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
+                    <User size={14} /> Hesabım
+                  </Link>
+                  <Link href="/hesabim/lisanslarim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
+                    <Key size={14} /> Lisanslarım
+                  </Link>
+                  <Link href="/hesabim/siparislerim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
+                    <Package size={14} /> Siparişlerim
+                  </Link>
+                  <div className="border-t border-white/5">
+                    <form action="/api/auth/logout" method="POST">
+                      <button type="submit" className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition">
+                        <LogOut size={14} /> Çıkış
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link href="/giris" className="text-sm px-4 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition">
+                Giriş
+              </Link>
+              <Link href="/uye-ol" className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition">
+                Üye Ol
+              </Link>
+            </>
+          )}
         </div>
 
         <button className="md:hidden text-white" onClick={() => setOpen(!open)}>
@@ -108,26 +152,25 @@ export default function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              {/* Mobile language picker */}
-              <div className="flex gap-2 py-2">
-                {(Object.keys(localeNames) as Locale[]).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => { setLocale(lang); setOpen(false); }}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition ${locale === lang ? "border-blue-500 text-blue-400 bg-blue-500/10" : "border-white/10 text-gray-400"}`}
-                  >
-                    {localeNames[lang]}
-                  </button>
-                ))}
+              <Link href="/sepet" onClick={() => setOpen(false)} className="flex items-center gap-2 text-gray-300 py-2">
+                <ShoppingCart size={16} /> Sepet {itemCount > 0 && <span className="text-blue-400">({itemCount})</span>}
+              </Link>
+              <div className="pt-3 border-t border-white/5">
+                {user ? (
+                  <>
+                    <Link href="/hesabim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Hesabım</Link>
+                    <Link href="/hesabim/lisanslarim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Lisanslarım</Link>
+                    <form action="/api/auth/logout" method="POST">
+                      <button type="submit" className="py-2 text-red-400 text-left">Çıkış</button>
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/giris" onClick={() => setOpen(false)} className="block text-center py-2 rounded-lg border border-white/10 text-gray-300 mb-2">Giriş</Link>
+                    <Link href="/uye-ol" onClick={() => setOpen(false)} className="block text-center py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">Üye Ol</Link>
+                  </>
+                )}
               </div>
-              <Link href="https://finans.erpide.com" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-orange-500 to-pink-600 text-white flex items-center justify-center gap-1.5">
-                <Briefcase size={14} /> FinansERPIDE
-              </Link>
-              <Link href="https://captcha.erpide.com/login" target="_blank" className="text-center py-2 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white flex items-center justify-center gap-1.5">
-                <Shield size={14} /> CaptchaERPIDE
-              </Link>
-              <Link href="/panel" className="text-center py-2 rounded-lg border border-white/10 text-gray-300">{t("nav.customer_panel")}</Link>
-              <Link href="/admin" className="text-center py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">{t("nav.admin")}</Link>
             </div>
           </motion.div>
         )}

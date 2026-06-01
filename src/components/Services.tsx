@@ -1,25 +1,14 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Globe, Smartphone, Shield, Briefcase, ArrowRight } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
-
-type Service = {
-  icon: typeof Settings;
-  titleKey: string;
-  descKey: string;
-  link?: string;
-  highlight?: boolean;
-  badge?: string;
-  buyHref?: string;
-};
+import { PRODUCTS } from "@/lib/products";
 
 export default function Services() {
   const { t } = useTranslation();
 
-  const services: Service[] = [
-    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", link: "https://finans.erpide.com", buyHref: "/fiyatlandirma", highlight: true, badge: "Beta" },
-    { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", link: "https://captcha.erpide.com", buyHref: "/fiyatlandirma", highlight: true },
+  const services = [
     { icon: Settings, titleKey: "svc.canias.title", descKey: "svc.canias.desc" },
     { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc" },
     { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc" },
@@ -33,66 +22,77 @@ export default function Services() {
   return (
     <section className="py-24 px-6 relative">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">{t("services.title")}</span>
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold mb-3">
+            <span className="gradient-text">Ürünlerimiz</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            {t("services.subtitle")}
-          </p>
+          <p className="text-gray-400 max-w-2xl mx-auto">SaaS ürünlerimiz — anında üye ol, sepete ekle, aylık abone ol.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              whileHover={{ y: -5 }}
-              className={`p-6 rounded-2xl bg-[#111118] border transition-all duration-300 group relative flex flex-col ${
-                s.highlight
-                  ? "border-blue-500/40 hover:border-blue-400/60 hover:glow-blue"
-                  : "border-white/5 hover:border-blue-500/30 hover:glow-blue"
-              }`}
-            >
-              {s.badge && (
-                <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
-                  {s.badge}
-                </span>
-              )}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-4 group-hover:from-blue-600/40 group-hover:to-purple-600/40 transition">
-                <s.icon size={24} className="text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">{t(s.titleKey)}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed mb-4">{t(s.descKey)}</p>
-              {s.buyHref && (
-                <div className="mt-auto pt-3 flex items-center gap-2">
-                  <Link
-                    href={s.buyHref}
-                    className="flex-1 text-center text-sm py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition flex items-center justify-center gap-1.5"
-                  >
-                    Satın Al <ArrowRight size={13} />
-                  </Link>
-                  {s.link && (
-                    <Link
-                      href={s.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm py-2 px-3 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
-                    >
-                      Panel →
-                    </Link>
-                  )}
+        <div className="grid md:grid-cols-2 gap-6 mb-20">
+          {PRODUCTS.map((p, i) => {
+            const Icon = p.icon;
+            return (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="p-8 rounded-2xl bg-[#111118] border border-blue-500/30 hover:border-blue-400/60 transition group relative"
+              >
+                {p.comingSoon && (
+                  <span className="absolute top-6 right-6 text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                    BETA
+                  </span>
+                )}
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-5`}>
+                  <Icon size={28} className="text-white" />
                 </div>
-              )}
-            </motion.div>
+                <h3 className="text-2xl font-bold text-white mb-2">{p.name}</h3>
+                <p className="text-blue-400 text-sm mb-2">{p.tagline}</p>
+                <p className="text-gray-400 text-sm leading-relaxed mb-5">{p.description}</p>
+                <div className="flex items-baseline gap-2 mb-5">
+                  <span className="text-xs text-gray-500">Aylık</span>
+                  <span className="text-xl font-bold text-white">{p.skus[0].price.toLocaleString("tr-TR")} TRY'den</span>
+                </div>
+                <Link
+                  href={`/urunler/${p.id}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition"
+                >
+                  İncele ve Satın Al <ArrowRight size={14} />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            <span className="gradient-text">Danışmanlık ve Hizmetler</span>
+          </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">CANIAS, 1C ve özel yazılım projeleri — teklif isteyin.</p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {services.map((s, i) => (
+            <Link key={i} href="/hizmetler">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                whileHover={{ y: -3 }}
+                className="p-5 rounded-2xl bg-[#111118] border border-white/5 hover:border-blue-500/30 transition h-full"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-3">
+                  <s.icon size={20} className="text-blue-400" />
+                </div>
+                <h3 className="font-semibold text-white mb-1 text-sm">{t(s.titleKey)}</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">{t(s.descKey)}</p>
+              </motion.div>
+            </Link>
           ))}
         </div>
       </div>

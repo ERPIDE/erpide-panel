@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Settings, Database, Code2, Rocket, Headset, GraduationCap, Shield, Briefcase, ArrowRight } from "lucide-react";
+import { Settings, Database, Code2, Rocket, Headset, GraduationCap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,8 +10,6 @@ export default function HizmetlerPage() {
   const { t } = useTranslation();
 
   const services = [
-    { icon: Briefcase, titleKey: "svc.finanserpide.title", descKey: "svc.finanserpide.desc", features: ["svc.finanserpide.f1", "svc.finanserpide.f2", "svc.finanserpide.f3", "svc.finanserpide.f4"], link: "https://finans.erpide.com", buyHref: "/fiyatlandirma", badge: "Beta" },
-    { icon: Shield, titleKey: "svc.captcha.title", descKey: "svc.captcha.desc", features: ["svc.captcha.f1", "svc.captcha.f2", "svc.captcha.f3", "svc.captcha.f4"], link: "https://captcha.erpide.com", buyHref: "/fiyatlandirma" },
     { icon: Settings, titleKey: "svc.canias.title", descKey: "svc.canias.desc", features: ["svc.canias.f1", "svc.canias.f2", "svc.canias.f3", "svc.canias.f4"] },
     { icon: Database, titleKey: "svc.1cerp.title", descKey: "svc.1cerp.desc", features: ["svc.1cerp.f1", "svc.1cerp.f2", "svc.1cerp.f3", "svc.1cerp.f4"] },
     { icon: Database, titleKey: "svc.1cacc.title", descKey: "svc.1cacc.desc", features: ["svc.1cacc.f1", "svc.1cacc.f2", "svc.1cacc.f3", "svc.1cacc.f4"] },
@@ -27,9 +25,9 @@ export default function HizmetlerPage() {
       <Navbar />
       <main className="pt-24 pb-16 px-6 min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-4"><span className="gradient-text">{t("services.title")}</span></h1>
-            <p className="text-gray-400 max-w-2xl mx-auto">{t("services.subtitle")}</p>
+            <p className="text-gray-400 max-w-2xl mx-auto">Danışmanlık, proje geliştirme ve eğitim hizmetleri. SaaS ürünlerimiz için <Link href="/urunler" className="text-blue-400 hover:underline">Ürünler</Link> sayfasına git.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -38,22 +36,15 @@ export default function HizmetlerPage() {
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className={`p-8 rounded-2xl bg-[#111118] border transition group relative ${
-                  s.link ? "border-blue-500/30 hover:border-blue-400/50" : "border-white/5 hover:border-blue-500/30"
-                }`}
+                transition={{ delay: i * 0.06 }}
+                className="p-8 rounded-2xl bg-[#111118] border border-white/5 hover:border-blue-500/30 transition"
               >
-                {s.badge && (
-                  <span className="absolute top-6 right-6 text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
-                    {s.badge}
-                  </span>
-                )}
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-5">
                   <s.icon size={28} className="text-blue-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">{t(s.titleKey)}</h3>
                 <p className="text-gray-400 text-sm mb-4 leading-relaxed">{t(s.descKey)}</p>
-                <ul className="space-y-2">
+                <ul className="space-y-2 mb-6">
                   {s.features.map((f, j) => (
                     <li key={j} className="text-sm text-gray-500 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -61,27 +52,9 @@ export default function HizmetlerPage() {
                     </li>
                   ))}
                 </ul>
-                {(s.buyHref || s.link) && (
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2">
-                    {s.buyHref && (
-                      <Link
-                        href={s.buyHref}
-                        className="flex-1 text-center text-sm py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition flex items-center justify-center gap-1.5"
-                      >
-                        Satın Al <ArrowRight size={13} />
-                      </Link>
-                    )}
-                    {s.link && (
-                      <Link
-                        href={s.link}
-                        target="_blank"
-                        className="text-sm py-2.5 px-4 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition whitespace-nowrap"
-                      >
-                        Panele Git →
-                      </Link>
-                    )}
-                  </div>
-                )}
+                <Link href="/iletisim" className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 transition">
+                  Teklif İste <ArrowRight size={13} />
+                </Link>
               </motion.div>
             ))}
           </div>

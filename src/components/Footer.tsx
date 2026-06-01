@@ -28,8 +28,8 @@ export default function Footer() {
             <h4 className="font-semibold text-white mb-4">{t("footer.links")}</h4>
             <div className="flex flex-col gap-2">
               <Link href="/" className="text-sm text-gray-400 hover:text-white transition">{t("nav.home")}</Link>
+              <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">Ürünler</Link>
               <Link href="/hizmetler" className="text-sm text-gray-400 hover:text-white transition">{t("nav.services")}</Link>
-              <Link href="/fiyatlandirma" className="text-sm text-gray-400 hover:text-white transition">Fiyatlandırma</Link>
               <Link href="/hakkimizda" className="text-sm text-gray-400 hover:text-white transition">{t("nav.about")}</Link>
               <Link href="/iletisim" className="text-sm text-gray-400 hover:text-white transition">{t("nav.contact")}</Link>
             </div>
