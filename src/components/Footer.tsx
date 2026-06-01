@@ -84,10 +84,15 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/5 mt-8 pt-6 text-center">
+        <div className="border-t border-white/5 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-600">
             &copy; {new Date().getFullYear()} {COMPANY.shortName}. Tüm hakları saklıdır.
           </p>
+          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+            <Link href="/panel" className="hover:text-gray-300 transition">Müşteri Paneli</Link>
+            <span className="text-gray-700">·</span>
+            <Link href="/admin" className="hover:text-gray-300 transition">Yönetim</Link>
+          </div>
         </div>
       </div>
     </footer>
