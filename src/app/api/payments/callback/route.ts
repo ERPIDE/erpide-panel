@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { retrieveCheckout } from "@/lib/payments/iyzico";
-import { findOrderByConversationId, updateOrder, findUserById, type OrderItem } from "@/lib/auth/user-store";
+import { findOrderByConversationId, updateOrder, findUserById, updateUser, type OrderItem } from "@/lib/auth/user-store";
 import { sendOrderConfirmationEmail } from "@/lib/payments/email";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { getSku } from "@/lib/products";
@@ -40,6 +40,19 @@ async function handle(req: Request) {
 
   const user = await findUserById(order.userId, true);
   const paidAt = new Date();
+
+  // If the customer ticked "kartımı kaydet" on the checkout form, iyzico
+  // returns cardUserKey + cardToken with this retrieve response. Stash them
+  // on the user so the daily renewal cron can charge silently.
+  if (user && result.cardUserKey && result.cardToken) {
+    await updateUser(user.id, {
+      iyzicoCardUserKey: result.cardUserKey,
+      iyzicoCardToken: result.cardToken,
+      iyzicoCardLastFour: result.lastFourDigits,
+      iyzicoCardAssociation: result.cardAssociation,
+      iyzicoCardSavedAt: paidAt.toISOString(),
+    });
+  }
 
   // Pick the cycle from the first item's SKU. Mixed-cycle orders are not a
   // thing right now (the cart only allows one product per checkout), so this

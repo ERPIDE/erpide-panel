@@ -59,6 +59,16 @@ export interface UserRecord {
   oauthProvider?: "google" | "facebook" | "github";
   oauthProviderId?: string;
   avatarUrl?: string;
+
+  // iyzico saved-card vault. Set when the customer ticks "kartımı kaydet" on
+  // checkout. cardUserKey is the customer pointer in iyzico's vault, cardToken
+  // is the specific card. The masked PAN bits below are display-only.
+  iyzicoCardUserKey?: string;
+  iyzicoCardToken?: string;
+  iyzicoCardLastFour?: string;
+  iyzicoCardAssociation?: string; // VISA, MASTER_CARD
+  iyzicoCardSavedAt?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -297,6 +307,12 @@ export async function listOrdersByUserId(userId: string): Promise<OrderRecord[]>
   return Object.values(s.orders)
     .filter((order) => order.userId === userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function listAllOrders(): Promise<OrderRecord[]> {
+  // Used by the renewal cron — must see absolutely the freshest state.
+  const s = await loadState(true);
+  return Object.values(s.orders);
 }
 
 export async function findActiveTrialForUserSku(userId: string, skuId: string): Promise<OrderRecord | undefined> {

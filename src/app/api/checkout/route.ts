@@ -129,6 +129,7 @@ export async function POST(req: Request) {
       buyer: buyerInfo,
       basketItems,
       basketId: order.id,
+      cardUserKey: user.iyzicoCardUserKey,
     });
 
     if (result.status !== "success") {
@@ -154,6 +155,11 @@ async function initCheckoutMulti(opts: {
   buyer: BuyerInfo;
   basketItems: Array<{ id: string; name: string; category1: string; itemType: string; price: string }>;
   basketId: string;
+  // When the buyer already has a saved card on file with iyzico, passing this
+  // here makes the checkout form show their stored cards as a quick option.
+  // Either way, ticking "kartımı kaydet" causes iyzico to return cardUserKey
+  // + cardToken in the retrieve response so we can charge again on renewal.
+  cardUserKey?: string;
 }) {
   const apiKey = process.env.IYZICO_API_KEY;
   const secretKey = process.env.IYZICO_SECRET_KEY;
@@ -172,18 +178,28 @@ async function initCheckoutMulti(opts: {
   const price = opts.totalPrice.toFixed(2);
 
   return new Promise<{ status: "success" | "failure"; token?: string; paymentPageUrl?: string; errorMessage?: string }>((resolve) => {
+    const initPayload: Record<string, unknown> = {
+      locale: "tr",
+      conversationId: opts.conversationId,
+      price,
+      paidPrice: price,
+      currency: "TRY",
+      basketId: opts.basketId,
+      paymentGroup: "SUBSCRIPTION",
+      // paymentSource: SUBSCRIPTION makes iyzico's hosted form surface the
+      // "kartımı kaydet" checkbox by default — without this checkout works
+      // but the customer never sees the save-card option and auto-renewal
+      // has nothing to pull from.
+      paymentSource: "SUBSCRIPTION",
+      callbackUrl: opts.callbackUrl,
+      enabledInstallments: [1, 2, 3, 6, 9],
+      buyer: opts.buyer,
+    };
+    if (opts.cardUserKey) initPayload.cardUserKey = opts.cardUserKey;
+
     client.checkoutFormInitialize.create(
       {
-        locale: "tr",
-        conversationId: opts.conversationId,
-        price,
-        paidPrice: price,
-        currency: "TRY",
-        basketId: opts.basketId,
-        paymentGroup: "PRODUCT",
-        callbackUrl: opts.callbackUrl,
-        enabledInstallments: [1, 2, 3, 6, 9],
-        buyer: opts.buyer,
+        ...initPayload,
         shippingAddress: {
           contactName: `${opts.buyer.name} ${opts.buyer.surname}`,
           city: opts.buyer.city,
