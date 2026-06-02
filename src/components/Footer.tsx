@@ -80,12 +80,12 @@ export default function Footer() {
               <Lock size={12} className="text-gray-500" />
               <span>256-bit SSL</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <PaymentBadge label="iyzico" color="from-sky-500 to-blue-600" />
-              <PaymentBadge label="VISA" color="from-blue-700 to-indigo-700" />
-              <PaymentBadge label="MasterCard" color="from-orange-500 to-red-600" />
-              <PaymentBadge label="Troy" color="from-cyan-600 to-teal-600" />
-              <PaymentBadge label="American Express" color="from-blue-600 to-blue-800" />
+            <div className="flex flex-wrap items-center gap-3">
+              <PaymentLogo src="/payment/iyzico.svg" alt="iyzico ile Öde" width={70} />
+              <PaymentLogo src="/payment/visa.svg" alt="Visa" width={42} />
+              <PaymentLogo src="/payment/mastercard.svg" alt="MasterCard" width={36} />
+              <PaymentLogo src="/payment/troy.svg" alt="Troy" width={36} />
+              <PaymentLogo src="/payment/amex.svg" alt="American Express" width={36} />
             </div>
           </div>
         </div>
@@ -105,10 +105,11 @@ export default function Footer() {
   );
 }
 
-function PaymentBadge({ label, color }: { label: string; color: string }) {
+function PaymentLogo({ src, alt, width }: { src: string; alt: string; width: number }) {
   return (
-    <span className={`text-[10px] font-bold px-2.5 py-1 rounded text-white bg-gradient-to-br ${color} opacity-80`}>
-      {label}
-    </span>
+    <div className="bg-white rounded px-2 py-1.5 flex items-center justify-center" style={{ minHeight: 28 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} style={{ width, height: "auto", maxHeight: 22 }} loading="lazy" />
+    </div>
   );
 }
