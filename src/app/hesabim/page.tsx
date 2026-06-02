@@ -8,7 +8,10 @@ export default async function HesabimPage() {
   const session = await requireUser();
   if (!session) redirect("/giris?next=/hesabim");
 
-  const user = await findUserById(session.userId!);
+  // forceFresh: hesabim sayfası account state'in en güncel olduğu yer; cache
+  // ile false-positive "doğrulanmamış" banner gösterilmesin diye blob'tan
+  // doğrudan oku.
+  const user = await findUserById(session.userId!, true);
   const orders = await listOrdersByUserId(session.userId!);
   const now = Date.now();
   const allLicenses = orders.flatMap((o) => o.items.map((item) => ({ ...item, orderDate: o.createdAt, orderStatus: o.status, isTrial: !!o.isTrial, trialExpiresAt: o.trialExpiresAt })));
@@ -40,7 +43,7 @@ export default async function HesabimPage() {
         <NavCard href="/urunler" icon={Sparkles} title="Yeni Ürün" desc="Trial başlat ya da satın al" tone="amber" />
       </div>
 
-      {!user?.emailVerified && (
+      {user && user.emailVerified === false && (
         <div className="mb-8 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-start gap-3">
           <Mail className="text-amber-400 mt-0.5 flex-shrink-0" size={18} />
           <div className="flex-1">

@@ -15,7 +15,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor" }, { status: 401 });
   }
 
-  const user = await findUserById(session.userId);
+  // forceFresh: kullanıcı az önce OAuth ile kaydolmuş olabilir, cache stale
+  // sebebiyle emailVerified=false sayıp deneme başlatmayı bloklamayalım.
+  const user = await findUserById(session.userId, true);
   if (!user) return NextResponse.json({ error: "Kullanıcı bulunamadı" }, { status: 401 });
   if (user.emailVerified === false) {
     return NextResponse.json(

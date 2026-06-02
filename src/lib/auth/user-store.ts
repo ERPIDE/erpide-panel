@@ -187,8 +187,8 @@ export async function findUserByEmail(email: string): Promise<UserRecord | undef
   return undefined;
 }
 
-export async function findUserById(id: string): Promise<UserRecord | undefined> {
-  const s = await loadState();
+export async function findUserById(id: string, forceFresh = false): Promise<UserRecord | undefined> {
+  const s = await loadState(forceFresh);
   return s.users[id];
 }
 
