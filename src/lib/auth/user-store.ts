@@ -91,10 +91,25 @@ export interface OrderRecord {
   currency: "TRY";
   paymentId?: string;
   conversationId: string;
-  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "TRIAL";
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "TRIAL" | "EXPIRED";
   iyzicoToken?: string;
   isTrial?: boolean;
   trialExpiresAt?: string;
+
+  // Paid subscription cycle: when this subscription period ends. After this
+  // date the backend License is no longer valid and API calls 403 — unless
+  // auto-renewal fires and creates a new follow-on order.
+  subscriptionExpiresAt?: string;
+  billingCycle?: "monthly" | "yearly";
+  autoRenewEnabled?: boolean;
+  // When the auto-renew cron last attempted to charge this order. Used to
+  // dedupe — the cron should retry once a day after a failure, not every
+  // minute.
+  lastRenewAttemptAt?: string;
+  lastRenewError?: string;
+  // If this order was created by an auto-renewal, the parent order id.
+  renewedFromOrderId?: string;
+
   createdAt: string;
   paidAt?: string;
 }

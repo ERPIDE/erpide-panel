@@ -5,16 +5,23 @@ import { requireUser } from "@/lib/auth/session";
 import { listOrdersByUserId } from "@/lib/auth/user-store";
 import { getProductOfSku } from "@/lib/products";
 import QuickStartTabs from "@/components/account/QuickStartTabs";
+import AutoRenewToggle from "@/components/account/AutoRenewToggle";
 
 interface LicenseRow {
+  orderId: string;
   productId: string;
   skuId: string;
   productName: string;
   skuName: string;
   licenseKey: string;
   orderDate: string;
-  kind: "paid" | "trial-active" | "trial-expired";
-  trialExpiresAt?: string;
+  kind: "paid-active" | "paid-expired" | "trial-active" | "trial-expired";
+  // For trials the expiry is trialExpiresAt; for paid it's subscriptionExpiresAt.
+  // Either way it's the moment after which the backend stops accepting calls
+  // and the UI should show "Yenile" / "Satın Al" CTAs.
+  expiresAt?: string;
+  autoRenewEnabled?: boolean;
+  billingCycle?: "monthly" | "yearly";
 
   apiKey?: string;
   apiBaseUrl?: string;
@@ -41,15 +48,20 @@ export default async function LisanslarimPage() {
   const now = Date.now();
   for (const o of orders) {
     if (o.status === "PAID") {
+      const expired = !!o.subscriptionExpiresAt && new Date(o.subscriptionExpiresAt).getTime() < now;
       for (const item of o.items) {
         licenses.push({
+          orderId: o.id,
           productId: item.productId,
           skuId: item.skuId,
           productName: item.productName,
           skuName: item.skuName,
           licenseKey: item.licenseKey,
           orderDate: o.createdAt,
-          kind: "paid",
+          kind: expired ? "paid-expired" : "paid-active",
+          expiresAt: o.subscriptionExpiresAt,
+          autoRenewEnabled: o.autoRenewEnabled,
+          billingCycle: o.billingCycle,
           apiKey: item.apiKey,
           apiBaseUrl: item.apiBaseUrl,
           dashboardUrl: item.dashboardUrl,
@@ -57,9 +69,10 @@ export default async function LisanslarimPage() {
         });
       }
     } else if (o.status === "TRIAL" && o.isTrial) {
-      const expired = o.trialExpiresAt && new Date(o.trialExpiresAt).getTime() < now;
+      const expired = !!o.trialExpiresAt && new Date(o.trialExpiresAt).getTime() < now;
       for (const item of o.items) {
         licenses.push({
+          orderId: o.id,
           productId: item.productId,
           skuId: item.skuId,
           productName: item.productName,
@@ -67,7 +80,7 @@ export default async function LisanslarimPage() {
           licenseKey: item.licenseKey,
           orderDate: o.createdAt,
           kind: expired ? "trial-expired" : "trial-active",
-          trialExpiresAt: o.trialExpiresAt,
+          expiresAt: o.trialExpiresAt,
           apiKey: item.apiKey,
           apiBaseUrl: item.apiBaseUrl,
           dashboardUrl: item.dashboardUrl,
@@ -93,13 +106,14 @@ export default async function LisanslarimPage() {
         <div className="space-y-4">
           {licenses.map((lic, i) => {
             const product = getProductOfSku(lic.skuId);
-            const isTrial = lic.kind !== "paid";
-            const expired = lic.kind === "trial-expired";
+            const isTrial = lic.kind === "trial-active" || lic.kind === "trial-expired";
+            const expired = lic.kind === "trial-expired" || lic.kind === "paid-expired";
+            const needsRenewSoon = !expired && lic.expiresAt && new Date(lic.expiresAt).getTime() - now < 3 * 24 * 60 * 60 * 1000;
             return (
               <div
                 key={i}
                 className={`p-5 rounded-2xl bg-[#111118] border ${
-                  expired ? "border-red-500/20" : isTrial ? "border-emerald-500/25" : "border-white/5"
+                  expired ? "border-red-500/20" : isTrial ? "border-emerald-500/25" : needsRenewSoon ? "border-amber-500/25" : "border-white/5"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
@@ -108,7 +122,7 @@ export default async function LisanslarimPage() {
                       <h3 className="font-semibold text-white text-lg">
                         {lic.productName} <span className="text-gray-400 font-normal text-base">— {lic.skuName}</span>
                       </h3>
-                      {isTrial && !expired && (
+                      {lic.kind === "trial-active" && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                           DENEME
                         </span>
@@ -118,17 +132,17 @@ export default async function LisanslarimPage() {
                           SÜRESİ DOLDU
                         </span>
                       )}
-                      {!isTrial && (
+                      {lic.kind === "paid-active" && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-                          AKTİF
+                          AKTİF {lic.billingCycle === "yearly" ? "(Yıllık)" : "(Aylık)"}
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
                       Alındı: {new Date(lic.orderDate).toLocaleDateString("tr-TR")}
-                      {isTrial && lic.trialExpiresAt && (
-                        <span className={`ml-3 inline-flex items-center gap-1 ${expired ? "text-red-400" : "text-emerald-300"}`}>
-                          <Clock size={11} /> {formatRemaining(lic.trialExpiresAt)}
+                      {lic.expiresAt && (
+                        <span className={`ml-3 inline-flex items-center gap-1 ${expired ? "text-red-400" : needsRenewSoon ? "text-amber-300" : isTrial ? "text-emerald-300" : "text-gray-400"}`}>
+                          <Clock size={11} /> {formatRemaining(lic.expiresAt)}
                         </span>
                       )}
                       {lic.maxSolvesPerDay && (
@@ -147,12 +161,12 @@ export default async function LisanslarimPage() {
                         <BookOpen size={12} /> Belgeler
                       </Link>
                     )}
-                    {isTrial && (
+                    {(isTrial || expired) && (
                       <Link
                         href={`/urunler/${product?.id ?? ""}?sku=${lic.skuId}`}
                         className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition"
                       >
-                        <ShoppingCart size={12} /> Satın Al
+                        <ShoppingCart size={12} /> {expired ? "Yeniden Al" : "Satın Al"}
                       </Link>
                     )}
                     {!expired && lic.dashboardUrl && (
@@ -166,6 +180,15 @@ export default async function LisanslarimPage() {
                     )}
                   </div>
                 </div>
+
+                {/* AUTO-RENEW TOGGLE — only for paid-active orders */}
+                {lic.kind === "paid-active" && (
+                  <AutoRenewToggle
+                    orderId={lic.orderId}
+                    initial={lic.autoRenewEnabled !== false}
+                    cycleLabel={lic.billingCycle === "yearly" ? "yıl" : "ay"}
+                  />
+                )}
 
                 {/* API CREDENTIALS — only shown when backend provisioned them */}
                 {!expired && lic.apiKey && lic.apiBaseUrl && (

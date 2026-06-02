@@ -39,6 +39,15 @@ async function handle(req: Request) {
   if (!order) return NextResponse.redirect(new URL("/odeme/basarisiz?reason=order-not-found", req.url));
 
   const user = await findUserById(order.userId, true);
+  const paidAt = new Date();
+
+  // Pick the cycle from the first item's SKU. Mixed-cycle orders are not a
+  // thing right now (the cart only allows one product per checkout), so this
+  // is fine. Default to monthly if for some reason the SKU is gone.
+  const firstSku = getSku(order.items[0]?.skuId || "");
+  const cycle: "monthly" | "yearly" = firstSku?.cycle === "yearly" ? "yearly" : "monthly";
+  const cycleDays = cycle === "yearly" ? 365 : 30;
+  const subscriptionExpiresAt = new Date(paidAt.getTime() + cycleDays * 24 * 60 * 60 * 1000);
 
   // Provision runtime credentials on each product backend. We do this BEFORE
   // marking the order PAID so the customer's Lisanslarım page never shows a
@@ -56,8 +65,10 @@ async function handle(req: Request) {
           lastName: user.surname,
           sku,
           isTrial: false,
-          // Monthly plans: don't set expiresAt — renewed by future cron;
-          // null = perpetual on the backend until we revoke or extend.
+          // Backend License.expires_at now mirrors the subscription window —
+          // when the cycle ends, the backend automatically 403s every API
+          // call until a renewal extends the license.
+          expiresAt: subscriptionExpiresAt,
           upstreamRef: `${order.id}/${item.skuId}`,
         });
         if (!prov.ok) {
@@ -87,8 +98,14 @@ async function handle(req: Request) {
     status: "PAID",
     paymentId: result.paymentId,
     iyzicoToken: token,
-    paidAt: new Date().toISOString(),
+    paidAt: paidAt.toISOString(),
     items: provisionedItems,
+    subscriptionExpiresAt: subscriptionExpiresAt.toISOString(),
+    billingCycle: cycle,
+    // Auto-renewal defaults to ON for paid orders (customer can toggle off
+    // from Lisanslarım). Trial orders never auto-renew — the customer has
+    // to explicitly buy.
+    autoRenewEnabled: true,
   });
 
   try {
