@@ -56,6 +56,9 @@ export interface UserRecord {
   acceptedTermsAt?: string;
   acceptedKvkkAt?: string;
   marketingConsentAt?: string;
+  oauthProvider?: "google" | "facebook" | "github";
+  oauthProviderId?: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -187,6 +190,14 @@ export async function findUserByEmail(email: string): Promise<UserRecord | undef
 export async function findUserById(id: string): Promise<UserRecord | undefined> {
   const s = await loadState();
   return s.users[id];
+}
+
+export async function findUserByOAuth(provider: "google" | "facebook" | "github", providerId: string): Promise<UserRecord | undefined> {
+  const s = await loadState(true);
+  for (const user of Object.values(s.users)) {
+    if (user.oauthProvider === provider && user.oauthProviderId === providerId) return user;
+  }
+  return undefined;
 }
 
 export async function findUserByVerificationToken(token: string): Promise<UserRecord | undefined> {

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 function Inner() {
   const sp = useSearchParams();
@@ -106,7 +107,14 @@ function Inner() {
           <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Üye Ol</span></h1>
           <p className="text-gray-400 text-sm mb-8">ERPIDE hesabını oluştur, tüm ürünlerini tek hesaptan yönet.</p>
 
-          <form onSubmit={handleSubmit} noValidate autoComplete="on" className="p-8 rounded-2xl bg-[#111118] border border-white/5 space-y-4">
+          <div className="p-8 rounded-2xl bg-[#111118] border border-white/5">
+            <GoogleAuthButton label="Google ile devam et" />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[11px] text-gray-500 uppercase tracking-wider">veya e-mail ile</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+          <form onSubmit={handleSubmit} noValidate autoComplete="on" className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Ad" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="given-name" />
               <Field label="Soyad" value={form.surname} onChange={(v) => setForm({ ...form, surname: v })} required autoComplete="family-name" />
@@ -155,6 +163,7 @@ function Inner() {
               <Link href={`/giris?next=${encodeURIComponent(next)}`} className="text-blue-400 hover:underline">Giriş yap</Link>
             </div>
           </form>
+          </div>
         </motion.div>
       </main>
       <Footer />

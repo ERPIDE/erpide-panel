@@ -1,10 +1,22 @@
 import { getIronSession, SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
 
+export interface PendingOAuth {
+  provider: "google" | "facebook" | "github";
+  providerId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+  startedAt: string;
+}
+
 export interface ShopSession {
   userId?: string;
   email?: string;
   name?: string;
+  pendingOAuth?: PendingOAuth;
+  oauthState?: string;
 }
 
 export const sessionOptions: SessionOptions = {

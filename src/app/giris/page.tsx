@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Loader2, MailWarning } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 function Inner() {
   const router = useRouter();
@@ -81,7 +82,14 @@ function Inner() {
           <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Giriş Yap</span></h1>
           <p className="text-gray-400 text-sm mb-8">ERPIDE hesabınla devam et.</p>
 
-          <form onSubmit={handleSubmit} noValidate autoComplete="on" className="p-8 rounded-2xl bg-[#111118] border border-white/5 space-y-4">
+          <div className="p-8 rounded-2xl bg-[#111118] border border-white/5">
+            <GoogleAuthButton label="Google ile giriş yap" />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[11px] text-gray-500 uppercase tracking-wider">veya e-mail ile</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+          <form onSubmit={handleSubmit} noValidate autoComplete="on" className="space-y-4">
             <div>
               <label className="block text-xs text-gray-400 mb-1.5">E-mail</label>
               <input
@@ -145,6 +153,7 @@ function Inner() {
               </div>
             </div>
           </form>
+          </div>
         </motion.div>
       </main>
       <Footer />
