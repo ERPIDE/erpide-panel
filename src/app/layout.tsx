@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/components/CartProvider";
+import { CurrencyProvider } from "@/components/CurrencyProvider";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <I18nProvider>
-          <CartProvider>{children}</CartProvider>
+          <CurrencyProvider>
+            <CartProvider>{children}</CartProvider>
+          </CurrencyProvider>
         </I18nProvider>
       </body>
     </html>

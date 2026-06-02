@@ -2,14 +2,23 @@ import { Shield, Briefcase, type LucideIcon } from "lucide-react";
 
 export type ProductId = "finanserpide" | "captchaerpide";
 export type BillingCycle = "monthly" | "yearly";
+export type Currency = "TRY" | "USD";
 
 export interface SKU {
   id: string;
   productId: ProductId;
   name: string;
   description: string;
+  /** @deprecated read SKU.prices[currency] instead; kept so legacy callers
+   *  still compile until the rollout is complete. */
   price: number;
+  /** @deprecated currency is derived from buyer locale now */
   currency: "TRY";
+  /** Per-currency pricing. Optional override; when missing for a currency,
+   *  callers fall back to `price` (TRY). FinansERPIDE is TR-only so its
+   *  SKUs don't set this; CaptchaERPIDE targets global buyers so its SKUs
+   *  publish both TRY and USD. */
+  prices?: Partial<Record<Currency, number>>;
   cycle: BillingCycle;
   features: string[];
   highlight?: boolean;
@@ -120,6 +129,7 @@ export const PRODUCTS: Product[] = [
         description: "Bot geliştiriciler için",
         price: 299,
         currency: "TRY",
+        prices: { TRY: 299, USD: 9.99 },
         cycle: "monthly",
         features: [
           "Günde 1.000 çözüm",
@@ -137,6 +147,7 @@ export const PRODUCTS: Product[] = [
         description: "Profesyonel kullanım",
         price: 999,
         currency: "TRY",
+        prices: { TRY: 999, USD: 29.99 },
         cycle: "monthly",
         features: [
           "Günde 10.000 çözüm",
@@ -155,6 +166,7 @@ export const PRODUCTS: Product[] = [
         description: "Yüksek hacim",
         price: 2999,
         currency: "TRY",
+        prices: { TRY: 2999, USD: 89.99 },
         cycle: "monthly",
         features: [
           "Sınırsız çözüm",

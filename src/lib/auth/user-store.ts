@@ -98,7 +98,7 @@ export interface OrderRecord {
   userId: string;
   items: OrderItem[];
   totalPrice: number;
-  currency: "TRY";
+  currency: "TRY" | "USD" | "EUR" | "GBP";
   paymentId?: string;
   conversationId: string;
   status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "TRIAL" | "EXPIRED";

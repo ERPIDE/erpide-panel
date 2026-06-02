@@ -128,7 +128,10 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
     basketId: order.id, // tied to the previous order for traceability
     price: order.totalPrice,
     paidPrice: order.totalPrice,
-    currency: "TRY",
+    // Renewal uses the same currency the buyer originally chose. iyzico
+    // multi-currency lets us bill USD on a TRY card and vice versa, but
+    // we never silently switch a customer's currency mid-subscription.
+    currency: (order.currency === "USD" || order.currency === "EUR" || order.currency === "GBP") ? order.currency : "TRY",
     cardUserKey: user.iyzicoCardUserKey,
     cardToken: user.iyzicoCardToken,
     buyer,

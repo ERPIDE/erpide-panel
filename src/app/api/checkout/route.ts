@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { type BuyerInfo } from "@/lib/payments/iyzico";
-import { getSku, getProductOfSku } from "@/lib/products";
+import { getSku, getProductOfSku, type Currency } from "@/lib/products";
 import { generateReferenceCode, generateLicenseKey } from "@/lib/payments/license";
 import { getSession } from "@/lib/auth/session";
 import { findUserById, createOrder, updateUser, type OrderItem } from "@/lib/auth/user-store";
+import { currencyFromRequest, priceFor } from "@/lib/currency";
 
 export const runtime = "nodejs";
 
@@ -53,13 +54,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Seçili adreste TC kimlik no veya VKN bulunamadı" }, { status: 400 });
     }
 
+    // Buyer's display currency from cookie/locale. Every line item in the
+    // basket gets priced in this currency; SKUs without an explicit override
+    // for the chosen currency fall back to TRY (returned by priceFor).
+    const requestedCurrency: Currency = currencyFromRequest(req);
     let totalPrice = 0;
+    let orderCurrency: Currency = "TRY";
     const orderItems: OrderItem[] = [];
     for (const ci of items) {
       const sku = getSku(ci.skuId);
       if (!sku) return NextResponse.json({ error: `Geçersiz ürün: ${ci.skuId}` }, { status: 400 });
       const product = getProductOfSku(sku.id);
       if (!product) return NextResponse.json({ error: `Ürün bulunamadı: ${ci.skuId}` }, { status: 400 });
+      const { price: linePrice, currency: lineCcy } = priceFor(sku, requestedCurrency);
+      // If any SKU falls back to TRY (no override for requested currency),
+      // the whole basket is forced to TRY so iyzico gets a single currency.
+      if (lineCcy !== requestedCurrency) orderCurrency = "TRY";
+      else if (orderCurrency === "TRY") orderCurrency = lineCcy;
       for (let i = 0; i < ci.quantity; i++) {
         const licenseKey = generateLicenseKey(sku.productId);
         orderItems.push({
@@ -67,10 +78,10 @@ export async function POST(req: Request) {
           productId: sku.productId,
           productName: product.name,
           skuName: sku.name,
-          price: sku.price,
+          price: linePrice,
           licenseKey,
         });
-        totalPrice += sku.price;
+        totalPrice += linePrice;
       }
     }
 
@@ -91,7 +102,7 @@ export async function POST(req: Request) {
       userId: user.id,
       items: orderItems,
       totalPrice,
-      currency: "TRY",
+      currency: orderCurrency,
       conversationId,
       status: "PENDING",
     });
@@ -126,6 +137,7 @@ export async function POST(req: Request) {
       conversationId,
       callbackUrl,
       totalPrice,
+      currency: orderCurrency,
       buyer: buyerInfo,
       basketItems,
       basketId: order.id,
@@ -152,6 +164,7 @@ async function initCheckoutMulti(opts: {
   conversationId: string;
   callbackUrl: string;
   totalPrice: number;
+  currency: Currency;
   buyer: BuyerInfo;
   basketItems: Array<{ id: string; name: string; category1: string; itemType: string; price: string }>;
   basketId: string;
@@ -183,7 +196,7 @@ async function initCheckoutMulti(opts: {
       conversationId: opts.conversationId,
       price,
       paidPrice: price,
-      currency: "TRY",
+      currency: opts.currency,
       basketId: opts.basketId,
       paymentGroup: "SUBSCRIPTION",
       // paymentSource: SUBSCRIPTION makes iyzico's hosted form surface the

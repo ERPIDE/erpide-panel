@@ -8,6 +8,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getProduct } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
+import { useCurrency } from "@/components/CurrencyProvider";
+import { priceFor, formatPrice } from "@/lib/currency";
 
 function Inner({ productId }: { productId: string }) {
   const product = getProduct(productId);
@@ -15,6 +17,7 @@ function Inner({ productId }: { productId: string }) {
   const sp = useSearchParams();
   const initialSku = sp.get("sku");
   const { addItem, lines } = useCart();
+  const { currency, setCurrency } = useCurrency();
   const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0].id || "");
   const [adding, setAdding] = useState(false);
   const [trialing, setTrialing] = useState(false);
@@ -146,9 +149,29 @@ function Inner({ productId }: { productId: string }) {
                 <p className="text-xs text-gray-500 mt-2">Ürün arayüzünden ekran görüntüleri yakında eklenecek.</p>
               </section>
 
-              <h2 className="text-xl font-bold text-white mb-4">Plan Seçin</h2>
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h2 className="text-xl font-bold text-white">Plan Seçin</h2>
+                {product.skus.some((s) => s.prices?.USD) && (
+                  <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-[#0d0d14] border border-white/5">
+                    <button
+                      onClick={() => setCurrency("TRY")}
+                      className={`text-xs px-3 py-1.5 rounded-md transition ${currency === "TRY" ? "bg-blue-500/20 text-blue-300" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      ₺ TRY
+                    </button>
+                    <button
+                      onClick={() => setCurrency("USD")}
+                      className={`text-xs px-3 py-1.5 rounded-md transition ${currency === "USD" ? "bg-blue-500/20 text-blue-300" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      $ USD
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="space-y-3 mb-8">
-                {product.skus.map((sku) => (
+                {product.skus.map((sku) => {
+                  const { price, currency: skuCcy } = priceFor(sku, currency);
+                  return (
                   <button
                     key={sku.id}
                     onClick={() => setSelectedSku(sku.id)}
@@ -169,12 +192,13 @@ function Inner({ productId }: { productId: string }) {
                         <p className="text-sm text-gray-400">{sku.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-white">{sku.price.toLocaleString("tr-TR")} {sku.currency}</p>
+                        <p className="text-2xl font-bold text-white">{formatPrice(price, skuCcy, { short: true })}</p>
                         <p className="text-xs text-gray-500">/ay</p>
                       </div>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               <h2 className="text-xl font-bold text-white mb-4">{currentSku.name} Plan Özellikleri</h2>
@@ -194,8 +218,15 @@ function Inner({ productId }: { productId: string }) {
                 <h3 className="text-xl font-bold text-white mb-1">{product.name} {currentSku.name}</h3>
                 <p className="text-sm text-gray-400 mb-5">{currentSku.description}</p>
                 <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-3xl font-bold text-white">{currentSku.price.toLocaleString("tr-TR")}</span>
-                  <span className="text-gray-400">{currentSku.currency}/ay</span>
+                  {(() => {
+                    const { price, currency: skuCcy } = priceFor(currentSku, currency);
+                    return (
+                      <>
+                        <span className="text-3xl font-bold text-white">{formatPrice(price, skuCcy, { short: true })}</span>
+                        <span className="text-gray-400">/ay</span>
+                      </>
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={handleStartTrial}
