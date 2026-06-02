@@ -22,6 +22,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "E-mail veya şifre hatalı" }, { status: 401 });
     }
 
+    if (user.emailVerified === false) {
+      return NextResponse.json(
+        {
+          error: "E-posta adresinizi henüz doğrulamadınız. Mailinize gönderilen bağlantıya tıklayın.",
+          needsVerification: true,
+          email: user.email,
+        },
+        { status: 403 }
+      );
+    }
+
     const session = await getSession();
     session.userId = user.id;
     session.email = user.email;

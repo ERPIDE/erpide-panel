@@ -12,8 +12,11 @@ export default async function HesabimPage() {
 
   const user = await findUserById(session.userId!);
   const orders = await listOrdersByUserId(session.userId!);
-  const allLicenses = orders.flatMap((o) => o.items.map((item) => ({ ...item, orderDate: o.createdAt, orderStatus: o.status })));
+  const now = Date.now();
+  const allLicenses = orders.flatMap((o) => o.items.map((item) => ({ ...item, orderDate: o.createdAt, orderStatus: o.status, isTrial: !!o.isTrial, trialExpiresAt: o.trialExpiresAt })));
   const paidLicenseCount = orders.filter((o) => o.status === "PAID").reduce((sum, o) => sum + o.items.length, 0);
+  const activeTrialCount = orders.filter((o) => o.status === "TRIAL" && o.isTrial && (!o.trialExpiresAt || new Date(o.trialExpiresAt).getTime() > now)).reduce((sum, o) => sum + o.items.length, 0);
+  const totalActive = paidLicenseCount + activeTrialCount;
 
   return (
     <>
@@ -31,12 +34,12 @@ export default async function HesabimPage() {
 
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
             <Stat icon={Package} label="Sipariş Sayısı" value={orders.length.toString()} />
-            <Stat icon={Key} label="Aktif Lisans" value={paidLicenseCount.toString()} />
+            <Stat icon={Key} label="Aktif Lisans" value={totalActive.toString()} sub={activeTrialCount > 0 ? `${activeTrialCount} deneme` : undefined} />
             <Stat icon={UserIcon} label="Üyelik" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString("tr-TR") : "—"} />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-8">
-            <NavCard href="/hesabim/lisanslarim" icon={Key} title="Lisanslarım" desc={`${paidLicenseCount} aktif lisans anahtarı`} />
+            <NavCard href="/hesabim/lisanslarim" icon={Key} title="Lisanslarım" desc={`${totalActive} aktif lisans${activeTrialCount > 0 ? ` (${activeTrialCount} deneme)` : ""}`} />
             <NavCard href="/hesabim/siparislerim" icon={Package} title="Siparişlerim" desc={`${orders.length} sipariş geçmişi`} />
           </div>
 
@@ -50,17 +53,26 @@ export default async function HesabimPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {allLicenses.slice(0, 5).map((lic, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[#0d0d14] border border-white/5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium">{lic.productName} {lic.skuName}</p>
-                      <p className="text-xs font-mono text-blue-400 truncate">{lic.licenseKey}</p>
+                {allLicenses.slice(0, 5).map((lic, i) => {
+                  const expired = lic.isTrial && lic.trialExpiresAt && new Date(lic.trialExpiresAt).getTime() < now;
+                  const label = lic.orderStatus === "PAID" ? "Aktif" : lic.isTrial && !expired ? "Deneme" : expired ? "Süresi Doldu" : "Beklemede";
+                  const tone = lic.orderStatus === "PAID"
+                    ? "bg-green-500/15 text-green-400"
+                    : lic.isTrial && !expired
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : expired
+                        ? "bg-red-500/15 text-red-300"
+                        : "bg-yellow-500/15 text-yellow-400";
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[#0d0d14] border border-white/5">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium">{lic.productName} {lic.skuName}</p>
+                        <p className="text-xs font-mono text-blue-400 truncate">{lic.licenseKey}</p>
+                      </div>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${tone}`}>{label}</span>
                     </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${lic.orderStatus === "PAID" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
-                      {lic.orderStatus === "PAID" ? "Aktif" : "Beklemede"}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -77,12 +89,13 @@ export default async function HesabimPage() {
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string }) {
+function Stat({ icon: Icon, label, value, sub }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; value: string; sub?: string }) {
   return (
     <div className="p-5 rounded-2xl bg-[#111118] border border-white/5">
       <Icon size={18} className="text-gray-500 mb-3" />
       <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-bold text-white">{value}</p>
+      {sub && <p className="text-[11px] text-emerald-300 mt-0.5">{sub}</p>}
     </div>
   );
 }

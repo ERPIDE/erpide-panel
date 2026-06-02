@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PRODUCTS } from "@/lib/products";
@@ -83,16 +83,24 @@ export default function UrunlerPage() {
                           <span className="text-3xl font-bold text-white">{sku.price.toLocaleString("tr-TR")}</span>
                           <span className="text-gray-400 ml-1 text-sm">{sku.currency}/ay</span>
                         </div>
-                        <Link
-                          href={`/urunler/${product.id}?sku=${sku.id}`}
-                          className={`block text-center py-2.5 rounded-xl font-semibold transition mb-4 text-sm ${
-                            sku.highlight
-                              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
-                              : "border border-white/10 text-white hover:bg-white/5"
-                          }`}
-                        >
-                          Sepete Ekle
-                        </Link>
+                        <div className="space-y-2 mb-4">
+                          <Link
+                            href={`/urunler/${product.id}?sku=${sku.id}&trial=1`}
+                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90 transition"
+                          >
+                            <Sparkles size={14} /> 3 Gün Ücretsiz Dene
+                          </Link>
+                          <Link
+                            href={`/urunler/${product.id}?sku=${sku.id}`}
+                            className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
+                              sku.highlight
+                                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                                : "border border-white/10 text-white hover:bg-white/5"
+                            }`}
+                          >
+                            Sepete Ekle
+                          </Link>
+                        </div>
                         <ul className="space-y-1.5">
                           {sku.features.slice(0, 5).map((f, j) => (
                             <li key={j} className="flex items-start gap-1.5 text-xs text-gray-300">

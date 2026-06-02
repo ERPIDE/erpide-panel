@@ -19,6 +19,12 @@ export async function POST(req: Request) {
 
     const user = await findUserById(session.userId);
     if (!user) return NextResponse.json({ error: "Kullanıcı bulunamadı" }, { status: 404 });
+    if (user.emailVerified === false) {
+      return NextResponse.json(
+        { error: "Ödeme yapmak için önce e-postanı doğrulaman gerekiyor.", needsVerification: true },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
     const items: CartItemInput[] = body.items;

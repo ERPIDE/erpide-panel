@@ -8,12 +8,17 @@ export interface UserRecord {
   name: string;
   surname: string;
   passwordHash: string;
+  emailVerified?: boolean;
+  verificationToken?: string;
+  verificationTokenExpiresAt?: string;
   gsmNumber?: string;
   identityNumber?: string;
   companyName?: string;
   taxNumber?: string;
   address?: string;
   city?: string;
+  postalCode?: string;
+  district?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,6 +104,14 @@ export async function findUserByEmail(email: string): Promise<UserRecord | undef
 export async function findUserById(id: string): Promise<UserRecord | undefined> {
   const u = await getUsers();
   return u.get(id);
+}
+
+export async function findUserByVerificationToken(token: string): Promise<UserRecord | undefined> {
+  const u = await getUsers();
+  for (const user of u.values()) {
+    if (user.verificationToken === token) return user;
+  }
+  return undefined;
 }
 
 export async function createUser(input: Omit<UserRecord, "id" | "createdAt" | "updatedAt">): Promise<UserRecord> {

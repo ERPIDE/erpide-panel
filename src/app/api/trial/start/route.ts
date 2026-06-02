@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getSku, getProductOfSku } from "@/lib/products";
 import { generateLicenseKey } from "@/lib/payments/license";
-import { createOrder, hasUsedTrialForSku, type OrderItem } from "@/lib/auth/user-store";
+import { createOrder, hasUsedTrialForSku, findUserById, type OrderItem } from "@/lib/auth/user-store";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -13,6 +13,15 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session.userId) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor" }, { status: 401 });
+  }
+
+  const user = await findUserById(session.userId);
+  if (!user) return NextResponse.json({ error: "Kullanıcı bulunamadı" }, { status: 401 });
+  if (user.emailVerified === false) {
+    return NextResponse.json(
+      { error: "Deneme başlatmak için önce e-postanı doğrulaman gerekiyor.", needsVerification: true },
+      { status: 403 }
+    );
   }
 
   let body: { skuId?: string };
