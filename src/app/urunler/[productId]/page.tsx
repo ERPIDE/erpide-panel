@@ -3,7 +3,7 @@ import { useState, use, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getProduct } from "@/lib/products";
@@ -75,8 +75,8 @@ function Inner({ productId }: { productId: string }) {
         setTrialing(false);
         return;
       }
-      setTrialMsg({ ok: true, text: "Deneme aktif! Lisansa hesabımdan ulaşabilirsin." });
-      setTimeout(() => router.push("/hesabim/lisanslarim"), 1200);
+      setTrialMsg({ ok: true, text: `Deneme aktif! Lisans anahtarın hesabımda. Nasıl kullanacağını /docs/${product?.id} sayfasında bul.` });
+      setTimeout(() => router.push("/hesabim/lisanslarim"), 1800);
     } catch (e) {
       setTrialMsg({ ok: false, text: "Bağlantı hatası: " + String(e) });
       setTrialing(false);
@@ -109,7 +109,42 @@ function Inner({ productId }: { productId: string }) {
                 </div>
               </div>
 
-              <p className="text-gray-300 leading-relaxed mb-8">{product.longDescription}</p>
+              <p className="text-gray-300 leading-relaxed mb-6">{product.longDescription}</p>
+
+              <div className="flex flex-wrap gap-3 mb-8">
+                <Link
+                  href={`/docs/${product.id}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition"
+                >
+                  <BookOpen size={14} /> Kurulum Kılavuzu
+                </Link>
+              </div>
+
+              {/* Tanıtım videosu placeholder */}
+              <section className="mb-10">
+                <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
+                <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
+                  <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                    <Play size={26} className="text-gray-400 ml-1" />
+                  </div>
+                  <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
+                  <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
+                </div>
+              </section>
+
+              {/* Ekran görüntüleri placeholder */}
+              <section className="mb-10">
+                <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-gray-900 to-[#0a0a0f] border border-white/5 flex flex-col items-center justify-center">
+                      <ImageIcon size={28} className="text-gray-700 mb-2" />
+                      <p className="text-[11px] text-gray-600">Ekran {i}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Ürün arayüzünden ekran görüntüleri yakında eklenecek.</p>
+              </section>
 
               <h2 className="text-xl font-bold text-white mb-4">Plan Seçin</h2>
               <div className="space-y-3 mb-8">

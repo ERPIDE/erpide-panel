@@ -52,6 +52,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <h4 className="font-semibold text-white mb-4 text-sm">Destek</h4>
             <div className="flex flex-col gap-2">
+              <Link href="/docs" className="text-sm text-gray-400 hover:text-white transition">Dökümantasyon</Link>
               <Link href="/giris" className="text-sm text-gray-400 hover:text-white transition">Giriş Yap</Link>
               <Link href="/uye-ol" className="text-sm text-gray-400 hover:text-white transition">Üye Ol</Link>
               <Link href="/hesabim" className="text-sm text-gray-400 hover:text-white transition">Hesabım</Link>
