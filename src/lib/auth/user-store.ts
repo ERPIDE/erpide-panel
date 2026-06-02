@@ -35,8 +35,10 @@ export interface OrderRecord {
   currency: "TRY";
   paymentId?: string;
   conversationId: string;
-  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "TRIAL";
   iyzicoToken?: string;
+  isTrial?: boolean;
+  trialExpiresAt?: string;
   createdAt: string;
   paidAt?: string;
 }
@@ -158,4 +160,29 @@ export async function listOrdersByUserId(userId: string): Promise<OrderRecord[]>
   return Array.from(o.values())
     .filter((order) => order.userId === userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function findActiveTrialForUserSku(userId: string, skuId: string): Promise<OrderRecord | undefined> {
+  const o = await getOrders();
+  const now = Date.now();
+  for (const order of o.values()) {
+    if (order.userId !== userId) continue;
+    if (!order.isTrial) continue;
+    if (order.status !== "TRIAL") continue;
+    if (!order.items.some((it) => it.skuId === skuId)) continue;
+    if (order.trialExpiresAt && new Date(order.trialExpiresAt).getTime() < now) continue;
+    return order;
+  }
+  return undefined;
+}
+
+export async function hasUsedTrialForSku(userId: string, skuId: string): Promise<boolean> {
+  const o = await getOrders();
+  for (const order of o.values()) {
+    if (order.userId !== userId) continue;
+    if (!order.isTrial) continue;
+    if (!order.items.some((it) => it.skuId === skuId)) continue;
+    return true;
+  }
+  return false;
 }

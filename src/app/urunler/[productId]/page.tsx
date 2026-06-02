@@ -1,9 +1,9 @@
 "use client";
-import { useState, use, Suspense } from "react";
+import { useState, use, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getProduct } from "@/lib/products";
@@ -17,6 +17,10 @@ function Inner({ productId }: { productId: string }) {
   const { addItem, lines } = useCart();
   const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0].id || "");
   const [adding, setAdding] = useState(false);
+  const [trialing, setTrialing] = useState(false);
+  const [trialMsg, setTrialMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const autoTrialFired = useRef(false);
+  const wantsAutoTrial = sp.get("trial") === "1";
 
   if (!product) {
     return (
@@ -40,6 +44,43 @@ function Inner({ productId }: { productId: string }) {
     addItem(currentSku.id, 1);
     await new Promise((r) => setTimeout(r, 300));
     setAdding(false);
+  }
+
+  useEffect(() => {
+    if (wantsAutoTrial && !autoTrialFired.current && product) {
+      autoTrialFired.current = true;
+      handleStartTrial();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsAutoTrial, product]);
+
+  async function handleStartTrial() {
+    setTrialing(true);
+    setTrialMsg(null);
+    try {
+      const me = await fetch("/api/shop/auth/me", { cache: "no-store" }).then((r) => r.json());
+      if (!me.user) {
+        const next = `/urunler/${product?.id}?sku=${currentSku.id}&trial=1`;
+        router.push(`/uye-ol?next=${encodeURIComponent(next)}`);
+        return;
+      }
+      const res = await fetch("/api/trial/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skuId: currentSku.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTrialMsg({ ok: false, text: data.error || "Deneme başlatılamadı" });
+        setTrialing(false);
+        return;
+      }
+      setTrialMsg({ ok: true, text: "Deneme aktif! Lisansa hesabımdan ulaşabilirsin." });
+      setTimeout(() => router.push("/hesabim/lisanslarim"), 1200);
+    } catch (e) {
+      setTrialMsg({ ok: false, text: "Bağlantı hatası: " + String(e) });
+      setTrialing(false);
+    }
   }
 
   return (
@@ -122,6 +163,14 @@ function Inner({ productId }: { productId: string }) {
                   <span className="text-gray-400">{currentSku.currency}/ay</span>
                 </div>
                 <button
+                  onClick={handleStartTrial}
+                  disabled={trialing}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
+                >
+                  {trialing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {trialing ? "Başlatılıyor..." : "3 Gün Ücretsiz Dene"}
+                </button>
+                <button
                   onClick={handleAdd}
                   disabled={adding}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
@@ -137,8 +186,13 @@ function Inner({ productId }: { productId: string }) {
                     Sepete Git →
                   </button>
                 )}
+                {trialMsg && (
+                  <div className={`mt-3 p-3 rounded-lg text-xs ${trialMsg.ok ? "bg-green-500/10 border border-green-500/20 text-green-300" : "bg-red-500/10 border border-red-500/20 text-red-300"}`}>
+                    {trialMsg.text}
+                  </div>
+                )}
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  İstediğin zaman iptal edebilirsin.<br />
+                  Deneme süresinde kart bilgisi gerekmez.<br />
                   Ödeme güvenli iyzico altyapısı ile alınır.
                 </p>
               </div>
