@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { getSku, getProductOfSku } from "@/lib/products";
 import { generateLicenseKey } from "@/lib/payments/license";
 import { createOrder, hasUsedTrialForSku, findUserById, type OrderItem } from "@/lib/auth/user-store";
+import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -51,8 +52,14 @@ export async function POST(req: Request) {
   }
 
   const licenseKey = generateLicenseKey(product.id);
-  const expiresAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAtDate = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = expiresAtDate.toISOString();
+  const conversationId = `TRIAL-${randomUUID()}`;
 
+  // Provision the customer's runtime credentials on the product backend
+  // (currently only CaptchaERPIDE). Without this the licenseKey we generate
+  // here is just decoration — captcha.erpide.com wouldn't know about the
+  // customer and every API call from them would 401.
   const item: OrderItem = {
     skuId: sku.id,
     productId: product.id,
@@ -62,12 +69,39 @@ export async function POST(req: Request) {
     licenseKey,
   };
 
+  if (product.id === "captchaerpide") {
+    const prov = await provisionCaptchaLicense({
+      email: user.email,
+      firstName: user.name,
+      lastName: user.surname,
+      sku,
+      isTrial: true,
+      expiresAt: expiresAtDate,
+      upstreamRef: conversationId,
+    });
+    if (!prov.ok) {
+      // Hard-fail: without API credentials the trial is useless. Show the
+      // real reason so we can fix infra problems quickly.
+      return NextResponse.json(
+        { error: `Deneme başlatılamadı (provision): ${prov.error}` },
+        { status: 502 }
+      );
+    }
+    item.apiKey = prov.apiKey;
+    item.apiKeyId = prov.apiKeyId;
+    item.apiBaseUrl = prov.apiBaseUrl;
+    item.dashboardUrl = prov.dashboardUrl;
+    item.backendUserId = prov.backendUserId;
+    item.backendLicenseId = prov.backendLicenseId;
+    item.maxSolvesPerDay = prov.maxSolvesPerDay;
+  }
+
   const order = await createOrder({
     userId: session.userId,
     items: [item],
     totalPrice: 0,
     currency: "TRY",
-    conversationId: `TRIAL-${randomUUID()}`,
+    conversationId,
     status: "TRIAL",
     isTrial: true,
     trialExpiresAt: expiresAt,
@@ -80,6 +114,8 @@ export async function POST(req: Request) {
       licenseKey,
       productName: product.name,
       skuName: sku.name,
+      apiKey: item.apiKey,
+      apiBaseUrl: item.apiBaseUrl,
       trialExpiresAt: expiresAt,
       trialDays: TRIAL_DAYS,
     },

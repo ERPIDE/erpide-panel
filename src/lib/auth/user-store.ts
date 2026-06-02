@@ -70,6 +70,17 @@ export interface OrderItem {
   skuName: string;
   price: number;
   licenseKey: string;
+
+  // Cross-system provision: filled when the product backend (e.g.
+  // captcha.erpide.com) mints the customer's runtime credentials.
+  apiKey?: string;
+  apiKeyId?: string;
+  apiBaseUrl?: string;
+  dashboardUrl?: string;
+  // Backend identifiers so we can later revoke or extend.
+  backendUserId?: string;
+  backendLicenseId?: string;
+  maxSolvesPerDay?: number;
 }
 
 export interface OrderRecord {
