@@ -28,13 +28,29 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const items: CartItemInput[] = body.items;
-    const buyer = body.buyer;
+    const billingAddressId: string | undefined = body.billingAddressId;
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Sepet boş" }, { status: 400 });
     }
-    if (!buyer?.gsmNumber || !buyer?.identityNumber || !buyer?.address) {
-      return NextResponse.json({ error: "Müşteri bilgileri eksik" }, { status: 400 });
+
+    const addresses = user.savedAddresses || [];
+    let billingAddress = billingAddressId ? addresses.find((a) => a.id === billingAddressId) : undefined;
+    if (!billingAddress) billingAddress = addresses.find((a) => a.isBillingDefault) || addresses[0];
+    if (!billingAddress) {
+      return NextResponse.json(
+        { error: "Fatura için kayıtlı bir adres seç. Hesabım > Adres Bilgileri'nden ekleyebilirsin.", needsAddress: true },
+        { status: 400 }
+      );
+    }
+
+    // For digital goods we still need a TC kimlik / VKN on the iyzico request.
+    // Pull it off the chosen address so the user never has to retype.
+    const taxId = billingAddress.type === "individual"
+      ? billingAddress.identityNumber
+      : billingAddress.taxNumber;
+    if (!taxId) {
+      return NextResponse.json({ error: "Seçili adreste TC kimlik no veya VKN bulunamadı" }, { status: 400 });
     }
 
     let totalPrice = 0;
@@ -58,11 +74,16 @@ export async function POST(req: Request) {
       }
     }
 
+    // Sync convenience fields onto the user record so older callers keep working
     await updateUser(user.id, {
-      gsmNumber: buyer.gsmNumber,
-      identityNumber: buyer.identityNumber,
-      address: buyer.address,
-      city: buyer.city || "İstanbul",
+      gsmNumber: billingAddress.phone,
+      identityNumber: billingAddress.identityNumber,
+      address: billingAddress.fullAddress,
+      city: billingAddress.city,
+      district: billingAddress.district,
+      postalCode: billingAddress.postalCode,
+      companyName: billingAddress.companyName,
+      taxNumber: billingAddress.taxNumber,
     });
 
     const conversationId = generateReferenceCode();
@@ -82,14 +103,14 @@ export async function POST(req: Request) {
 
     const buyerInfo: BuyerInfo = {
       id: user.id,
-      name: user.name,
-      surname: user.surname,
+      name: billingAddress.firstName,
+      surname: billingAddress.lastName,
       email: user.email,
-      gsmNumber: buyer.gsmNumber,
-      identityNumber: buyer.identityNumber,
-      registrationAddress: buyer.address,
-      city: buyer.city || "İstanbul",
-      country: "Turkey",
+      gsmNumber: billingAddress.phone,
+      identityNumber: taxId,
+      registrationAddress: billingAddress.fullAddress,
+      city: billingAddress.city,
+      country: billingAddress.country || "Turkey",
       ip,
     };
 

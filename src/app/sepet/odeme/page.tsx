@@ -3,22 +3,23 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, Plus, User, Building2, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/components/CartProvider";
+import AddressFormModal from "@/components/account/AddressFormModal";
+import type { SavedAddress } from "@/lib/auth/user-store";
 
 export default function SepetOdemePage() {
   const router = useRouter();
   const { getLineWithSku, total, itemCount } = useCart();
   const items = getLineWithSku();
+
   const [user, setUser] = useState<{ name: string; surname: string; email: string } | null>(null);
-  const [form, setForm] = useState({
-    gsmNumber: "",
-    identityNumber: "",
-    address: "",
-    city: "İstanbul",
-  });
+  const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
   const [consents, setConsents] = useState({ preInfo: false, distance: false, kvkk: false, digitalDelivery: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,11 +34,26 @@ export default function SepetOdemePage() {
           return;
         }
         setUser(data.user);
+        await loadAddresses();
       } catch {
         router.push("/giris?next=/sepet/odeme");
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  async function loadAddresses() {
+    try {
+      const res = await fetch("/api/shop/account/addresses", { cache: "no-store" });
+      const data = await res.json();
+      const list: SavedAddress[] = data.addresses || [];
+      setAddresses(list);
+      const billingDefault = list.find((a) => a.isBillingDefault);
+      setSelectedAddressId(billingDefault?.id || list[0]?.id || null);
+    } catch {
+      setAddresses([]);
+    }
+  }
 
   const allConsents = consents.preInfo && consents.distance && consents.kvkk && consents.digitalDelivery;
 
@@ -45,6 +61,7 @@ export default function SepetOdemePage() {
     e.preventDefault();
     setError("");
     if (items.length === 0) { setError("Sepetin boş"); return; }
+    if (!selectedAddressId) { setError("Bir fatura adresi seç veya yeni ekle"); return; }
     if (!allConsents) { setError("Tüm onay kutularını işaretle"); return; }
     setLoading(true);
     try {
@@ -53,7 +70,7 @@ export default function SepetOdemePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ skuId: i.sku.id, quantity: i.line.quantity })),
-          buyer: form,
+          billingAddressId: selectedAddressId,
           consents,
         }),
       });
@@ -70,7 +87,7 @@ export default function SepetOdemePage() {
     }
   }
 
-  if (!user) {
+  if (!user || addresses === null) {
     return (
       <>
         <Navbar />
@@ -104,24 +121,47 @@ export default function SepetOdemePage() {
             <ArrowLeft size={14} /> Sepete dön
           </Link>
           <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Ödeme</span></h1>
-          <p className="text-gray-400 text-sm mb-8">Bilgileri tamamla, iyzico'ya yönlendirilirsin.</p>
+          <p className="text-gray-400 text-sm mb-8">
+            Dijital ürün — fatura adresini seç, iyzico'ya yönlendirilirsin. Teslimat yok, lisans anahtarı maille gelir.
+          </p>
 
           <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_380px] gap-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5">
-                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Müşteri Bilgileri</legend>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Ad" value={user.name} disabled />
-                  <Field label="Soyad" value={user.surname} disabled />
-                  <Field label="E-mail" value={user.email} disabled full />
-                  <Field label="GSM (+90...)" value={form.gsmNumber} onChange={(v) => setForm({ ...form, gsmNumber: v })} required />
-                  <Field label="TC Kimlik No" value={form.identityNumber} onChange={(v) => setForm({ ...form, identityNumber: v })} required maxLength={11} />
-                  <Field label="Şehir" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-gray-400 mb-1.5">Adres</label>
-                    <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} required className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm focus:border-blue-500 outline-none transition" />
-                  </div>
+                <div className="flex items-center justify-between mb-4">
+                  <legend className="px-1 text-xs text-gray-400 uppercase tracking-wider">Fatura Adresi</legend>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressModal(true)}
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
+                  >
+                    <Plus size={12} /> Yeni Adres
+                  </button>
                 </div>
+
+                {addresses.length === 0 ? (
+                  <div className="p-6 rounded-xl border border-dashed border-white/10 text-center">
+                    <p className="text-sm text-gray-400 mb-3">Henüz kayıtlı adresin yok.</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition"
+                    >
+                      <Plus size={14} /> İlk Adresini Ekle
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {addresses.map((addr) => (
+                      <AddressRadio
+                        key={addr.id}
+                        addr={addr}
+                        selected={selectedAddressId === addr.id}
+                        onSelect={() => setSelectedAddressId(addr.id)}
+                      />
+                    ))}
+                  </div>
+                )}
               </fieldset>
 
               <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-3">
@@ -163,7 +203,7 @@ export default function SepetOdemePage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !allConsents}
+                  disabled={loading || !allConsents || !selectedAddressId}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={16} className="animate-spin" />}
@@ -178,24 +218,54 @@ export default function SepetOdemePage() {
         </div>
       </main>
       <Footer />
+
+      {showAddressModal && (
+        <AddressFormModal
+          onClose={() => setShowAddressModal(false)}
+          onSaved={() => { setShowAddressModal(false); loadAddresses(); }}
+        />
+      )}
     </>
   );
 }
 
-function Field({ label, value, onChange, disabled = false, required = false, maxLength, full = false }: { label: string; value: string; onChange?: (v: string) => void; disabled?: boolean; required?: boolean; maxLength?: number; full?: boolean }) {
+function AddressRadio({ addr, selected, onSelect }: { addr: SavedAddress; selected: boolean; onSelect: () => void }) {
+  const TypeIcon = addr.type === "corporate" ? Building2 : User;
   return (
-    <div className={full ? "sm:col-span-2" : ""}>
-      <label className="block text-xs text-gray-400 mb-1.5">{label}{required && <span className="text-red-400 ml-1">*</span>}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        disabled={disabled}
-        required={required}
-        maxLength={maxLength}
-        className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm focus:border-blue-500 outline-none transition disabled:opacity-60"
-      />
-    </div>
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left p-4 rounded-xl border transition ${
+        selected
+          ? "border-blue-500/60 bg-blue-500/5"
+          : "border-white/10 bg-[#0d0d14] hover:border-white/20"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${selected ? "border-blue-500 bg-blue-500" : "border-white/20"}`}>
+          {selected && <Check size={10} className="text-white" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <TypeIcon size={14} className="text-gray-500" />
+            <span className="font-semibold text-white text-sm">{addr.label}</span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${addr.type === "corporate" ? "bg-purple-500/15 text-purple-300 border-purple-500/30" : "bg-blue-500/15 text-blue-300 border-blue-500/30"}`}>
+              {addr.type === "corporate" ? "KURUMSAL" : "BİREYSEL"}
+            </span>
+            {addr.isBillingDefault && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">FATURA</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-300">{addr.firstName} {addr.lastName} • {addr.phone}</p>
+          {addr.type === "corporate" && (
+            <p className="text-[11px] text-gray-500">{addr.companyName} • VKN {addr.taxNumber} • {addr.taxOffice}</p>
+          )}
+          <p className="text-[11px] text-gray-500 mt-1 leading-relaxed truncate">
+            {addr.fullAddress} • {addr.district}/{addr.city}
+          </p>
+        </div>
+      </div>
+    </button>
   );
 }
 
