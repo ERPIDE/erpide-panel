@@ -81,7 +81,9 @@ export default function Footer() {
               <span>256-bit SSL</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <PaymentLogo src="/payment/iyzico.svg" alt="iyzico ile Öde" width={70} />
+              {/* iyzico white logo — no pill background, sits on dark footer */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/payment/iyzico.svg" alt="iyzico ile Öde" style={{ width: 140, height: "auto" }} loading="lazy" />
               <PaymentLogo src="/payment/visa.svg" alt="Visa" width={42} />
               <PaymentLogo src="/payment/mastercard.svg" alt="MasterCard" width={36} />
               <PaymentLogo src="/payment/troy.svg" alt="Troy" width={36} />
