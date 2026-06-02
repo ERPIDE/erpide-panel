@@ -11,6 +11,7 @@ function Inner() {
   const sp = useSearchParams();
   const next = sp.get("next") || "/hesabim";
   const [form, setForm] = useState({ name: "", surname: "", email: "", password: "", passwordConfirm: "" });
+  const [consents, setConsents] = useState({ terms: false, kvkk: false, marketing: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<{ email: string; skipped: boolean } | null>(null);
@@ -23,6 +24,14 @@ function Inner() {
       setError("Şifreler eşleşmiyor");
       return;
     }
+    if (!consents.terms) {
+      setError("Kullanım Koşulları ve Gizlilik Politikası onayı zorunludur");
+      return;
+    }
+    if (!consents.kvkk) {
+      setError("KVKK Aydınlatma Metni onayı zorunludur");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/shop/auth/register", {
@@ -33,6 +42,9 @@ function Inner() {
           surname: form.surname,
           email: form.email,
           password: form.password,
+          acceptTerms: consents.terms,
+          acceptKvkk: consents.kvkk,
+          marketingConsent: consents.marketing,
         }),
       });
       const data = await res.json();
@@ -103,6 +115,30 @@ function Inner() {
             <Field label="Şifre (min. 8 karakter, harf+rakam)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} required autoComplete="new-password" />
             <Field label="Şifre (tekrar)" type="password" value={form.passwordConfirm} onChange={(v) => setForm({ ...form, passwordConfirm: v })} required autoComplete="new-password" />
 
+            <div className="space-y-2.5 pt-2 border-t border-white/5">
+              <ConsentCheckbox
+                checked={consents.terms}
+                onChange={(v) => setConsents({ ...consents, terms: v })}
+                required
+              >
+                <Link href="/sozlesmeler/kullanim-kosullari" target="_blank" className="text-blue-400 hover:underline">Kullanım Koşulları</Link> ve{" "}
+                <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı okudum, kabul ediyorum.
+              </ConsentCheckbox>
+              <ConsentCheckbox
+                checked={consents.kvkk}
+                onChange={(v) => setConsents({ ...consents, kvkk: v })}
+                required
+              >
+                <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">KVKK Aydınlatma Metni</Link>'ni okudum, kişisel verilerimin işlenmesini kabul ediyorum.
+              </ConsentCheckbox>
+              <ConsentCheckbox
+                checked={consents.marketing}
+                onChange={(v) => setConsents({ ...consents, marketing: v })}
+              >
+                <span className="text-gray-400">(İsteğe bağlı)</span> Ticari elektronik ileti (e-posta, SMS) almak istiyorum.
+              </ConsentCheckbox>
+            </div>
+
             {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
 
             <button
@@ -113,11 +149,6 @@ function Inner() {
               {loading && <Loader2 size={16} className="animate-spin" />}
               {loading ? "Hesap oluşturuluyor..." : "Üye Ol"}
             </button>
-
-            <p className="text-xs text-gray-500 text-center pt-2">
-              Üye olarak <Link href="/sozlesmeler/kullanim-kosullari" target="_blank" className="text-blue-400 hover:underline">Kullanım Koşulları</Link>'nı ve{" "}
-              <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı kabul etmiş olursun.
-            </p>
 
             <div className="pt-4 border-t border-white/5 text-center text-sm">
               <span className="text-gray-400">Hesabın var mı? </span>
@@ -144,6 +175,23 @@ function Field({ label, value, onChange, type = "text", required = false, autoCo
         className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm focus:border-blue-500 outline-none transition"
       />
     </div>
+  );
+}
+
+function ConsentCheckbox({ checked, onChange, required, children }: { checked: boolean; onChange: (v: boolean) => void; required?: boolean; children: React.ReactNode }) {
+  return (
+    <label className="flex items-start gap-2.5 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+      />
+      <span className="text-xs text-gray-300 leading-relaxed group-hover:text-white transition">
+        {required && <span className="text-red-400 mr-1">*</span>}
+        {children}
+      </span>
+    </label>
   );
 }
 

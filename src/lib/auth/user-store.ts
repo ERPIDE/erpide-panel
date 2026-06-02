@@ -53,6 +53,9 @@ export interface UserRecord {
   postalCode?: string;
   district?: string;
   savedAddresses?: SavedAddress[];
+  acceptedTermsAt?: string;
+  acceptedKvkkAt?: string;
+  marketingConsentAt?: string;
   createdAt: string;
   updatedAt: string;
 }

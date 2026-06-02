@@ -11,6 +11,9 @@ const schema = z.object({
   surname: z.string().min(1).max(50),
   email: z.string().email().max(120),
   password: z.string().min(8).max(128),
+  acceptTerms: z.literal(true, { message: "Kullanım Koşulları ve Gizlilik Politikası onayı zorunludur" }),
+  acceptKvkk: z.literal(true, { message: "KVKK Aydınlatma Metni onayı zorunludur" }),
+  marketingConsent: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -18,7 +21,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
-    const { name, surname, email, password } = parsed.data;
+    const { name, surname, email, password, marketingConsent } = parsed.data;
 
     const pwdError = validatePassword(password);
     if (pwdError) return NextResponse.json({ error: pwdError }, { status: 400 });
@@ -28,6 +31,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await hashPassword(password);
     const { token, expiresAt } = generateVerificationToken();
+    const now = new Date().toISOString();
     const user = await createUser({
       name,
       surname,
@@ -36,6 +40,9 @@ export async function POST(req: Request) {
       emailVerified: false,
       verificationToken: token,
       verificationTokenExpiresAt: expiresAt,
+      acceptedTermsAt: now,
+      acceptedKvkkAt: now,
+      marketingConsentAt: marketingConsent ? now : undefined,
     });
 
     const emailRes = await sendVerificationEmail({ to: user.email, name: user.name, token });
