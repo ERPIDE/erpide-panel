@@ -4,7 +4,7 @@ export default function GoogleAuthButton({ label }: { label?: string }) {
   return (
     <a
       href="/api/shop/auth/oauth/google"
-      className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl bg-white text-gray-800 font-medium hover:bg-gray-100 transition text-sm"
+      className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl bg-[#1f1f24] hover:bg-[#26262d] border border-white/10 hover:border-white/20 text-gray-100 font-medium transition text-sm"
     >
       <GoogleIcon />
       {label || "Google ile devam et"}
