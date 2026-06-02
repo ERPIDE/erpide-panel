@@ -3,6 +3,38 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { put, list } from "@vercel/blob";
 
+export type CustomerType = "individual" | "corporate";
+
+export interface SavedAddress {
+  id: string;
+  label: string;
+  type: CustomerType;
+
+  firstName: string;
+  lastName: string;
+  phone: string;
+
+  identityNumber?: string;
+
+  companyName?: string;
+  taxNumber?: string;
+  taxOffice?: string;
+  eInvoiceUser?: boolean;
+
+  country: string;
+  city: string;
+  district: string;
+  neighborhood?: string;
+  postalCode?: string;
+  fullAddress: string;
+
+  isBillingDefault?: boolean;
+  isShippingDefault?: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserRecord {
   id: string;
   email: string;
@@ -20,6 +52,7 @@ export interface UserRecord {
   city?: string;
   postalCode?: string;
   district?: string;
+  savedAddresses?: SavedAddress[];
   createdAt: string;
   updatedAt: string;
 }

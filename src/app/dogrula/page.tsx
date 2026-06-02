@@ -56,7 +56,7 @@ export default async function DogrulaPage({ searchParams }: PageProps) {
           {result.kind === "ok" && <Success />}
           {result.kind === "already" && <Already />}
           {result.kind === "missing" && <Invalid title="Geçersiz bağlantı" desc="Doğrulama bağlantısı eksik. Mailindeki linke tıkladığından emin ol." />}
-          {result.kind === "invalid" && <Invalid title="Bağlantı geçersiz" desc="Bu bağlantı kullanılmış veya hatalı. Yeni bir doğrulama mail'i gönderebilirsin." showResend />}
+          {result.kind === "invalid" && <Invalid title="Bağlantı kullanılmış veya geçersiz" desc="Bu bağlantı bir kez kullanılabilir — büyük olasılıkla daha önce tıkladın ve hesabın zaten doğrulandı. Doğrudan giriş yapmayı dene. Yeni bir hesap için yeniden mail göndertebilirsin." showResend showLogin />}
           {result.kind === "expired" && <Invalid title="Bağlantının süresi dolmuş" desc="Doğrulama bağlantısı 24 saat geçerliydi. Tekrar gönderebiliriz." showResend defaultEmail={result.email} />}
         </div>
       </main>
@@ -91,7 +91,7 @@ function Already() {
   );
 }
 
-function Invalid({ title, desc, showResend, defaultEmail }: { title: string; desc: string; showResend?: boolean; defaultEmail?: string }) {
+function Invalid({ title, desc, showResend, showLogin, defaultEmail }: { title: string; desc: string; showResend?: boolean; showLogin?: boolean; defaultEmail?: string }) {
   return (
     <>
       {showResend ? (
@@ -101,8 +101,13 @@ function Invalid({ title, desc, showResend, defaultEmail }: { title: string; des
       )}
       <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
       <p className="text-sm text-gray-400 mb-6">{desc}</p>
+      {showLogin && (
+        <Link href="/giris" className="block w-full px-6 py-3 mb-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-center">
+          Giriş Yap
+        </Link>
+      )}
       {showResend && <ResendVerificationForm defaultEmail={defaultEmail} />}
-      <Link href="/giris" className="text-sm text-blue-400 hover:underline">Giriş sayfasına dön</Link>
+      {!showLogin && <Link href="/giris" className="text-sm text-blue-400 hover:underline">Giriş sayfasına dön</Link>}
     </>
   );
 }
