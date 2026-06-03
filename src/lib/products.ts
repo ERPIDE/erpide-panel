@@ -1,6 +1,6 @@
-import { Shield, Briefcase, type LucideIcon } from "lucide-react";
+import { Shield, Briefcase, Boxes, Truck, type LucideIcon } from "lucide-react";
 
-export type ProductId = "finanserpide" | "captchaerpide";
+export type ProductId = "finanserpide" | "captchaerpide" | "1c-erp" | "1c-drive";
 export type BillingCycle = "monthly" | "yearly";
 export type Currency = "TRY" | "USD";
 
@@ -34,6 +34,11 @@ export interface Product {
   color: string;
   domain: string;
   comingSoon?: boolean;
+  /** When true, no public price tiers — buyer talks to sales (AI call center
+   *  + WhatsApp). Skus can stay empty. */
+  contactOnly?: boolean;
+  /** Optional live demo URL. Shown as a "Demoyu İncele" button on the product card. */
+  demoUrl?: string;
   skus: SKU[];
 }
 
@@ -178,6 +183,36 @@ export const PRODUCTS: Product[] = [
         ],
       },
     ],
+  },
+  {
+    id: "1c-erp",
+    name: "1C:ERP",
+    tagline: "Kurumsal ERP Çözümü — Üretim, Lojistik, Finans",
+    description:
+      "1C:ERP; orta ve büyük ölçekli üretim/lojistik firmaları için tam kapsamlı kurumsal kaynak planlama. Üretim planlama, MRP, depo yönetimi, finans, bütçeleme — hepsi tek platformda. ERPIDE olarak kurulum, eğitim, yerelleştirme ve destek sunarız.",
+    longDescription:
+      "1C:ERP, üretim odaklı orta-büyük şirketler için Rusya ve Türk Cumhuriyetleri pazarında en yaygın kullanılan ERP'lerden biridir. Modüller: üretim planlama (MPS), malzeme ihtiyaç planlama (MRP), tedarik zinciri, depo, satış, finans, bütçeleme, regulated raporlama. ERPIDE; lisanslama, kurulum, yerelleştirme (TR/KZ vergi mevzuatı), kullanıcı eğitimi, özelleştirme ve canlı destek hizmetleri sunar. Fiyatlandırma şirket büyüklüğüne, kullanıcı sayısına ve modül ihtiyacına göre değişir — detay için iletişime geçin.",
+    icon: Boxes,
+    color: "from-indigo-600 to-blue-700",
+    domain: "1c-erp.erpide.com",
+    contactOnly: true,
+    demoUrl: "https://app902777.1capp.net/ERPWEDemo/en_US/",
+    skus: [],
+  },
+  {
+    id: "1c-drive",
+    name: "1C:Drive",
+    tagline: "KOBİ İçin Hızlı ERP — Operasyon, CRM, Stok",
+    description:
+      "1C:Drive; küçük ve orta ölçekli işletmeler için hazır bulut ERP. Satış, satınalma, stok, hizmet yönetimi, müşteri ilişkileri, basit muhasebe — kısa sürede devreye alın. ERPIDE'den kurulum + destek paketleri ile sıfırdan operasyonel olun.",
+    longDescription:
+      "1C:Drive; KOBİ'ler için hızlı devreye alınan, operasyon odaklı bulut ERP'dir. Satış sürecinin başından sonuna (teklif, sipariş, sevkiyat, fatura), satınalma, stok takibi, depo, basit muhasebe, müşteri/tedarikçi ilişkileri ve hizmet yönetimi kapsanır. ERPIDE; demo kurulum, veri taşıma, kullanıcı eğitimi ve aylık destek paketleri sunar. Fiyatlandırma kullanıcı sayısı ve eklenecek modüllere göre değişir — iletişime geçin, ihtiyacınıza özel teklif hazırlayalım.",
+    icon: Truck,
+    color: "from-cyan-600 to-teal-600",
+    domain: "1c-drive.erpide.com",
+    contactOnly: true,
+    demoUrl: "https://app.1c-demo.de/drive_demo_loc_tr/tr/",
+    skus: [],
   },
 ];
 

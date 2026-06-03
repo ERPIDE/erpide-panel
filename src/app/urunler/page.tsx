@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PRODUCTS } from "@/lib/products";
@@ -60,6 +60,9 @@ export default function UrunlerPage() {
                     </div>
                   </div>
 
+                  {product.contactOnly ? (
+                    <ContactCTA product={product} />
+                  ) : (
                   <div className="grid md:grid-cols-3 gap-4">
                     {product.skus.map((sku, i) => (
                       <motion.div
@@ -115,6 +118,7 @@ export default function UrunlerPage() {
                       </motion.div>
                     ))}
                   </div>
+                  )}
                 </motion.section>
               );
             })}
@@ -123,5 +127,56 @@ export default function UrunlerPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+
+function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?: string } }) {
+  // No public price for 1C:ERP/Drive — customer must talk to sales (AI call
+  // center / WhatsApp / contact form). Demo URL opens in new tab so they can
+  // poke around before deciding.
+  const waMsg = encodeURIComponent(`Merhaba, ${product.name} hakkında bilgi almak istiyorum.`);
+  return (
+    <div className="grid md:grid-cols-3 gap-4">
+      {product.demoUrl && (
+        <a
+          href={product.demoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-6 rounded-2xl bg-[#111118] border border-blue-500/30 hover:border-blue-500/60 transition group"
+        >
+          <ExternalLink size={20} className="text-blue-400 mb-3" />
+          <h3 className="font-bold text-white mb-1">Canlı Demo</h3>
+          <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+            Resmi demo ortamında {product.name}'i kurulum gerekmeden deneyimle.
+          </p>
+          <span className="text-xs text-blue-400 group-hover:underline">Demoyu Aç →</span>
+        </a>
+      )}
+      <Link
+        href={`/iletisim?konu=${product.id}`}
+        className="p-6 rounded-2xl bg-[#111118] border border-purple-500/30 hover:border-purple-500/60 transition group"
+      >
+        <MessageCircle size={20} className="text-purple-400 mb-3" />
+        <h3 className="font-bold text-white mb-1">AI Asistan ile Konuş</h3>
+        <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+          Fiyat, modül seçimi ve ihtiyaç analizini AI asistanımız üzerinden hızlıca yap.
+        </p>
+        <span className="text-xs text-purple-400 group-hover:underline">Sohbet Başlat →</span>
+      </Link>
+      <a
+        href={`https://wa.me/908504474237?text=${waMsg}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="p-6 rounded-2xl bg-[#111118] border border-emerald-500/30 hover:border-emerald-500/60 transition group"
+      >
+        <Phone size={20} className="text-emerald-400 mb-3" />
+        <h3 className="font-bold text-white mb-1">WhatsApp Hattı</h3>
+        <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+          Doğrudan satış ekibimize WhatsApp üzerinden ulaş, ihtiyacına özel teklif al.
+        </p>
+        <span className="text-xs text-emerald-400 group-hover:underline">Mesaj Gönder →</span>
+      </a>
+    </div>
   );
 }
