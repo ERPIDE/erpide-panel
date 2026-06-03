@@ -2,25 +2,31 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown } from "lucide-react";
+import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, Shield, ShoppingBag } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 import { useCart } from "./CartProvider";
 
 interface MeUser { id: string; email: string; name: string; surname: string }
+interface AppsState { finanserpide: boolean; captchaerpide: boolean }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [appsOpen, setAppsOpen] = useState(false);
   const [user, setUser] = useState<MeUser | null>(null);
+  const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false });
   const { t, locale, setLocale } = useTranslation();
   const { itemCount } = useCart();
 
   useEffect(() => {
     fetch("/api/shop/auth/me", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setUser(d.user || null))
+      .then((d) => {
+        setUser(d.user || null);
+        if (d.apps) setApps(d.apps);
+      })
       .catch(() => {});
   }, []);
 
@@ -90,10 +96,56 @@ export default function Navbar() {
             )}
           </Link>
 
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => { setAppsOpen(!appsOpen); setAccountOpen(false); }}
+                className="flex items-center gap-1.5 text-sm p-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
+                title="Uygulamalarım"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              {appsOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[280px] z-50">
+                  <div className="px-4 py-3 border-b border-white/5">
+                    <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Uygulamalarım</p>
+                  </div>
+                  <AppLauncherItem
+                    icon={<Wallet size={18} className="text-blue-400" />}
+                    name="FinansERPIDE"
+                    desc="Multi-tenant ERP / muhasebe"
+                    active={apps.finanserpide}
+                    activeUrl="https://finans.erpide.com/giris"
+                    inactiveUrl="/urunler/finanserpide"
+                    onClose={() => setAppsOpen(false)}
+                  />
+                  <AppLauncherItem
+                    icon={<Shield size={18} className="text-emerald-400" />}
+                    name="CaptchaERPIDE"
+                    desc="AI captcha çözücü API"
+                    active={apps.captchaerpide}
+                    activeUrl="https://captcha.erpide.com/dashboard"
+                    inactiveUrl="/urunler/captchaerpide"
+                    onClose={() => setAppsOpen(false)}
+                  />
+                  <div className="border-t border-white/5">
+                    <Link
+                      href="/urunler"
+                      onClick={() => setAppsOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs text-gray-400 hover:bg-white/5 hover:text-white transition"
+                    >
+                      <ShoppingBag size={12} /> Tüm Ürünler
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {user ? (
             <div className="relative">
               <button
-                onClick={() => setAccountOpen(!accountOpen)}
+                onClick={() => { setAccountOpen(!accountOpen); setAppsOpen(false); }}
                 className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
               >
                 <User size={14} />
@@ -155,6 +207,36 @@ export default function Navbar() {
               <Link href="/sepet" onClick={() => setOpen(false)} className="flex items-center gap-2 text-gray-300 py-2">
                 <ShoppingCart size={16} /> Sepet {itemCount > 0 && <span className="text-blue-400">({itemCount})</span>}
               </Link>
+              {user && (
+                <div className="pt-3 border-t border-white/5">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Uygulamalarım</p>
+                  <a
+                    href={apps.finanserpide ? "https://finans.erpide.com/giris" : "/urunler/finanserpide"}
+                    target={apps.finanserpide ? "_blank" : undefined}
+                    rel={apps.finanserpide ? "noopener noreferrer" : undefined}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between py-2 text-gray-300"
+                  >
+                    <span className="flex items-center gap-2"><Wallet size={16} className="text-blue-400" /> FinansERPIDE</span>
+                    {apps.finanserpide
+                      ? <ExternalLink size={12} className="text-blue-400" />
+                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                  </a>
+                  <a
+                    href={apps.captchaerpide ? "https://captcha.erpide.com/dashboard" : "/urunler/captchaerpide"}
+                    target={apps.captchaerpide ? "_blank" : undefined}
+                    rel={apps.captchaerpide ? "noopener noreferrer" : undefined}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between py-2 text-gray-300"
+                  >
+                    <span className="flex items-center gap-2"><Shield size={16} className="text-emerald-400" /> CaptchaERPIDE</span>
+                    {apps.captchaerpide
+                      ? <ExternalLink size={12} className="text-emerald-400" />
+                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                  </a>
+                </div>
+              )}
+
               <div className="pt-3 border-t border-white/5">
                 {user ? (
                   <>
@@ -176,5 +258,54 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </motion.nav>
+  );
+}
+
+
+function AppLauncherItem({
+  icon, name, desc, active, activeUrl, inactiveUrl, onClose,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  desc: string;
+  active: boolean;
+  activeUrl: string;
+  inactiveUrl: string;
+  onClose: () => void;
+}) {
+  if (active) {
+    return (
+      <a
+        href={activeUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClose}
+        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition group"
+      >
+        <div className="flex-shrink-0">{icon}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-white truncate">{name}</p>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">AKTİF</span>
+          </div>
+          <p className="text-[11px] text-gray-500 truncate">{desc}</p>
+        </div>
+        <ExternalLink size={14} className="text-gray-500 group-hover:text-white transition flex-shrink-0" />
+      </a>
+    );
+  }
+  return (
+    <Link
+      href={inactiveUrl}
+      onClick={onClose}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition group"
+    >
+      <div className="flex-shrink-0 opacity-50">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-300 truncate">{name}</p>
+        <p className="text-[11px] text-gray-500 truncate">{desc}</p>
+      </div>
+      <span className="text-[10px] font-semibold text-blue-300 group-hover:text-blue-200 transition flex-shrink-0">Satın Al →</span>
+    </Link>
   );
 }
