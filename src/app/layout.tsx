@@ -4,6 +4,7 @@ import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/components/CartProvider";
 import { CurrencyProvider } from "@/components/CurrencyProvider";
+import VapiWidget from "@/components/VapiWidget";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CartProvider>{children}</CartProvider>
           </CurrencyProvider>
         </I18nProvider>
+        <VapiWidget />
       </body>
     </html>
   );

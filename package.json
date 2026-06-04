@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.2",
+    "@vapi-ai/web": "^2.5.2",
     "@vercel/blob": "^2.3.2",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.38.0",

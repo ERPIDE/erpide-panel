@@ -56,3 +56,8 @@ body { background: var(--bg-dark); color: var(--text-primary); }
 }
 
 .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+.thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+.thin-scrollbar::-webkit-scrollbar { width: 6px; }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.06); border-radius: 3px; }
