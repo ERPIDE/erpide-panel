@@ -96,14 +96,40 @@ export default function Navbar() {
             )}
           </Link>
 
+          {user && apps.finanserpide && (
+            <a
+              href="https://finans.erpide.com/giris"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-200 hover:bg-blue-500/20 hover:text-blue-100 transition"
+              title="FinansERPIDE'yi aç"
+            >
+              <Wallet size={13} /> FinansERPIDE
+              <ExternalLink size={11} className="opacity-60" />
+            </a>
+          )}
+          {user && apps.captchaerpide && (
+            <a
+              href="https://captcha.erpide.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100 transition"
+              title="CaptchaERPIDE'yi aç"
+            >
+              <Shield size={13} /> CaptchaERPIDE
+              <ExternalLink size={11} className="opacity-60" />
+            </a>
+          )}
+
           {user && (
             <div className="relative">
               <button
                 onClick={() => { setAppsOpen(!appsOpen); setAccountOpen(false); }}
-                className="flex items-center gap-1.5 text-sm p-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
-                title="Uygulamalarım"
+                className="flex items-center gap-1.5 text-sm px-2.5 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
+                title="Tüm uygulamalar"
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={15} />
+                <span className="hidden xl:inline text-xs">Uygulamalar</span>
               </button>
               {appsOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[280px] z-50">

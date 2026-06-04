@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/session";
 import { listOrdersByUserId, findUserById } from "@/lib/auth/user-store";
-import { Package, Key, User as UserIcon, Mail, ShoppingBag, Sparkles, ArrowRight } from "lucide-react";
+import { Package, Key, User as UserIcon, Mail, ShoppingBag, Sparkles, ArrowRight, Wallet, Shield, ExternalLink } from "lucide-react";
 import { redirect } from "next/navigation";
 
 export default async function HesabimPage() {
@@ -19,6 +19,19 @@ export default async function HesabimPage() {
   const activeTrialCount = orders.filter((o) => o.status === "TRIAL" && o.isTrial && (!o.trialExpiresAt || new Date(o.trialExpiresAt).getTime() > now)).reduce((sum, o) => sum + o.items.length, 0);
   const totalActive = paidLicenseCount + activeTrialCount;
 
+  // Hangi ürünlere aktif (paid veya trial-non-expired) erişimi var?
+  const activeProductIds = new Set<string>();
+  for (const o of orders) {
+    if (o.status === "PAID") {
+      const exp = o.subscriptionExpiresAt && new Date(o.subscriptionExpiresAt).getTime() < now;
+      if (!exp) o.items.forEach((it) => activeProductIds.add(it.productId));
+    } else if (o.status === "TRIAL" && o.isTrial) {
+      const exp = o.trialExpiresAt && new Date(o.trialExpiresAt).getTime() < now;
+      if (!exp) o.items.forEach((it) => activeProductIds.add(it.productId));
+    }
+  }
+  const hasAnyApp = activeProductIds.size > 0;
+
   return (
     <>
       <header className="mb-8">
@@ -29,6 +42,35 @@ export default async function HesabimPage() {
           Hoş geldin {user?.name || session.email} — siparişlerini, lisanslarını ve profil bilgilerini buradan yönet.
         </p>
       </header>
+
+      {hasAnyApp && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Uygulamalarım</h2>
+            <span className="text-[11px] text-gray-500">Tıkla, uygulamaya git</span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {activeProductIds.has("finanserpide") && (
+              <AppLaunchCard
+                href="https://finans.erpide.com/giris"
+                icon={Wallet}
+                title="FinansERPIDE"
+                desc="Multi-tenant ERP + AI muhasebe asistanı"
+                tone="blue"
+              />
+            )}
+            {activeProductIds.has("captchaerpide") && (
+              <AppLaunchCard
+                href="https://captcha.erpide.com/dashboard"
+                icon={Shield}
+                title="CaptchaERPIDE"
+                desc="AI captcha çözücü dashboard + API"
+                tone="emerald"
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         <Stat icon={Package} label="Sipariş Sayısı" value={orders.length.toString()} />
@@ -124,5 +166,42 @@ function NavCard({ href, icon: Icon, title, desc, tone }: { href: string; icon: 
       <h3 className="font-semibold text-white mb-0.5">{title}</h3>
       <p className="text-xs text-gray-400">{desc}</p>
     </Link>
+  );
+}
+
+
+function AppLaunchCard({
+  href, icon: Icon, title, desc, tone,
+}: {
+  href: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  title: string;
+  desc: string;
+  tone: "blue" | "emerald";
+}) {
+  const cls = tone === "blue"
+    ? "from-blue-500/10 to-cyan-500/10 border-blue-500/30 hover:border-blue-500/50 text-blue-300"
+    : "from-emerald-500/10 to-teal-500/10 border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300";
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br border transition ${cls}`}
+    >
+      <div className="flex-shrink-0 p-3 rounded-xl bg-white/5 border border-white/5">
+        <Icon size={28} className={tone === "blue" ? "text-blue-300" : "text-emerald-300"} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-semibold text-white text-base">{title}</h3>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">AKTİF</span>
+        </div>
+        <p className="text-xs text-gray-400 truncate">{desc}</p>
+      </div>
+      <div className="flex-shrink-0 flex items-center gap-1 text-sm font-semibold opacity-80 group-hover:opacity-100">
+        Aç <ExternalLink size={14} />
+      </div>
+    </a>
   );
 }
