@@ -4,7 +4,13 @@ import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/components/CartProvider";
 import { CurrencyProvider } from "@/components/CurrencyProvider";
-import VapiWidget from "@/components/VapiWidget";
+import VapiWidgetMount from "@/components/VapiWidgetMount";
+
+// Geçici: Next.js 16.2.1'in workStore prerender bug'ı yüzünden
+// statik üretim sayfaları kırıyor (/giris, /admin/*, /hesabim/*).
+// Tüm route'ları runtime'a alıyoruz — site çalışsın, sonra Next.js
+// patch'i çıkınca tekrar değerlendiririz.
+export const dynamic = "force-dynamic";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
@@ -30,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CartProvider>{children}</CartProvider>
           </CurrencyProvider>
         </I18nProvider>
-        <VapiWidget />
+        <VapiWidgetMount />
       </body>
     </html>
   );
