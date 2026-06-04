@@ -4,6 +4,8 @@ import { listOrdersByUserId, findUserById } from "@/lib/auth/user-store";
 import { Package, Key, User as UserIcon, Mail, ShoppingBag, Sparkles, ArrowRight, Wallet, Shield, ExternalLink } from "lucide-react";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function HesabimPage() {
   const session = await requireUser();
   if (!session) redirect("/giris?next=/hesabim");

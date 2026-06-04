@@ -5,6 +5,8 @@ import AccountSidebar from "@/components/AccountSidebar";
 import { requireUser } from "@/lib/auth/session";
 import { findUserById } from "@/lib/auth/user-store";
 
+export const dynamic = "force-dynamic";
+
 export default async function HesabimLayout({ children }: { children: React.ReactNode }) {
   const session = await requireUser();
   if (!session) redirect("/giris?next=/hesabim");
