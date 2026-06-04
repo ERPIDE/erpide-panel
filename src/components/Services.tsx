@@ -54,8 +54,14 @@ export default function Services() {
                 <p className="text-blue-400 text-sm mb-2">{p.tagline}</p>
                 <p className="text-gray-400 text-sm leading-relaxed mb-5">{p.description}</p>
                 <div className="flex items-baseline gap-2 mb-5">
-                  <span className="text-xs text-gray-500">Aylık</span>
-                  <span className="text-xl font-bold text-white">{p.skus[0].price.toLocaleString("tr-TR")} TRY'den</span>
+                  {p.contactOnly || !p.skus[0] ? (
+                    <span className="text-sm font-semibold text-blue-400">Demo + Teklif Al</span>
+                  ) : (
+                    <>
+                      <span className="text-xs text-gray-500">Aylık</span>
+                      <span className="text-xl font-bold text-white">{p.skus[0].price.toLocaleString("tr-TR")} TRY'den</span>
+                    </>
+                  )}
                 </div>
                 <Link
                   href={`/urunler/${p.id}`}
