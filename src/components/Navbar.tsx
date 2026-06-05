@@ -96,31 +96,6 @@ export default function Navbar() {
             )}
           </Link>
 
-          {user && apps.finanserpide && (
-            <a
-              href="https://finans.erpide.com/giris"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-200 hover:bg-blue-500/20 hover:text-blue-100 transition"
-              title="FinansERPIDE'yi aç"
-            >
-              <Wallet size={13} /> FinansERPIDE
-              <ExternalLink size={11} className="opacity-60" />
-            </a>
-          )}
-          {user && apps.captchaerpide && (
-            <a
-              href="https://captcha.erpide.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100 transition"
-              title="CaptchaERPIDE'yi aç"
-            >
-              <Shield size={13} /> CaptchaERPIDE
-              <ExternalLink size={11} className="opacity-60" />
-            </a>
-          )}
-
           {user && (
             <div className="relative">
               <button

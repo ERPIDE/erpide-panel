@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@vapi-ai/web": "^2.5.2",
     "@vercel/blob": "^2.3.2",
