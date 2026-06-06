@@ -45,11 +45,11 @@ export default function UrunlerPage() {
           </motion.div>
 
           <div className="space-y-16">
-            {PRODUCTS.filter((p) => p.id !== "ai-kontor").map((product) => {
+            {PRODUCTS.map((product) => {
               const Icon = product.icon;
               // Liste sayfasında "module" ve "seat" tipi SKU'lar gizlenir — onlar detay sayfasının
-              // konfigüratöründen seçilir. Sadece base/standalone kart olarak gösterilir.
-              const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone");
+              // konfigüratöründen seçilir. base/standalone/credit kart olarak gösterilir.
+              const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
               return (
                 <motion.section
                   key={product.id}
