@@ -4,7 +4,7 @@ import { getSku, getProductOfSku, type Currency } from "@/lib/products";
 import { generateReferenceCode, generateLicenseKey } from "@/lib/payments/license";
 import { getSession } from "@/lib/auth/session";
 import { findUserById, createOrder, updateUser, type OrderItem } from "@/lib/auth/user-store";
-import { currencyFromRequest, priceFor } from "@/lib/currency";
+import { priceForCharge } from "@/lib/currency";
 
 export const runtime = "nodejs";
 
@@ -54,23 +54,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Seçili adreste TC kimlik no veya VKN bulunamadı" }, { status: 400 });
     }
 
-    // Buyer's display currency from cookie/locale. Every line item in the
-    // basket gets priced in this currency; SKUs without an explicit override
-    // for the chosen currency fall back to TRY (returned by priceFor).
-    const requestedCurrency: Currency = currencyFromRequest(req);
+    // Fiyatlar USD gösterilse de iyzico hesabımız sadece TRY aldığı için
+    // priceForCharge() ile USD * kur => TRY çevriliyor. orderCurrency hep TRY.
     let totalPrice = 0;
-    let orderCurrency: Currency = "TRY";
+    const orderCurrency: Currency = "TRY";
     const orderItems: OrderItem[] = [];
     for (const ci of items) {
       const sku = getSku(ci.skuId);
       if (!sku) return NextResponse.json({ error: `Geçersiz ürün: ${ci.skuId}` }, { status: 400 });
       const product = getProductOfSku(sku.id);
       if (!product) return NextResponse.json({ error: `Ürün bulunamadı: ${ci.skuId}` }, { status: 400 });
-      const { price: linePrice, currency: lineCcy } = priceFor(sku, requestedCurrency);
-      // If any SKU falls back to TRY (no override for requested currency),
-      // the whole basket is forced to TRY so iyzico gets a single currency.
-      if (lineCcy !== requestedCurrency) orderCurrency = "TRY";
-      else if (orderCurrency === "TRY") orderCurrency = lineCcy;
+      const { price: linePrice } = priceForCharge(sku);
       for (let i = 0; i < ci.quantity; i++) {
         const licenseKey = generateLicenseKey(sku.productId);
         orderItems.push({

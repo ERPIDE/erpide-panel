@@ -78,7 +78,7 @@ export default function Hero() {
           className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
         >
           <Link
-            href="/hizmetler"
+            href="/urunler"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition text-lg"
           >
             {t("hero.cta1")} <ArrowRight size={20} />
@@ -97,9 +97,9 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/5"
         >
-          <AnimatedStat value={150} suffix="+" label={t("hero.stat1")} />
-          <AnimatedStat value={12} suffix="+" label={t("hero.stat2")} />
-          <AnimatedStat value={50} suffix="+" label={t("hero.stat3")} />
+          <AnimatedStat value={5} suffix="+" label={t("hero.stat1")} />
+          <AnimatedStat value={15} suffix="+" label={t("hero.stat2")} />
+          <AnimatedStat value={30} suffix="+" label={t("hero.stat3")} />
           <AnimatedStat value={7} suffix="/24" label={t("hero.stat4")} />
         </motion.div>
       </div>

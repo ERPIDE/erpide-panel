@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, ShieldCheck, Plus, User, Building2, Check } from "l
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/components/CartProvider";
+import { priceFor, formatPrice } from "@/lib/currency";
 import AddressFormModal from "@/components/account/AddressFormModal";
 import type { SavedAddress } from "@/lib/auth/user-store";
 
@@ -187,19 +188,22 @@ export default function SepetOdemePage() {
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <h3 className="font-semibold text-white mb-4">{itemCount} ürün</h3>
                 <div className="space-y-2 mb-4">
-                  {items.map(({ line, sku }) => (
-                    <div key={sku.id} className="flex justify-between text-sm">
-                      <span className="text-gray-400 truncate">{sku.productId === "finanserpide" ? "Finans" : "Captcha"} {sku.name} ×{line.quantity}</span>
-                      <span className="text-gray-300 font-mono">{(sku.price * line.quantity).toLocaleString("tr-TR")} ₺</span>
-                    </div>
-                  ))}
+                  {items.map(({ line, sku }) => {
+                    const { price, currency } = priceFor(sku, "USD");
+                    return (
+                      <div key={sku.id} className="flex justify-between text-sm">
+                        <span className="text-gray-400 truncate">{sku.productId === "finanserpide" ? "Finans" : "Captcha"} {sku.name} ×{line.quantity}</span>
+                        <span className="text-gray-300 font-mono">{formatPrice(price * line.quantity, currency, { short: true })}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="pt-4 border-t border-white/5 mb-6">
                   <div className="flex justify-between items-baseline">
                     <span className="text-white font-semibold">Aylık</span>
-                    <span className="text-2xl font-bold text-white">{total.toLocaleString("tr-TR")} ₺</span>
+                    <span className="text-2xl font-bold text-white">{formatPrice(total, "USD", { short: true })}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">KDV dahil</p>
+                  <p className="text-xs text-gray-500 mt-1">KDV dahil • TL karşılığı tahsil edilir</p>
                 </div>
                 <button
                   type="submit"

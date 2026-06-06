@@ -124,9 +124,30 @@ export interface OrderRecord {
   paidAt?: string;
 }
 
+/**
+ * Aktivasyon kodları — admin/seri üretilir, kullanıcı /hesabim ekranında
+ * girer. Karşılığında yeni PAID order yaratılır (durationDays kadar geçerli).
+ * Hepsiburada/N11 gibi pazaryerlerinde e-pin olarak satılabilir.
+ */
+export interface LicenseCodeRecord {
+  code: string; // ERP-XXXX-XXXX-XXXX format (büyük harf, tire ayırıcı)
+  skuId: string;
+  productId: string;
+  durationDays: number; // genelde 30, yıllık için 365
+  batchId?: string;     // toplu üretim grubu (opsiyonel takip)
+  note?: string;        // ne için üretildiği (örn "Hepsiburada Q3 2026")
+  createdAt: string;
+  expiresAt?: string;   // kodun KENDİSİNİN kullanım son tarihi (geç gelen e-pin)
+  redeemedBy?: string;  // userId
+  redeemedAt?: string;
+  redeemedOrderId?: string;
+}
+
 interface State {
   users: Record<string, UserRecord>;
   orders: Record<string, OrderRecord>;
+  /** key = normalize edilmiş kod (büyük harf, tireler korunur) */
+  licenseCodes?: Record<string, LicenseCodeRecord>;
   __version: 1;
 }
 
@@ -338,4 +359,47 @@ export async function hasUsedTrialForSku(userId: string, skuId: string): Promise
     return true;
   }
   return false;
+}
+
+// ============== LICENSE CODES ==============
+
+function normalizeCode(input: string): string {
+  return input.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export async function getLicenseCode(code: string): Promise<LicenseCodeRecord | undefined> {
+  const s = await loadState();
+  return s.licenseCodes?.[normalizeCode(code)];
+}
+
+export async function createLicenseCode(input: Omit<LicenseCodeRecord, "createdAt" | "redeemedBy" | "redeemedAt" | "redeemedOrderId">): Promise<LicenseCodeRecord> {
+  const s = await loadState(true);
+  if (!s.licenseCodes) s.licenseCodes = {};
+  const code = normalizeCode(input.code);
+  if (s.licenseCodes[code]) throw new Error("Bu kod zaten mevcut");
+  const record: LicenseCodeRecord = {
+    ...input,
+    code,
+    createdAt: new Date().toISOString(),
+  };
+  s.licenseCodes[code] = record;
+  await saveState(s);
+  return record;
+}
+
+export async function markLicenseCodeRedeemed(code: string, userId: string, orderId: string): Promise<void> {
+  const s = await loadState(true);
+  const key = normalizeCode(code);
+  const rec = s.licenseCodes?.[key];
+  if (!rec) throw new Error("Kod bulunamadı");
+  if (rec.redeemedBy) throw new Error("Kod zaten kullanılmış");
+  rec.redeemedBy = userId;
+  rec.redeemedAt = new Date().toISOString();
+  rec.redeemedOrderId = orderId;
+  await saveState(s);
+}
+
+export async function listLicenseCodes(): Promise<LicenseCodeRecord[]> {
+  const s = await loadState();
+  return Object.values(s.licenseCodes || {});
 }

@@ -80,11 +80,13 @@ export default async function HesabimPage() {
         <Stat icon={UserIcon} label="Üyelik" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString("tr-TR") : "—"} />
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <NavCard href="/hesabim/profil" icon={UserIcon} title="Profil" desc="Ad, telefon, TC kimlik" tone="blue" />
         <NavCard href="/hesabim/lisanslarim" icon={Key} title="Lisanslarım" desc={`${totalActive} aktif`} tone="emerald" />
         <NavCard href="/hesabim/siparislerim" icon={ShoppingBag} title="Siparişlerim" desc={`${orders.length} sipariş`} tone="purple" />
-        <NavCard href="/urunler" icon={Sparkles} title="Yeni Ürün" desc="Trial başlat ya da satın al" tone="amber" />
+        <NavCard href="/hesabim/aktivasyon-kodu" icon={Key} title="Aktivasyon Kodu" desc="E-pin ile lisans aktive et" tone="amber" />
+        <NavCard href="/hesabim/adres" icon={UserIcon} title="Adreslerim" desc="Fatura adresleri" tone="blue" />
+        <NavCard href="/urunler" icon={Sparkles} title="Yeni Ürün" desc="Trial başlat ya da satın al" tone="purple" />
       </div>
 
       {user && user.emailVerified === false && (

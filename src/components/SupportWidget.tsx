@@ -2,7 +2,7 @@
 /**
  * erpide.com sağ-alt destek widget'ı — iki yan yana buton:
  *   🎤 Bizi Ara (Vapi voice call — TR/RU multilingual)
- *   💬 Yazılı Destek (Anthropic Claude chat — TR/RU)
+ *   💬 Canlı Destek (Anthropic Claude chat — TR/RU)
  *
  * Voice ve chat ayrı paneller. Voice Vapi başarısız olursa chat fallback
  * olarak hep çalışır (kendi API key'imiz, kendi prompt'umuz).
@@ -21,8 +21,8 @@ interface ChatMsg { role: "user" | "assistant"; content: string }
 
 
 export default function SupportWidget() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
-  const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
+  const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID?.trim();
   const vapiReady = !!(publicKey && assistantId);
 
   const [panel, setPanel] = useState<Panel>(null);
@@ -122,6 +122,20 @@ export default function SupportWidget() {
     }
   }
 
+  // İletişim sayfası gibi dış noktalardan paneli açabilmek için global event listener.
+  // Kullanım: window.dispatchEvent(new Event("erpide:open-chat" | "erpide:open-voice"))
+  useEffect(() => {
+    const handleOpenChat = () => openChat();
+    const handleOpenVoice = () => { if (vapiReady) startVoice(); else openChat(); };
+    window.addEventListener("erpide:open-chat", handleOpenChat);
+    window.addEventListener("erpide:open-voice", handleOpenVoice);
+    return () => {
+      window.removeEventListener("erpide:open-chat", handleOpenChat);
+      window.removeEventListener("erpide:open-voice", handleOpenVoice);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vapiReady]);
+
   async function sendChat() {
     const text = chatInput.trim();
     if (!text || chatSending) return;
@@ -174,7 +188,7 @@ export default function SupportWidget() {
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-300">
                 <p className="font-semibold mb-1">Sesli arama açılamadı</p>
                 <p className="opacity-80 break-words">{voiceError}</p>
-                <button onClick={openChat} className="mt-2 text-blue-300 underline">Yazılı sohbetten devam et →</button>
+                <button onClick={openChat} className="mt-2 text-blue-300 underline">Canlı destekten devam et →</button>
               </div>
             )}
             {voiceTranscript.length === 0 && voiceStatus !== "error" ? (
@@ -210,7 +224,7 @@ export default function SupportWidget() {
           <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-cyan-600/10">
             <div className="flex items-center gap-2">
               <Bot size={16} className="text-blue-300" />
-              <span className="text-sm font-semibold text-white">Yazılı Destek</span>
+              <span className="text-sm font-semibold text-white">Canlı Destek</span>
               <span className="text-[10px] text-gray-500">AI</span>
             </div>
             <div className="flex items-center gap-1">
@@ -265,11 +279,11 @@ export default function SupportWidget() {
           className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition transform hover:scale-105 ${
             panel === "chat" ? "bg-blue-600 text-white" : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-90"
           }`}
-          title="Yazılı destek — AI asistan size cevap verir"
-          aria-label="Yazılı destek"
+          title="Canlı destek — AI asistan size cevap verir"
+          aria-label="Canlı destek"
         >
           <MessageSquare size={18} />
-          <span className="hidden sm:inline text-sm font-semibold">Yazılı Destek</span>
+          <span className="hidden sm:inline text-sm font-semibold">Canlı Destek</span>
         </button>
         {vapiReady && (
           <button

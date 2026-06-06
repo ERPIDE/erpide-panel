@@ -7,6 +7,7 @@ import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, ShieldCheck, Loader2 } f
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/components/CartProvider";
+import { priceFor, formatPrice } from "@/lib/currency";
 
 export default function SepetPage() {
   const { getLineWithSku, updateQuantity, removeItem, total, itemCount } = useCart();
@@ -66,7 +67,9 @@ export default function SepetPage() {
                         {sku.productId === "finanserpide" ? "FinansERPIDE" : "CaptchaERPIDE"} {sku.name}
                       </Link>
                       <p className="text-xs text-gray-500 mt-1">{sku.description}</p>
-                      <p className="text-xs text-gray-400 mt-2">{sku.price.toLocaleString("tr-TR")} {sku.currency}/ay</p>
+                      {(() => { const { price, currency } = priceFor(sku, "USD"); return (
+                        <p className="text-xs text-gray-400 mt-2">{formatPrice(price, currency, { short: true })}/ay</p>
+                      ); })()}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -86,7 +89,9 @@ export default function SepetPage() {
                     </div>
 
                     <div className="text-right min-w-[100px]">
-                      <p className="font-bold text-white">{(sku.price * line.quantity).toLocaleString("tr-TR")} {sku.currency}</p>
+                      {(() => { const { price, currency } = priceFor(sku, "USD"); return (
+                        <p className="font-bold text-white">{formatPrice(price * line.quantity, currency, { short: true })}</p>
+                      ); })()}
                       <p className="text-xs text-gray-500">/ay</p>
                     </div>
 
@@ -104,19 +109,22 @@ export default function SepetPage() {
                 <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                   <h3 className="font-semibold text-white mb-4">Sipariş Özeti</h3>
                   <div className="space-y-2 mb-4">
-                    {items.map(({ line, sku }) => (
-                      <div key={sku.id} className="flex justify-between text-sm">
-                        <span className="text-gray-400 truncate">{sku.productId === "finanserpide" ? "Finans" : "Captcha"} {sku.name} × {line.quantity}</span>
-                        <span className="text-gray-300 font-mono">{(sku.price * line.quantity).toLocaleString("tr-TR")} ₺</span>
-                      </div>
-                    ))}
+                    {items.map(({ line, sku }) => {
+                      const { price, currency } = priceFor(sku, "USD");
+                      return (
+                        <div key={sku.id} className="flex justify-between text-sm">
+                          <span className="text-gray-400 truncate">{sku.productId === "finanserpide" ? "Finans" : "Captcha"} {sku.name} × {line.quantity}</span>
+                          <span className="text-gray-300 font-mono">{formatPrice(price * line.quantity, currency, { short: true })}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="pt-4 border-t border-white/5 mb-6">
                     <div className="flex justify-between items-baseline">
                       <span className="text-white font-semibold">Aylık Toplam</span>
-                      <span className="text-2xl font-bold text-white">{total.toLocaleString("tr-TR")} ₺</span>
+                      <span className="text-2xl font-bold text-white">{formatPrice(total, "USD", { short: true })}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">KDV dahil • istediğin zaman iptal</p>
+                    <p className="text-xs text-gray-500 mt-1">KDV dahil • TL karşılığı tahsil edilir • istediğin zaman iptal</p>
                   </div>
                   <button
                     onClick={startCheckout}

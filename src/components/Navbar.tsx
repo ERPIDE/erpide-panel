@@ -9,6 +9,8 @@ import { useCart } from "./CartProvider";
 
 interface MeUser { id: string; email: string; name: string; surname: string }
 interface AppsState { finanserpide: boolean; captchaerpide: boolean }
+type AppState = "active" | "expired" | "none";
+interface AppStatesMap { finanserpide: AppState; captchaerpide: AppState }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -17,6 +19,7 @@ export default function Navbar() {
   const [appsOpen, setAppsOpen] = useState(false);
   const [user, setUser] = useState<MeUser | null>(null);
   const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false });
+  const [appStates, setAppStates] = useState<AppStatesMap>({ finanserpide: "none", captchaerpide: "none" });
   const { t, locale, setLocale } = useTranslation();
   const { itemCount } = useCart();
 
@@ -26,6 +29,7 @@ export default function Navbar() {
       .then((d) => {
         setUser(d.user || null);
         if (d.apps) setApps(d.apps);
+        if (d.appStates) setAppStates(d.appStates);
       })
       .catch(() => {});
   }, []);
@@ -115,18 +119,18 @@ export default function Navbar() {
                     icon={<Wallet size={18} className="text-blue-400" />}
                     name="FinansERPIDE"
                     desc="Multi-tenant ERP / muhasebe"
-                    active={apps.finanserpide}
-                    activeUrl="https://finans.erpide.com/giris"
-                    inactiveUrl="/urunler/finanserpide"
+                    state={appStates.finanserpide}
+                    appUrl="https://finans.erpide.com/giris"
+                    buyUrl="/urunler/finanserpide"
                     onClose={() => setAppsOpen(false)}
                   />
                   <AppLauncherItem
                     icon={<Shield size={18} className="text-emerald-400" />}
                     name="CaptchaERPIDE"
                     desc="AI captcha çözücü API"
-                    active={apps.captchaerpide}
-                    activeUrl="https://captcha.erpide.com/dashboard"
-                    inactiveUrl="/urunler/captchaerpide"
+                    state={appStates.captchaerpide}
+                    appUrl="https://captcha.erpide.com/dashboard"
+                    buyUrl="/urunler/captchaerpide"
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="border-t border-white/5">
@@ -160,6 +164,9 @@ export default function Navbar() {
                   </Link>
                   <Link href="/hesabim/lisanslarim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
                     <Key size={14} /> Lisanslarım
+                  </Link>
+                  <Link href="/hesabim/aktivasyon-kodu" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
+                    <Key size={14} /> Aktivasyon Kodu
                   </Link>
                   <Link href="/hesabim/siparislerim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
                     <Package size={14} /> Siparişlerim
@@ -264,20 +271,27 @@ export default function Navbar() {
 
 
 function AppLauncherItem({
-  icon, name, desc, active, activeUrl, inactiveUrl, onClose,
+  icon, name, desc, state, appUrl, buyUrl, onClose,
 }: {
   icon: React.ReactNode;
   name: string;
   desc: string;
-  active: boolean;
-  activeUrl: string;
-  inactiveUrl: string;
+  state: "active" | "expired" | "none";
+  appUrl: string;
+  buyUrl: string;
   onClose: () => void;
 }) {
-  if (active) {
+  // Aktif veya süresi dolmuş kullanıcı → uygulamanın giriş ekranına yönlendir.
+  // App orada "lisansınız bitti, uzatın" veya direkt dashboard gösterir.
+  // Hiç almamış kullanıcı → satın al sayfasına yönlendir.
+  if (state === "active" || state === "expired") {
+    const label = state === "active" ? "AKTİF" : "SÜRESİ DOLDU";
+    const badgeCls = state === "active"
+      ? "bg-green-500/15 text-green-300 border-green-500/30"
+      : "bg-amber-500/15 text-amber-300 border-amber-500/30";
     return (
       <a
-        href={activeUrl}
+        href={appUrl}
         target="_blank"
         rel="noopener noreferrer"
         onClick={onClose}
@@ -287,9 +301,9 @@ function AppLauncherItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-white truncate">{name}</p>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">AKTİF</span>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${badgeCls}`}>{label}</span>
           </div>
-          <p className="text-[11px] text-gray-500 truncate">{desc}</p>
+          <p className="text-[11px] text-gray-500 truncate">{state === "expired" ? "Lisansı uzatmak için giriş yap" : desc}</p>
         </div>
         <ExternalLink size={14} className="text-gray-500 group-hover:text-white transition flex-shrink-0" />
       </a>
@@ -297,7 +311,7 @@ function AppLauncherItem({
   }
   return (
     <Link
-      href={inactiveUrl}
+      href={buyUrl}
       onClick={onClose}
       className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition group"
     >

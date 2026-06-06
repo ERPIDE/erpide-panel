@@ -4,6 +4,7 @@ import { Settings, Database, Code2, Rocket, Headset, GraduationCap, ArrowRight }
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import { PRODUCTS } from "@/lib/products";
+import { priceFor, formatPrice } from "@/lib/currency";
 
 export default function Services() {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ export default function Services() {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-20">
-          {PRODUCTS.map((p, i) => {
+          {PRODUCTS.filter((p) => p.id !== "ai-kontor").map((p, i) => {
             const Icon = p.icon;
             return (
               <motion.div
@@ -59,7 +60,10 @@ export default function Services() {
                   ) : (
                     <>
                       <span className="text-xs text-gray-500">Aylık</span>
-                      <span className="text-xl font-bold text-white">{p.skus[0].price.toLocaleString("tr-TR")} TRY'den</span>
+                      {(() => {
+                        const { price, currency } = priceFor(p.skus[0], "USD");
+                        return <span className="text-xl font-bold text-white">{formatPrice(price, currency, { short: true })}&apos;dan</span>;
+                      })()}
                     </>
                   )}
                 </div>

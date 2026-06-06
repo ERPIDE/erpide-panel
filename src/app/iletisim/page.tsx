@@ -77,7 +77,7 @@ function IletisimPage() {
               desc="Ürün karşılaştırması, fiyat aralığı, kurulum süreci — AI asistan anında cevaplar. Karmaşık taleplerde ekibe yönlendirir."
               cta="Sohbeti Başlat"
               href={`#ai-chat`}
-              onClick={() => alert("AI Asistan yakında aktif olacak — şimdilik WhatsApp veya forma yönlendirebilirim.")}
+              onClick={() => { try { window.dispatchEvent(new Event("erpide:open-chat")); } catch { /* noop */ } }}
             />
             <ChannelCard
               icon={PhoneCall}
@@ -87,7 +87,7 @@ function IletisimPage() {
               desc="Bir tuşa basın, AI sesli asistanımız sizi arasın. Ürün demosu, fiyat teklifi, demo randevusu — telefonla halledin."
               cta="Beni Ara"
               href={`#ai-call`}
-              onClick={() => alert("AI Call Center yakında devreye alınacak — şu an için WhatsApp veya form üzerinden iletişime geçin.")}
+              onClick={() => { try { window.dispatchEvent(new Event("erpide:open-voice")); } catch { /* noop */ } }}
             />
             <ChannelCard
               icon={MessageCircle}
@@ -188,7 +188,8 @@ function IletisimPage() {
                 <h3 className="font-semibold text-white mb-2">Türkiye Ofisi</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
                   ERPİDE Yazılım San. Tic. A.Ş.<br />
-                  Aydın / Efeler<br />
+                  Ilıcabaşı Mah. Denizli Blv. No:91<br />
+                  Efeler / Aydın<br />
                   Türkiye
                 </p>
               </div>

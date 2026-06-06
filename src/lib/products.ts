@@ -1,8 +1,24 @@
-import { Shield, Briefcase, Boxes, Truck, type LucideIcon } from "lucide-react";
+import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, type LucideIcon } from "lucide-react";
 
-export type ProductId = "finanserpide" | "captchaerpide" | "1c-erp" | "1c-drive";
+export type ProductId =
+  | "finanserpide"
+  | "captchaerpide"
+  | "ai-kontor"
+  | "pocketerpide"
+  | "1c-erp"
+  | "1c-drive";
 export type BillingCycle = "monthly" | "yearly";
 export type Currency = "TRY" | "USD";
+
+/**
+ * SKU.kind — sepetin "Plan Konfigüratörü" UI'ında SKU'ları nasıl gruplayacağı:
+ *   "base"      → Plan'ın temel paketi (1 tane alınır, modüller bunun üstüne)
+ *   "module"    → Opsiyonel modül add-on'u ($10 her biri)
+ *   "seat"      → Ek kullanıcı koltuğu (quantity ile sepete eklenir)
+ *   "credit"    → Tüketilen kontör (AI mesaj kontörü gibi)
+ *   "standalone"→ Tek paket ürün (PocketERPIDE, CaptchaERPIDE Starter/Pro/Ent)
+ */
+export type SKUKind = "base" | "module" | "seat" | "credit" | "standalone";
 
 export interface SKU {
   id: string;
@@ -22,6 +38,15 @@ export interface SKU {
   cycle: BillingCycle;
   features: string[];
   highlight?: boolean;
+  kind?: SKUKind;
+  /**
+   * Modül SKU'su finanserpide tarafında hangi route prefix'ine erişim verir.
+   * Örn. ["/muhasebe"] → muhasebe modülü; ["/uretim"] → üretim.
+   * Base SKU her zaman ["/satis","/satinalma","/stok","/finans"] kapsar.
+   */
+  grantsModules?: string[];
+  /** kind="credit" SKU'sunun aldığı kontör/mesaj adedi (örn. 500, 1000, 2000, 10000). */
+  creditsGranted?: number;
 }
 
 export interface Product {
@@ -57,60 +82,99 @@ export const PRODUCTS: Product[] = [
     comingSoon: true,
     skus: [
       {
-        id: "finanserpide-starter-monthly",
+        id: "finanserpide-base-monthly",
         productId: "finanserpide",
-        name: "Starter",
-        description: "Tek şirket, küçük ekipler için",
-        price: 999,
+        name: "Temel Paket",
+        description: "Satış · Satınalma · Stok · Finans (her zaman dahil)",
+        price: 20,
         currency: "TRY",
+        prices: { USD: 20 },
         cycle: "monthly",
+        kind: "base",
+        grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
         features: [
+          "Satış (teklif, sipariş, irsaliye, fatura)",
+          "Satınalma (talep, sipariş, irsaliye, fatura)",
+          "Stok yönetimi (ürün, depo, hareket)",
+          "Finans (banka, e-Süreçler, raporlar)",
           "1 şirket (VKN bazlı izole DB)",
-          "1 owner + 2 çalışan kullanıcı",
-          "Aylık 100 fatura",
-          "e-Fatura/e-Arşiv (eFinans)",
-          "Banka mutabakatı (manuel)",
-          "Cari takip + kar/zarar",
-          "E-mail destek",
-        ],
-      },
-      {
-        id: "finanserpide-pro-monthly",
-        productId: "finanserpide",
-        name: "Pro",
-        description: "Büyüyen şirketler için",
-        price: 1999,
-        currency: "TRY",
-        cycle: "monthly",
-        features: [
-          "1 şirket (izole DB)",
-          "5 kullanıcı",
+          "1 owner kullanıcı",
           "Sınırsız fatura",
-          "e-Fatura/e-Arşiv (eFinans)",
-          "Banka mutabakatı (otomatik QNB)",
-          "Vergi raporları (KDV/geçici/KV)",
-          "Personel + SGK XML",
-          "Öncelikli destek (24 saat)",
+          "e-Fatura / e-Arşiv (QNB eFinans)",
         ],
         highlight: true,
       },
       {
-        id: "finanserpide-enterprise-monthly",
+        id: "finanserpide-module-muhasebe-monthly",
         productId: "finanserpide",
-        name: "Enterprise",
-        description: "Holdingler ve büyük şirketler",
-        price: 4999,
+        name: "Muhasebe Modülü",
+        description: "Yevmiye, mizan, hesap planı, KDV, defter-i kebir",
+        price: 10,
         currency: "TRY",
+        prices: { USD: 10 },
         cycle: "monthly",
+        kind: "module",
+        grantsModules: ["/muhasebe"],
         features: [
-          "Sınırsız şirket (multi-tenant)",
-          "Sınırsız kullanıcı",
-          "Sınırsız fatura",
-          "Tüm modüller dahil",
-          "Özel API entegrasyonları",
-          "Dedicated müşteri yöneticisi",
-          "Telefon destek (mesai içi)",
-          "SLA garantisi",
+          "Hesap planı (TR muhasebe)",
+          "Otomatik yevmiye girişi",
+          "Mizan + defter-i kebir",
+          "KDV / Stopaj hesabı",
+          "Muhasebe raporları (bilanço, gelir tablosu)",
+        ],
+      },
+      {
+        id: "finanserpide-module-ik-monthly",
+        productId: "finanserpide",
+        name: "İnsan Kaynakları Modülü",
+        description: "Personel, devam takip, bordro, izin",
+        price: 10,
+        currency: "TRY",
+        prices: { USD: 10 },
+        cycle: "monthly",
+        kind: "module",
+        grantsModules: ["/ik"],
+        features: [
+          "Personel kartoteks (SGK, banka, sözleşme)",
+          "Devam takip (PDKS entegrasyonu)",
+          "Bordro hesabı + e-Bordro",
+          "İzin yönetimi + onay akışı",
+          "MUHSGK XML üretim",
+        ],
+      },
+      {
+        id: "finanserpide-module-uretim-monthly",
+        productId: "finanserpide",
+        name: "Üretim Modülü",
+        description: "BOM (reçete), üretim emri, maliyetlendirme",
+        price: 10,
+        currency: "TRY",
+        prices: { USD: 10 },
+        cycle: "monthly",
+        kind: "module",
+        grantsModules: ["/uretim"],
+        features: [
+          "Çoklu seviye reçete (BOM)",
+          "Üretim emirleri",
+          "Standart vs gerçek maliyet",
+          "İşçilik + GÜG hesabı",
+          "Sipariş bazlı kar marjı",
+        ],
+      },
+      {
+        id: "finanserpide-extra-user-monthly",
+        productId: "finanserpide",
+        name: "Ek Kullanıcı",
+        description: "Sisteme +1 ek kullanıcı koltuğu (istediğin kadar al)",
+        price: 10,
+        currency: "TRY",
+        prices: { USD: 10 },
+        cycle: "monthly",
+        kind: "seat",
+        features: [
+          "+1 kullanıcı koltuğu",
+          "Rol ve yetki ataması",
+          "Owner panelinden anında eklenip çıkarılabilir",
         ],
       },
     ],
@@ -132,9 +196,9 @@ export const PRODUCTS: Product[] = [
         productId: "captchaerpide",
         name: "Starter",
         description: "Bot geliştiriciler için",
-        price: 299,
+        price: 9.99,
         currency: "TRY",
-        prices: { TRY: 299, USD: 9.99 },
+        prices: { USD: 9.99 },
         cycle: "monthly",
         features: [
           "Günde 1.000 çözüm",
@@ -150,9 +214,9 @@ export const PRODUCTS: Product[] = [
         productId: "captchaerpide",
         name: "Pro",
         description: "Profesyonel kullanım",
-        price: 999,
+        price: 29.99,
         currency: "TRY",
-        prices: { TRY: 999, USD: 29.99 },
+        prices: { USD: 29.99 },
         cycle: "monthly",
         features: [
           "Günde 10.000 çözüm",
@@ -169,9 +233,9 @@ export const PRODUCTS: Product[] = [
         productId: "captchaerpide",
         name: "Enterprise",
         description: "Yüksek hacim",
-        price: 2999,
+        price: 89.99,
         currency: "TRY",
-        prices: { TRY: 2999, USD: 89.99 },
+        prices: { USD: 89.99 },
         cycle: "monthly",
         features: [
           "Sınırsız çözüm",
@@ -181,6 +245,130 @@ export const PRODUCTS: Product[] = [
           "SLA garantisi",
           "Telefon destek",
         ],
+      },
+    ],
+  },
+  {
+    id: "ai-kontor",
+    name: "AI Asistan Kontörü",
+    tagline: "FinansERPIDE AI Asistanına Ek Mesaj Kontörü",
+    description:
+      "FinansERPIDE planında kalan AI mesaj limitinizi aştığınızda kontör paketi alarak kesintisiz devam edin. Tek seferlik satın alma — paket bitmeden tekrar dolmaz, yenisini alabilirsiniz.",
+    longDescription:
+      "FinansERPIDE'nin yerleşik AI asistanı (Claude tabanlı) plan limitiniz dolduğunda 429 döner. Bu pakete yatırım yaparak fatura okuma, hesaplama, raporlama, veri girişi gibi AI işlemlerine kesintisiz devam edebilirsiniz. Kontörler hesabınıza anında işlenir, sadece tüketildikçe düşer; aylık plan limitinizin üstüne eklenir, bir sonraki aya devreder.",
+    icon: Sparkles,
+    color: "from-amber-500 to-orange-600",
+    domain: "finans.erpide.com",
+    skus: [
+      {
+        id: "ai-kontor-500",
+        productId: "ai-kontor",
+        name: "500 Kontör",
+        description: "Küçük takviye — kısa süreli yoğun kullanım",
+        price: 5,
+        currency: "TRY",
+        prices: { USD: 5 },
+        cycle: "monthly",
+        kind: "credit",
+        creditsGranted: 500,
+        features: [
+          "500 AI mesaj kontörü",
+          "Firma havuzuna anında tanımlanır",
+          "Plan limitinden ayrıdır — devreder",
+          "Mesaj başı $0.010",
+        ],
+      },
+      {
+        id: "ai-kontor-1000",
+        productId: "ai-kontor",
+        name: "1.000 Kontör",
+        description: "Standart kullanım için",
+        price: 10,
+        currency: "TRY",
+        prices: { USD: 10 },
+        cycle: "monthly",
+        kind: "credit",
+        creditsGranted: 1000,
+        features: [
+          "1.000 AI mesaj kontörü",
+          "Mesaj başı $0.010 (aynı oran)",
+          "Firma havuzuna anında tanımlanır",
+          "Plan limitinden ayrıdır — devreder",
+        ],
+      },
+      {
+        id: "ai-kontor-2000",
+        productId: "ai-kontor",
+        name: "2.000 Kontör",
+        description: "Aylık yedek — orta yoğunluk",
+        price: 20,
+        currency: "TRY",
+        prices: { USD: 20 },
+        cycle: "monthly",
+        kind: "credit",
+        creditsGranted: 2000,
+        features: [
+          "2.000 AI mesaj kontörü",
+          "Mesaj başı $0.010",
+          "Toplu fatura işleme için ideal",
+          "Plan limitinden ayrıdır — devreder",
+        ],
+        highlight: true,
+      },
+      {
+        id: "ai-kontor-10000",
+        productId: "ai-kontor",
+        name: "10.000 Kontör",
+        description: "Yoğun kullanım — büyük takım",
+        price: 80,
+        currency: "TRY",
+        prices: { USD: 80 },
+        cycle: "monthly",
+        kind: "credit",
+        creditsGranted: 10000,
+        features: [
+          "10.000 AI mesaj kontörü",
+          "%20 indirimli paket (mesaj başı $0.008)",
+          "Toplu işleme için en uygun",
+          "Plan limitinden ayrıdır — devreder",
+        ],
+      },
+    ],
+  },
+  {
+    id: "pocketerpide",
+    name: "PocketERPIDE",
+    tagline: "Bireysel Kullanıcı için AI Destekli Cüzdan & Bütçe",
+    description:
+      "Maaşını gir, faturalarını AI'a söyle, otomatik kaydedilsin. Memur, mühendis, doktor — gelir/gider takip eden herkes için tasarlandı. ERP karmaşıklığı yok, sade cüzdan deneyimi.",
+    longDescription:
+      "PocketERPIDE; bireysel kullanıcılar için yapılmış, AI asistanlı kişisel finans takip uygulamasıdır. Maaşını (brüt veya net) bir kez tanımla, sistem her ay otomatik gelir olarak kaydetsin. Fatura geldikçe AI'a fotoğraf at veya yazılı olarak söyle — kategorize edilip cüzdanına işlensin. Aylık özet, kategori bazlı harcama analizi, hedef bütçe takibi, vergi iadesi hesaplama. Şirket muhasebesi karmaşıklığı yok; herkesin kullanabildiği sade bir kişisel bütçe uygulaması.",
+    icon: Wallet,
+    color: "from-pink-500 to-rose-600",
+    domain: "pocket.erpide.com",
+    comingSoon: true,
+    skus: [
+      {
+        id: "pocketerpide-personal-monthly",
+        productId: "pocketerpide",
+        name: "Personal",
+        description: "Bireysel kullanıcılar için tek paket — sınırsız özellik",
+        price: 3,
+        currency: "TRY",
+        prices: { USD: 3 },
+        cycle: "monthly",
+        kind: "standalone",
+        features: [
+          "Brüt/Net maaş tanımı (TR vergi diliminden net hesabı)",
+          "Periyodik gelir (maaş, kira, ek iş)",
+          "AI ile fatura kayıt (yaz / söyle / fotoğraf at)",
+          "Kategori bazlı harcama analizi",
+          "Aylık özet + kalan bütçe",
+          "Hedef bütçe (örn 'ayda 5000 TL biriktir')",
+          "Vergi iadesi hesabı (yıl sonu)",
+          "Mobil + web — her yerden eriş",
+        ],
+        highlight: true,
       },
     ],
   },

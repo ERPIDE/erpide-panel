@@ -14,22 +14,42 @@ import type { SKU, Currency } from "@/lib/products";
 
 export const SUPPORTED_CURRENCIES: Currency[] = ["TRY", "USD"];
 
+/** USD→TRY çevrim kuru. iyzico hesabımız sadece TRY ödeme aldığı için fiyatlar
+ *  USD gösterilse de ödeme TRY çevrilerek çekilir. Kuru env'den okuyoruz —
+ *  default 40, manuel güncellenir ya da ileride bir kur API'sine bağlanır. */
+const DEFAULT_USD_TRY = 40;
+export function getUsdTryRate(): number {
+  const raw = process.env.USD_TRY_RATE;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_USD_TRY;
+}
+
+/** Bir SKU için iyzico'ya gönderilecek TRY tutarı. SKU'nun USD fiyatı varsa
+ *  kur ile çarpar; yoksa legacy `price` (TRY) döner. */
+export function priceForCharge(sku: SKU): { price: number; currency: "TRY" } {
+  const usd = sku.prices?.USD;
+  if (usd !== undefined) {
+    const tryAmount = Math.round(usd * getUsdTryRate() * 100) / 100;
+    return { price: tryAmount, currency: "TRY" };
+  }
+  return { price: sku.price, currency: "TRY" };
+}
+
 export interface CurrencyFormatOptions {
   short?: boolean; // "$9.99" instead of "USD 9.99"
 }
 
 
-/** Read the user's Accept-Language header and a manual cookie override and
- *  return the currency we should display prices in. */
+/** Tüm dünya için USD gösteriyoruz — TR enflasyonu yüzünden TRY fiyat sabit
+ *  tutulamıyor, ayrıca diğer ERP ürünleri (1C, CANIAS) zaten USD ile fiyat
+ *  veriyor, karşılaştırma kolay olsun. Cookie override kalır (admin/debug
+ *  için), ama default herkese USD. */
 export function pickCurrency(opts: {
   acceptLanguage?: string | null;
   cookieValue?: string | null;
 }): Currency {
   const cookie = (opts.cookieValue || "").toUpperCase();
   if (cookie === "TRY" || cookie === "USD") return cookie as Currency;
-
-  const al = (opts.acceptLanguage || "").toLowerCase();
-  if (al.includes("tr")) return "TRY";
   return "USD";
 }
 
@@ -41,7 +61,9 @@ export function pickCurrency(opts: {
 export function priceFor(sku: SKU, requested: Currency): { price: number; currency: Currency } {
   const explicit = sku.prices?.[requested];
   if (explicit !== undefined) return { price: explicit, currency: requested };
-  // Requested currency not supported on this SKU → fall back to TRY.
+  // Fallback: USD varsa onu döndür, yoksa legacy price (TRY varsayılır).
+  const usd = sku.prices?.USD;
+  if (usd !== undefined) return { price: usd, currency: "USD" };
   return { price: sku.price, currency: "TRY" };
 }
 

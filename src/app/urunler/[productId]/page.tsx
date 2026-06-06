@@ -10,6 +10,7 @@ import { getProduct } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
+import FinansERPIDEConfigurator from "@/components/FinansERPIDEConfigurator";
 
 function Inner({ productId }: { productId: string }) {
   const product = getProduct(productId);
@@ -17,13 +18,45 @@ function Inner({ productId }: { productId: string }) {
   const sp = useSearchParams();
   const initialSku = sp.get("sku");
   const { addItem, lines } = useCart();
-  const { currency, setCurrency } = useCurrency();
+  const { currency } = useCurrency();
   const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0].id || "");
   const [adding, setAdding] = useState(false);
   const [trialing, setTrialing] = useState(false);
   const [trialMsg, setTrialMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const autoTrialFired = useRef(false);
   const wantsAutoTrial = sp.get("trial") === "1";
+
+  // Kullanıcının mevcut durumu: trial daha önce yapılmış mı, aktif paid SKU var mı?
+  // me API'den çekiliyor; null = henüz yüklenmedi (UI default flow).
+  const [meReady, setMeReady] = useState(false);
+  const [hasTrialedThisProduct, setHasTrialedThisProduct] = useState(false);
+  const [activeSkuOfThisProduct, setActiveSkuOfThisProduct] = useState<string | null>(null);
+  const [lastSkuOfThisProduct, setLastSkuOfThisProduct] = useState<string | null>(null);
+  const [productAppState, setProductAppState] = useState<"active" | "expired" | "none">("none");
+  // ai-kontor için: kullanıcının aktif finanserpide planı var mı?
+  const [hasActiveFinansERPIDE, setHasActiveFinansERPIDE] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+    fetch("/api/shop/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        const trialed: string[] = Array.isArray(d?.trialedProducts) ? d.trialedProducts : [];
+        const active: Record<string, string> = (d?.activeSkuByProduct && typeof d.activeSkuByProduct === "object") ? d.activeSkuByProduct : {};
+        const last: Record<string, string> = (d?.lastSkuByProduct && typeof d.lastSkuByProduct === "object") ? d.lastSkuByProduct : {};
+        const states: Record<string, "active" | "expired" | "none"> = (d?.appStates && typeof d.appStates === "object") ? d.appStates : {};
+        setHasTrialedThisProduct(trialed.includes(product.id));
+        setActiveSkuOfThisProduct(active[product.id] ?? null);
+        setLastSkuOfThisProduct(last[product.id] ?? null);
+        setProductAppState(states[product.id] ?? "none");
+        setHasActiveFinansERPIDE(states.finanserpide === "active");
+        setMeReady(true);
+      })
+      .catch(() => setMeReady(true));
+  }, [product]);
+
+  // ai-kontor sadece aktif FinansERPIDE müşterilerine satılır — kontörler firma bazlı havuza yazılır.
+  const aiKontorBlocked = product?.id === "ai-kontor" && meReady && !hasActiveFinansERPIDE;
 
   if (!product) {
     return (
@@ -84,6 +117,29 @@ function Inner({ productId }: { productId: string }) {
       setTrialMsg({ ok: false, text: "Bağlantı hatası: " + String(e) });
       setTrialing(false);
     }
+  }
+
+  // FinansERPIDE özel sayfa: modüler plan konfigüratörü (base + modul + ek kullanıcı).
+  // Diğer ürünler (Captcha, AI Kontör, Pocket) standart "Plan Seç" UI'ı kullanır.
+  if (product.id === "finanserpide") {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-24 pb-20 px-6 min-h-screen">
+          <div className="max-w-6xl mx-auto">
+            <Link href="/urunler" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6">
+              <ArrowLeft size={14} /> Ürünlere dön
+            </Link>
+            <FinansERPIDEConfigurator
+              product={product}
+              activeBaseSkuId={activeSkuOfThisProduct}
+              hasTrialed={hasTrialedThisProduct}
+            />
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
   }
 
   return (
@@ -151,41 +207,37 @@ function Inner({ productId }: { productId: string }) {
 
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-white">Plan Seçin</h2>
-                {product.skus.some((s) => s.prices?.USD) && (
-                  <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-[#0d0d14] border border-white/5">
-                    <button
-                      onClick={() => setCurrency("TRY")}
-                      className={`text-xs px-3 py-1.5 rounded-md transition ${currency === "TRY" ? "bg-blue-500/20 text-blue-300" : "text-gray-500 hover:text-gray-300"}`}
-                    >
-                      ₺ TRY
-                    </button>
-                    <button
-                      onClick={() => setCurrency("USD")}
-                      className={`text-xs px-3 py-1.5 rounded-md transition ${currency === "USD" ? "bg-blue-500/20 text-blue-300" : "text-gray-500 hover:text-gray-300"}`}
-                    >
-                      $ USD
-                    </button>
-                  </div>
-                )}
               </div>
               <div className="space-y-3 mb-8">
                 {product.skus.map((sku) => {
                   const { price, currency: skuCcy } = priceFor(sku, currency);
+                  const isCurrentPlan = activeSkuOfThisProduct === sku.id;
+                  const isExpiredSku = productAppState === "expired" && lastSkuOfThisProduct === sku.id;
                   return (
                   <button
                     key={sku.id}
                     onClick={() => setSelectedSku(sku.id)}
                     className={`w-full text-left p-5 rounded-2xl border transition ${
-                      selectedSku === sku.id
+                      isCurrentPlan
+                        ? "border-emerald-500/50 bg-emerald-500/5"
+                        : isExpiredSku
+                        ? "border-amber-500/50 bg-amber-500/5"
+                        : selectedSku === sku.id
                         ? "border-blue-500/60 bg-blue-500/5"
                         : "border-white/10 bg-[#111118] hover:border-white/20"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-semibold text-white">{sku.name}</h3>
-                          {sku.highlight && (
+                          {isCurrentPlan && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">MEVCUT PLANINIZ</span>
+                          )}
+                          {isExpiredSku && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">SÜRESİ DOLDU</span>
+                          )}
+                          {!isCurrentPlan && !isExpiredSku && sku.highlight && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">POPÜLER</span>
                           )}
                         </div>
@@ -228,22 +280,71 @@ function Inner({ productId }: { productId: string }) {
                     );
                   })()}
                 </div>
-                <button
-                  onClick={handleStartTrial}
-                  disabled={trialing}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
-                >
-                  {trialing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {trialing ? "Başlatılıyor..." : "3 Gün Ücretsiz Dene"}
-                </button>
-                <button
-                  onClick={handleAdd}
-                  disabled={adding}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
-                >
-                  {adding ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
-                  {adding ? "Ekleniyor..." : inCartQty > 0 ? `Sepete Ekle (zaten ${inCartQty}x var)` : "Sepete Ekle"}
-                </button>
+                {(() => {
+                  // ai-kontor: FinansERPIDE aktif değilse satın alma engelli (kontör firma bazlı havuza işlenir).
+                  if (aiKontorBlocked) {
+                    return (
+                      <div className="space-y-2 mb-2">
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed">
+                          AI kontör paketleri, satın alanın firma havuzuna yazılır ve sadece <strong>FinansERPIDE</strong> içinde kullanılır. Önce aktif bir FinansERPIDE planı almalısınız.
+                        </div>
+                        <Link
+                          href="/urunler/finanserpide"
+                          className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition"
+                        >
+                          <ArrowLeft size={16} /> FinansERPIDE&apos;ye Git
+                        </Link>
+                      </div>
+                    );
+                  }
+                  const isCurrentPlan = meReady && activeSkuOfThisProduct === currentSku.id;
+                  const hasAnyActivePlanForProduct = meReady && !!activeSkuOfThisProduct;
+                  const isExpiredProduct = productAppState === "expired";
+                  const isExpiredSelected = isExpiredProduct && lastSkuOfThisProduct === currentSku.id;
+                  const showTrial = meReady && !hasTrialedThisProduct && !hasAnyActivePlanForProduct && !isExpiredProduct;
+
+                  const ctaLabel = isCurrentPlan
+                    ? "Bu Plan Aktif"
+                    : isExpiredSelected
+                    ? (inCartQty > 0 ? `Lisansı Uzat (sepette ${inCartQty}x)` : "Lisansı Uzat (+30 gün)")
+                    : isExpiredProduct
+                    ? (inCartQty > 0 ? `Bu Plana Yükselt (sepette ${inCartQty}x)` : "Bu Plana Yükselt")
+                    : hasAnyActivePlanForProduct
+                    ? (inCartQty > 0 ? `Yükselt (sepette ${inCartQty}x)` : "Bu Plana Yükselt")
+                    : (inCartQty > 0 ? `Sepete Ekle (zaten ${inCartQty}x var)` : "Sepete Ekle");
+
+                  const isUpgradeOrRenew = isExpiredProduct || hasAnyActivePlanForProduct;
+                  return (
+                    <>
+                      {showTrial && (
+                        <button
+                          onClick={handleStartTrial}
+                          disabled={trialing}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
+                        >
+                          {trialing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                          {trialing ? "Başlatılıyor..." : "3 Gün Ücretsiz Dene"}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleAdd}
+                        disabled={adding || isCurrentPlan}
+                        className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 mb-2 ${
+                          isCurrentPlan
+                            ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 cursor-not-allowed"
+                            : isUpgradeOrRenew
+                            ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 disabled:opacity-50"
+                            : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 disabled:opacity-50"
+                        }`}
+                      >
+                        {adding ? <Loader2 size={16} className="animate-spin" />
+                          : isCurrentPlan ? <Check size={16} />
+                          : <ShoppingCart size={16} />}
+                        {adding ? "Ekleniyor..." : ctaLabel}
+                      </button>
+                    </>
+                  );
+                })()}
                 {inCartQty > 0 && (
                   <button
                     onClick={() => router.push("/sepet")}

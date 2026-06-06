@@ -4,6 +4,8 @@ import type { ProductId } from "../products";
 const PREFIX: Record<ProductId, string> = {
   finanserpide: "FRP",
   captchaerpide: "CAP",
+  "ai-kontor": "AIK",
+  pocketerpide: "PKT",
   // 1C products are contact-only (no automated licensing); placeholders kept
   // so the Record stays exhaustive — keys won't be hit in normal flows.
   "1c-erp": "ERP",

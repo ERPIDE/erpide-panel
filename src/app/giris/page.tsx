@@ -3,7 +3,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader2, MailWarning } from "lucide-react";
+import { Loader2, MailWarning, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -12,6 +12,7 @@ function Inner() {
   const router = useRouter();
   const sp = useSearchParams();
   const next = sp.get("next") || "/hesabim";
+  const expiredApp = sp.get("expired"); // "finanserpide" | "captchaerpide" | "1"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,18 @@ function Inner() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Giriş Yap</span></h1>
           <p className="text-gray-400 text-sm mb-8">ERPIDE hesabınla devam et.</p>
+
+          {expiredApp && (
+            <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-sm text-amber-200">
+              <div className="flex items-start gap-2 mb-2">
+                <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="font-semibold">Lisansınızın süresi doldu</p>
+              </div>
+              <p className="text-amber-100/80 text-xs leading-relaxed">
+                Giriş yaptıktan sonra <strong>Hesabım → Lisanslarım</strong> sayfasından <strong>&quot;Lisansı Uzat&quot;</strong> butonu ile aboneliğinizi yenileyebilirsiniz. Otomatik ödeme talimatı aktifse bir sonraki tahsilat döngüsünde otomatik yenilenir.
+              </p>
+            </div>
+          )}
 
           <div className="p-8 rounded-2xl bg-[#111118] border border-white/5">
             <GoogleAuthButton label="Google ile giriş yap" />

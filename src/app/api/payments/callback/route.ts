@@ -3,6 +3,7 @@ import { retrieveCheckout } from "@/lib/payments/iyzico";
 import { findOrderByConversationId, updateOrder, findUserById, updateUser, type OrderItem } from "@/lib/auth/user-store";
 import { sendOrderConfirmationEmail } from "@/lib/payments/email";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
+import { provisionFinanserpideSku } from "@/lib/payments/finanserpide-provision";
 import { getSku } from "@/lib/products";
 
 export const runtime = "nodejs";
@@ -102,6 +103,29 @@ async function handle(req: Request) {
       } else {
         provisionedItems.push(item);
       }
+    } else if ((item.productId === "finanserpide" || item.productId === "ai-kontor") && user) {
+      const sku = getSku(item.skuId);
+      if (sku && (sku.kind === "base" || sku.kind === "module" || sku.kind === "seat" || sku.kind === "credit")) {
+        // Idempotency anchor: paymentId tek başına yetmiyor çünkü 1 ödemede
+        // birden fazla satır olabilir (ek kullanıcı, kontör paketi). licenseKey
+        // her satır için unique → tekrar deneme aynı satırı tekrar açmaz.
+        const itemPaymentId = `${result.paymentId || order.id}-${item.licenseKey}`;
+        const prov = await provisionFinanserpideSku({
+          buyerEmail: user.email,
+          paymentId: itemPaymentId,
+          sku,
+          quantity: 1, // checkout her unit'i ayrı OrderItem olarak yazıyor
+        });
+        if (!prov.ok) {
+          // Soft-fail: finans.erpide.com geçici olarak kapalıysa ödemeyi
+          // bekletmek yerine logla ve sonra retry et. Müşteri ödediği için
+          // "Lisanslarım"'da satır gözükür; provisioning durumu cron'la senkronlanır.
+          console.error("[callback] finanserpide provision failed:", prov.error, "sku=", sku.id);
+        } else {
+          console.log("[callback] finanserpide provisioned:", { sku: sku.id, kind: sku.kind, tenantId: prov.tenantId });
+        }
+      }
+      provisionedItems.push(item);
     } else {
       provisionedItems.push(item);
     }

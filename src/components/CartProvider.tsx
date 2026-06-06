@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { getSku, type SKU } from "@/lib/products";
+import { priceFor } from "@/lib/currency";
 
 export interface CartLine {
   skuId: string;
@@ -75,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines]);
 
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
-  const total = getLineWithSku().reduce((sum, { line, sku }) => sum + sku.price * line.quantity, 0);
+  const total = getLineWithSku().reduce((sum, { line, sku }) => sum + priceFor(sku, "USD").price * line.quantity, 0);
 
   return (
     <CartContext.Provider value={{ lines, itemCount, total, addItem, removeItem, updateQuantity, clear, getLineWithSku }}>

@@ -164,9 +164,14 @@ export default async function LisanslarimPage() {
                     {(isTrial || expired) && (
                       <Link
                         href={`/urunler/${product?.id ?? ""}?sku=${lic.skuId}`}
-                        className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition"
+                        className={`inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg text-white hover:opacity-90 transition ${
+                          lic.kind === "paid-expired"
+                            ? "bg-gradient-to-r from-amber-500 to-orange-600"
+                            : "bg-gradient-to-r from-blue-600 to-purple-600"
+                        }`}
                       >
-                        <ShoppingCart size={12} /> {expired ? "Yeniden Al" : "Satın Al"}
+                        <ShoppingCart size={12} />
+                        {lic.kind === "paid-expired" ? "Lisansı Uzat" : (expired ? "Satın Al" : "Satın Al")}
                       </Link>
                     )}
                     {!expired && lic.dashboardUrl && (
