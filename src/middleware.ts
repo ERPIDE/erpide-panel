@@ -32,7 +32,22 @@ async function getSessionType(token: string): Promise<string | null> {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get("host") || "";
   const session = req.cookies.get("erpide_session");
+
+  // ===== pocket.erpide.com subdomain rewrite =====
+  // Subdomain DNS Vercel'e gelir; burada path'i /pocket'a yönlendiririz.
+  // Kullanıcı pocket.erpide.com'a yazınca /pocket sayfası açılır,
+  // pocket.erpide.com/giris → /giris (auth aynı session paylaşılır).
+  if (host.startsWith("pocket.")) {
+    // Root → /pocket; diğer pathler aynen passthrough (giris, hesabim, api, vs.)
+    if (pathname === "/" || pathname === "") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/pocket";
+      return NextResponse.rewrite(url);
+    }
+    // /pocket zaten /pocket'i gösterir, /pocket dışındaki path'ler de panel'in normal sayfaları
+  }
 
   const isAdminRoute = ADMIN_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
@@ -57,5 +72,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/dashboard/:path*", "/admin/tasks/:path*", "/admin/reports/:path*", "/admin/users/:path*"],
+  // pocket.erpide.com rewrite için root path'i de matcher'a aldık.
+  // "/" sadece pocket subdomain'inde rewrite olur, ana erpide.com'da hiçbir şey olmaz.
+  matcher: ["/", "/admin/dashboard/:path*", "/admin/tasks/:path*", "/admin/reports/:path*", "/admin/users/:path*"],
 };
