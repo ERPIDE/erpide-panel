@@ -29,6 +29,17 @@ interface LicenseRow {
   maxSolvesPerDay?: number;
 }
 
+/** Backend provisioning dashboardUrl döndürmemişse productId'ye göre default app URL'i ver.
+ *  PocketERPIDE panel içinde çalıştığı için /pocket; FinansERPIDE harici subdomain. */
+function defaultAppUrl(productId: string): string | null {
+  switch (productId) {
+    case "pocketerpide":  return "/pocket";
+    case "finanserpide":  return "https://finans.erpide.com/giris";
+    case "captchaerpide": return "https://captcha.erpide.com/dashboard";
+    default:              return null;
+  }
+}
+
 function formatRemaining(expiresAt: string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
   if (ms <= 0) return "Süresi doldu";
@@ -174,15 +185,23 @@ export default async function LisanslarimPage() {
                         {lic.kind === "paid-expired" ? "Lisansı Uzat" : (expired ? "Satın Al" : "Satın Al")}
                       </Link>
                     )}
-                    {!expired && lic.dashboardUrl && (
-                      <Link
-                        href={lic.dashboardUrl}
-                        target="_blank"
-                        className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
-                      >
-                        Detaylı Panel <ExternalLink size={12} />
-                      </Link>
-                    )}
+                    {(() => {
+                      if (expired) return null;
+                      const url = lic.dashboardUrl || defaultAppUrl(lic.productId);
+                      if (!url) return null;
+                      const isExternal = url.startsWith("http");
+                      return (
+                        <Link
+                          href={url}
+                          target={isExternal ? "_blank" : undefined}
+                          rel={isExternal ? "noopener noreferrer" : undefined}
+                          className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition font-medium"
+                        >
+                          {lic.productId === "pocketerpide" ? "Cüzdanı Aç" : "Uygulamayı Aç"}
+                          {isExternal ? <ExternalLink size={12} /> : null}
+                        </Link>
+                      );
+                    })()}
                   </div>
                 </div>
 

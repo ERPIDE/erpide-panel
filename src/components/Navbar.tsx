@@ -8,9 +8,9 @@ import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 import { useCart } from "./CartProvider";
 
 interface MeUser { id: string; email: string; name: string; surname: string }
-interface AppsState { finanserpide: boolean; captchaerpide: boolean }
+interface AppsState { finanserpide: boolean; captchaerpide: boolean; pocketerpide: boolean }
 type AppState = "active" | "expired" | "none";
-interface AppStatesMap { finanserpide: AppState; captchaerpide: AppState }
+interface AppStatesMap { finanserpide: AppState; captchaerpide: AppState; pocketerpide: AppState }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -18,8 +18,8 @@ export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
   const [user, setUser] = useState<MeUser | null>(null);
-  const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false });
-  const [appStates, setAppStates] = useState<AppStatesMap>({ finanserpide: "none", captchaerpide: "none" });
+  const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false, pocketerpide: false });
+  const [appStates, setAppStates] = useState<AppStatesMap>({ finanserpide: "none", captchaerpide: "none", pocketerpide: "none" });
   const { t, locale, setLocale } = useTranslation();
   const { itemCount } = useCart();
 
@@ -133,6 +133,15 @@ export default function Navbar() {
                     buyUrl="/urunler/captchaerpide"
                     onClose={() => setAppsOpen(false)}
                   />
+                  <AppLauncherItem
+                    icon={<Wallet size={18} className="text-pink-400" />}
+                    name="PocketERPIDE"
+                    desc="Bireysel cüzdan + AI fatura takibi"
+                    state={appStates.pocketerpide}
+                    appUrl="/pocket"
+                    buyUrl="/urunler/pocketerpide"
+                    onClose={() => setAppsOpen(false)}
+                  />
                   <div className="border-t border-white/5">
                     <Link
                       href="/urunler"
@@ -242,6 +251,16 @@ export default function Navbar() {
                       ? <ExternalLink size={12} className="text-emerald-400" />
                       : <span className="text-[10px] text-gray-500">Satın Al</span>}
                   </a>
+                  <Link
+                    href={apps.pocketerpide ? "/pocket" : "/urunler/pocketerpide"}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between py-2 text-gray-300"
+                  >
+                    <span className="flex items-center gap-2"><Wallet size={16} className="text-pink-400" /> PocketERPIDE</span>
+                    {apps.pocketerpide
+                      ? <ExternalLink size={12} className="text-pink-400" />
+                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                  </Link>
                 </div>
               )}
 

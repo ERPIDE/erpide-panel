@@ -13,7 +13,7 @@ export async function GET() {
   const orders = await listOrdersByUserId(user.id);
   const now = Date.now();
   type AppState = "active" | "expired" | "none";
-  const states: Record<string, AppState> = { finanserpide: "none", captchaerpide: "none" };
+  const states: Record<string, AppState> = { finanserpide: "none", captchaerpide: "none", pocketerpide: "none" };
   const trialedProductIds = new Set<string>();
   // productId → şu an aktif PAID SKU (varsa). UI "MEVCUT PLANINIZ" rozeti için.
   const activeSkuByProduct: Record<string, string> = {};
@@ -63,6 +63,7 @@ export async function GET() {
       // Legacy boolean (true = aktif lisans). Yeni kod `appStates` kullansın.
       finanserpide: states.finanserpide === "active",
       captchaerpide: states.captchaerpide === "active",
+      pocketerpide: states.pocketerpide === "active",
     },
     appStates: states,
     trialedProducts: Array.from(trialedProductIds),
