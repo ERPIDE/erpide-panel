@@ -27,6 +27,21 @@ interface Props {
   hasTrialed?: boolean;
 }
 
+// FinansERPIDE canlı sistemden çekilmiş ekran görüntüleri — Playwright otomatik
+// capture (C:/tmp/erpide-screenshots/capture.js, headless chromium 1920×1080@2x).
+// Yeni özellik geldiğinde script tekrar koşulup public/ altı güncellenir.
+const FINANSERPIDE_SCREENSHOTS = [
+  { src: "/screenshots/finanserpide/02-faturalar.png",        caption: "Faturalar — açık/vadesi geçmiş/ödenmiş filtreleri" },
+  { src: "/screenshots/finanserpide/06-muhasebe-yevmiye.png", caption: "TR Muhasebe — otomatik yevmiye + TDHP hesap planı" },
+  { src: "/screenshots/finanserpide/09-eylul-ai.png",         caption: "Eylül — konuşarak fatura kes, rapor sor, cari aç" },
+  { src: "/screenshots/finanserpide/08-raporlar.png",         caption: "Raporlar — kar/zarar, cari yaşlandırma, mutabakat" },
+  { src: "/screenshots/finanserpide/07-finans-bankalar.png",  caption: "Banka & Kasa — çoklu hesap, döviz, hareket takibi" },
+  { src: "/screenshots/finanserpide/04-stok-urunler.png",     caption: "Stok — ağırlıklı ortalama maliyet, min seviye alarmı" },
+  { src: "/screenshots/finanserpide/03-cari.png",             caption: "Cari — müşteri/tedarikçi, bakiye, mutabakat PDF" },
+  { src: "/screenshots/finanserpide/10-ik-bordro.png",        caption: "Bordro — SGK kesintileri, otomatik personel ödemesi" },
+  { src: "/screenshots/finanserpide/11-uretim-recete.png",    caption: "Üretim — BOM reçeteleri, sipariş bazlı maliyet" },
+];
+
 export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, hasTrialed }: Props) {
   const router = useRouter();
   const { addItem, lines } = useCart();
@@ -81,7 +96,51 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
   const Icon = product.icon;
 
   return (
-    <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+    <>
+      {/* HERO — Komuta Merkezi (canlı dashboard screenshot) */}
+      <div className="mb-10">
+        <div className="flex items-start gap-4 mb-5">
+          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${product.color} flex items-center justify-center flex-shrink-0`}>
+            <Icon size={26} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white">{product.name}</h1>
+            <p className="text-sm text-blue-400 mt-1">{product.tagline}</p>
+            <p className="text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">{product.description}</p>
+          </div>
+        </div>
+        <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/screenshots/finanserpide/01-dashboard.png"
+            alt="FinansERPIDE Dashboard — Komuta Merkezi"
+            className="w-full h-auto block"
+            loading="eager"
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2 text-center italic">
+          Komuta Merkezi — net pozisyon, bu ayki satış/alış, açık fatura/vade, finansman yükü ve operasyon, hepsi tek ekranda.
+        </p>
+      </div>
+
+      {/* EKRAN GÖRÜNTÜLERİ — canlıdan modül galerisi */}
+      <div className="mb-10">
+        <h2 className="text-2xl font-bold text-white mb-2">Modüller — Canlı Sistemden</h2>
+        <p className="text-sm text-gray-400 mb-5 max-w-2xl">
+          Tüm görüntüler gerçek FinansERPIDE arayüzünden alındı. Yeni özellik eklendiğinde otomatik güncellenir.
+        </p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {FINANSERPIDE_SCREENSHOTS.map((s) => (
+            <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 hover:border-blue-500/40 transition group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.src} alt={s.caption} className="w-full h-auto block group-hover:scale-[1.02] transition-transform" loading="lazy" />
+              <figcaption className="px-3 py-2 text-xs text-gray-400 bg-[#0a0a0f] border-t border-white/5 leading-relaxed">{s.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_360px] gap-8">
       {/* SOL — Konfigüratör */}
       <div>
         <div className="flex items-start gap-4 mb-6">
@@ -89,9 +148,8 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
             <Icon size={26} className="text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white">{product.name}</h1>
-            <p className="text-sm text-blue-400 mt-1">{product.tagline}</p>
-            <p className="text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">{product.description}</p>
+            <h2 className="text-2xl font-bold text-white">Planınızı Yapılandırın</h2>
+            <p className="text-sm text-gray-400 mt-1">Temel paket + ihtiyacınız olan modülleri ekleyin.</p>
           </div>
         </div>
 
@@ -272,7 +330,8 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
 
         <SkuItemListAddedToCart product={product} />
       </aside>
-    </div>
+      </div>
+    </>
   );
 }
 
