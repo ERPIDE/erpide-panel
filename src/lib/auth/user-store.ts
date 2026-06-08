@@ -143,11 +143,41 @@ export interface LicenseCodeRecord {
   redeemedOrderId?: string;
 }
 
+/**
+ * Havale ödeme isteği — kullanıcı checkout'ta "Havale" seçerse oluşur.
+ * Unique kod (HAV-XXXXXXXX) üretilir, kullanıcı IBAN'a transfer yaparken
+ * açıklamaya bu kodu yazar. Admin /admin/odemeler ekranından gelen havaleyi
+ * "Onayla" basınca order PAID'e geçer + lisans aktif olur.
+ */
+export interface BankTransferRequest {
+  code: string;         // HAV-XXXXXXXX format
+  userId: string;
+  userEmail: string;
+  productId: string;
+  skuIds: string[];     // tek istek birden fazla SKU içerebilir (sepet)
+  skuNames?: string[];  // human-readable kayıt
+  amountUSD: number;    // sepet toplamı USD
+  fxRate: number;       // o ankü TCMB USD/TRY satış kuru
+  fxRateDate: string;   // YYYY-MM-DD
+  amountTRY: number;    // round-down (4307→4300)
+  ibanUsed: string;     // hangi IBAN'a gönderileceği
+  ibanHolder: string;   // hesap sahibi adı
+  status: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+  createdAt: string;
+  expiresAt: string;     // varsayılan 7 gün
+  approvedBy?: string;   // admin email
+  approvedAt?: string;
+  rejectionReason?: string;
+  orderId?: string;      // approve sonrası yaratılan order
+}
+
 interface State {
   users: Record<string, UserRecord>;
   orders: Record<string, OrderRecord>;
   /** key = normalize edilmiş kod (büyük harf, tireler korunur) */
   licenseCodes?: Record<string, LicenseCodeRecord>;
+  /** key = HAV-XXXXXXXX havale kodu */
+  bankTransfers?: Record<string, BankTransferRequest>;
   __version: 1;
 }
 
@@ -402,4 +432,59 @@ export async function markLicenseCodeRedeemed(code: string, userId: string, orde
 export async function listLicenseCodes(): Promise<LicenseCodeRecord[]> {
   const s = await loadState();
   return Object.values(s.licenseCodes || {});
+}
+
+// ============ HAVALE / EFT ÖDEME İSTEKLERİ ============
+
+export async function createBankTransferRequest(input: Omit<BankTransferRequest, "createdAt" | "status">): Promise<BankTransferRequest> {
+  const s = await loadState(true);
+  if (!s.bankTransfers) s.bankTransfers = {};
+  if (s.bankTransfers[input.code]) throw new Error("Bu kod zaten mevcut");
+  const record: BankTransferRequest = {
+    ...input,
+    status: "PENDING",
+    createdAt: new Date().toISOString(),
+  };
+  s.bankTransfers[input.code] = record;
+  await saveState(s);
+  return record;
+}
+
+export async function getBankTransferRequest(code: string): Promise<BankTransferRequest | undefined> {
+  const s = await loadState();
+  return s.bankTransfers?.[code];
+}
+
+export async function listBankTransferRequests(opts?: { status?: BankTransferRequest["status"]; userId?: string }): Promise<BankTransferRequest[]> {
+  const s = await loadState();
+  let list = Object.values(s.bankTransfers || {});
+  if (opts?.status) list = list.filter((b) => b.status === opts.status);
+  if (opts?.userId) list = list.filter((b) => b.userId === opts.userId);
+  return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function approveBankTransferRequest(code: string, adminEmail: string, orderId: string): Promise<BankTransferRequest> {
+  const s = await loadState(true);
+  const rec = s.bankTransfers?.[code];
+  if (!rec) throw new Error("Havale isteği bulunamadı");
+  if (rec.status !== "PENDING") throw new Error(`İstek zaten ${rec.status}`);
+  rec.status = "APPROVED";
+  rec.approvedBy = adminEmail;
+  rec.approvedAt = new Date().toISOString();
+  rec.orderId = orderId;
+  await saveState(s);
+  return rec;
+}
+
+export async function rejectBankTransferRequest(code: string, adminEmail: string, reason: string): Promise<BankTransferRequest> {
+  const s = await loadState(true);
+  const rec = s.bankTransfers?.[code];
+  if (!rec) throw new Error("Havale isteği bulunamadı");
+  if (rec.status !== "PENDING") throw new Error(`İstek zaten ${rec.status}`);
+  rec.status = "REJECTED";
+  rec.approvedBy = adminEmail;
+  rec.approvedAt = new Date().toISOString();
+  rec.rejectionReason = reason;
+  await saveState(s);
+  return rec;
 }

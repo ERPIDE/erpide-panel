@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
-  Menu, ChevronRight, Loader2, Shield, Key
+  Menu, ChevronRight, Loader2, Shield, Key, Banknote
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/odemeler", label: "Ödemeler", icon: Banknote },
   { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
   { href: "/admin/reports", label: "Raporlar", icon: FileText },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users },

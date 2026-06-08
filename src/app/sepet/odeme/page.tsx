@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, ShieldCheck, Plus, User, Building2, Check } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, Plus, User, Building2, Check, CreditCard, Banknote, Key } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/components/CartProvider";
@@ -22,6 +22,7 @@ export default function SepetOdemePage() {
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const [consents, setConsents] = useState({ preInfo: false, distance: false, kvkk: false, digitalDelivery: false });
+  const [paymentMethod, setPaymentMethod] = useState<"iyzico" | "bank-transfer" | "e-pin">("iyzico");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,10 +63,31 @@ export default function SepetOdemePage() {
     e.preventDefault();
     setError("");
     if (items.length === 0) { setError("Sepetin boş"); return; }
+    // E-pin için adres + consents gereksiz — direkt redirect
+    if (paymentMethod === "e-pin") {
+      router.push("/hesabim/aktivasyon-kodu");
+      return;
+    }
     if (!selectedAddressId) { setError("Bir fatura adresi seç veya yeni ekle"); return; }
     if (!allConsents) { setError("Tüm onay kutularını işaretle"); return; }
     setLoading(true);
     try {
+      if (paymentMethod === "bank-transfer") {
+        const res = await fetch("/api/payments/bank-transfer/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skuIds: items.map((i) => i.sku.id) }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Havale isteği oluşturulamadı");
+          setLoading(false);
+          return;
+        }
+        router.push(data.redirectUrl);
+        return;
+      }
+      // Default: iyzico
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,8 +187,33 @@ export default function SepetOdemePage() {
                 )}
               </fieldset>
 
-              <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-3">
-                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Yasal Onaylar</legend>
+              <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-2">
+                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Ödeme Yöntemi</legend>
+                <PaymentRadio
+                  selected={paymentMethod === "iyzico"}
+                  onSelect={() => setPaymentMethod("iyzico")}
+                  icon={<CreditCard size={16} />}
+                  title="iyzico ile Kredi Kartı"
+                  desc="Anında aktivasyon · 256-bit SSL · Kart bilgisi bizde değil"
+                />
+                <PaymentRadio
+                  selected={paymentMethod === "bank-transfer"}
+                  onSelect={() => setPaymentMethod("bank-transfer")}
+                  icon={<Banknote size={16} />}
+                  title="Havale / EFT"
+                  desc="Günün TCMB kuruyla TL tutarı + IBAN bilgisi sonraki adımda gösterilir. 1-2 iş günü içinde manuel onaylanır."
+                />
+                <PaymentRadio
+                  selected={paymentMethod === "e-pin"}
+                  onSelect={() => setPaymentMethod("e-pin")}
+                  icon={<Key size={16} />}
+                  title="E-Pin / Aktivasyon Kodu"
+                  desc="Bayilerden/etkinliklerden aldığınız ERP-XXXX-XXXX-XXXX kodunu girerek lisansı anında aktive edin."
+                />
+              </fieldset>
+
+              <fieldset className={`p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-3 ${paymentMethod === "e-pin" ? "opacity-50 pointer-events-none" : ""}`}>
+                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Yasal Onaylar {paymentMethod === "e-pin" && <span className="normal-case text-gray-500">(e-pin için gereksiz)</span>}</legend>
                 <Consent checked={consents.preInfo} onChange={(v) => setConsents({ ...consents, preInfo: v })}>
                   <Link href="/sozlesmeler/on-bilgilendirme" target="_blank" className="text-blue-400 hover:underline">Ön Bilgilendirme Formu</Link>'nu okudum.
                 </Consent>
@@ -207,14 +254,20 @@ export default function SepetOdemePage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !allConsents || !selectedAddressId}
+                  disabled={loading || (paymentMethod !== "e-pin" && (!allConsents || !selectedAddressId))}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={16} className="animate-spin" />}
-                  {loading ? "Yönlendiriliyor..." : "iyzico ile Öde"}
+                  {loading ? "Yönlendiriliyor..." :
+                    paymentMethod === "iyzico"        ? "iyzico ile Öde" :
+                    paymentMethod === "bank-transfer" ? "Havale Bilgilerini Al" :
+                                                        "Aktivasyon Koduyla Devam"}
                 </button>
                 <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">
-                  <ShieldCheck size={12} /> Kart bilgilerin iyzico'da, biz görmeyiz.
+                  <ShieldCheck size={12} />
+                  {paymentMethod === "iyzico" && "Kart bilgilerin iyzico'da, biz görmeyiz."}
+                  {paymentMethod === "bank-transfer" && "TL tutarı sonraki adımda kesinleşir."}
+                  {paymentMethod === "e-pin" && "Aktivasyon kodu sayfasına yönlendirileceksin."}
                 </div>
               </div>
             </motion.aside>
@@ -268,6 +321,27 @@ function AddressRadio({ addr, selected, onSelect }: { addr: SavedAddress; select
             {addr.fullAddress} • {addr.district}/{addr.city}
           </p>
         </div>
+      </div>
+    </button>
+  );
+}
+
+function PaymentRadio({ selected, onSelect, icon, title, desc }: { selected: boolean; onSelect: () => void; icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left p-4 rounded-xl border transition flex items-start gap-3 ${
+        selected ? "border-blue-500/60 bg-blue-500/5" : "border-white/10 bg-[#0d0d14] hover:border-white/20"
+      }`}
+    >
+      <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${selected ? "border-blue-500 bg-blue-500" : "border-white/20"}`}>
+        {selected && <Check size={10} className="text-white" />}
+      </div>
+      <div className={`flex-shrink-0 ${selected ? "text-blue-300" : "text-gray-500"}`}>{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className={`font-semibold text-sm ${selected ? "text-white" : "text-gray-200"}`}>{title}</p>
+        <p className="text-[11px] text-gray-500 leading-relaxed mt-0.5">{desc}</p>
       </div>
     </button>
   );
