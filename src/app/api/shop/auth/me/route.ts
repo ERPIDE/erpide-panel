@@ -4,16 +4,34 @@ import { findUserById, listOrdersByUserId } from "@/lib/auth/user-store";
 
 export const runtime = "nodejs";
 
+/**
+ * PLATFORM_OWNER_EMAILS — virgülle ayrılmış email listesi.
+ * Bu kullanıcılar şirket sahipleri/çalışanlarıdır; kendi ürünlerinde
+ * "lisansın bitmiş" görmemeleri için tüm app state'leri "active" sayılır.
+ *
+ * Env'de yoksa hard-coded fallback: alimuratelll@gmail.com (kurucu).
+ */
+const PLATFORM_OWNER_EMAILS = new Set(
+  (process.env.PLATFORM_OWNER_EMAILS || "alimuratelll@gmail.com")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
+
 export async function GET() {
   const session = await getSession();
   if (!session.userId) return NextResponse.json({ user: null });
   const user = await findUserById(session.userId);
   if (!user) return NextResponse.json({ user: null });
 
+  const isPlatformOwner = PLATFORM_OWNER_EMAILS.has(user.email.toLowerCase());
+
   const orders = await listOrdersByUserId(user.id);
   const now = Date.now();
   type AppState = "active" | "expired" | "none";
-  const states: Record<string, AppState> = { finanserpide: "none", captchaerpide: "none", pocketerpide: "none" };
+  const states: Record<string, AppState> = isPlatformOwner
+    ? { finanserpide: "active", captchaerpide: "active", pocketerpide: "active" }
+    : { finanserpide: "none", captchaerpide: "none", pocketerpide: "none" };
   const trialedProductIds = new Set<string>();
   // productId → şu an aktif PAID SKU (varsa). UI "MEVCUT PLANINIZ" rozeti için.
   const activeSkuByProduct: Record<string, string> = {};
@@ -52,6 +70,8 @@ export async function GET() {
       continue;
     }
     for (const pid of productIds) {
+      // Owner için state hep "active" — geçmiş expired order'ı bunu bozmasın
+      if (isPlatformOwner) { states[pid] = "active"; continue; }
       if (!expired) states[pid] = "active";
       else if (states[pid] === "none") states[pid] = "expired";
     }
