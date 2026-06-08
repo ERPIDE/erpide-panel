@@ -30,7 +30,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setLines(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as CartLine[];
+        // Geçersiz / silinmiş SKU referanslarını temizle — eski SKU id'leri stale
+        // localStorage'da kalırsa itemCount şişer ama sepet boş görünür.
+        const valid = Array.isArray(parsed)
+          ? parsed.filter((l) => l && typeof l.skuId === "string" && getSku(l.skuId))
+          : [];
+        setLines(valid);
+      }
     } catch {}
     setHydrated(true);
   }, []);
@@ -75,8 +83,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       .filter((x): x is { line: CartLine; sku: SKU } => x !== null);
   }, [lines]);
 
-  const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
-  const total = getLineWithSku().reduce((sum, { line, sku }) => sum + priceFor(sku, "USD").price * line.quantity, 0);
+  // itemCount sadece GEÇERLİ (var olan SKU'ya bağlı) line'ları sayar — silinmiş
+  // SKU referansları localStorage'da kalırsa "1 ürün" gösterip sepet boş olmasın.
+  const validLines = getLineWithSku();
+  const itemCount = validLines.reduce((sum, { line }) => sum + line.quantity, 0);
+  const total = validLines.reduce((sum, { line, sku }) => sum + priceFor(sku, "USD").price * line.quantity, 0);
 
   return (
     <CartContext.Provider value={{ lines, itemCount, total, addItem, removeItem, updateQuantity, clear, getLineWithSku }}>
