@@ -239,25 +239,45 @@ function Inner({ productId }: { productId: string }) {
                 </section>
               )}
 
-              {/* CaptchaERPIDE — yeni oyun temalı demo hazırlanıyor */}
+              {/* CaptchaERPIDE — Galaxy Rush oyun girişi captcha demo (canlı çözüm) */}
               {product.id === "captchaerpide" && (
-                <section className="mb-10">
-                  <h2 className="text-xl font-bold text-white mb-3">Canlı Çözüm Demosu</h2>
-                  <div className="aspect-video rounded-2xl bg-gradient-to-br from-green-950/40 via-[#0a0a0f] to-teal-950/30 border border-green-500/20 flex flex-col items-center justify-center text-center p-6 relative overflow-hidden">
-                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-green-500/10 blur-3xl" />
-                    <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-teal-500/10 blur-3xl" />
-                    <div className="relative">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-xs text-green-300 font-medium mb-4">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        Demo hazırlanıyor
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-2">Slider Captcha Solver</h3>
-                      <p className="text-sm text-gray-400 max-w-md mx-auto">
-                        OpenCV + edge-template matching ile ortalama 28ms&apos;de çözer. Steril bir demo sayfası + canlı çözüm videosu hazırlanıyor.
-                      </p>
+                <>
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-1">Canlı Çözüm — Galaxy Rush Demo</h2>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Oyun girişine entegre slider captcha — solver OpenCV ile ortalama 100ms&apos;de çözer, AES-GCM şifreli trajectory ile doğrulanır.
+                    </p>
+                    <video
+                      className="w-full rounded-2xl border border-white/10 bg-black"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      poster="/screenshots/captchaerpide/01-loaded.png"
+                    >
+                      <source src="/videos/captcha-game-demo.webm" type="video/webm" />
+                      Tarayıcınız webm video desteği vermiyor.
+                    </video>
+                  </section>
+
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-3">Aşamalar</h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { src: "/screenshots/captchaerpide/01-loaded.png", caption: "Oyuna girişte captcha — robot olmadığını kanıtla" },
+                        { src: "/screenshots/captchaerpide/02-solved.png", caption: "Çözüm anı — AI parçayı hedefe yerleştirdi" },
+                      ].map((s) => (
+                        <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={s.src} alt={s.caption} className="w-full h-auto block" loading="lazy" />
+                          <figcaption className="px-3 py-2 text-[11px] text-gray-400 border-t border-white/5">{s.caption}</figcaption>
+                        </figure>
+                      ))}
                     </div>
-                  </div>
-                </section>
+                  </section>
+                </>
               )}
 
               {/* AI Kontör — Eylül AI ile chat SS + plan limit akışı */}
