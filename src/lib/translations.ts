@@ -17,6 +17,47 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.contact": "Contact",
     "nav.customer_panel": "Customer Panel",
     "nav.admin": "Admin",
+    "nav.products": "Products",
+    "nav.all_products": "All Products",
+    "nav.account": "My Account",
+    "nav.licenses": "My Licenses",
+    "nav.cart": "Cart",
+    "nav.buy": "Buy",
+    "nav.logout": "Log Out",
+    "nav.login": "Sign In",
+    "nav.signup": "Sign Up",
+    "nav.activation_code": "Activation Code",
+
+    // Account / Sidebar
+    "sidebar.licenses": "My Licenses",
+    "sidebar.orders": "My Orders",
+    "sidebar.addresses": "Address Info",
+    "sidebar.change_password": "Change Password",
+    "sidebar.summary": "Overview",
+    "sidebar.profile": "Profile Info",
+    "sidebar.welcome": "Welcome",
+    "sidebar.user": "User",
+
+    // Account features
+    "account.auto_renew": "Auto-Renewal",
+    "account.auto_renew_on_desc": "When enabled, your subscription is renewed automatically each {cycle} from your saved card; service continues without interruption. If renewal fails, you'll be notified by email.",
+    "account.auto_renew_off_desc": "Disabled — your license will end when the term expires and API calls will start returning 403. Use the manual \"Renew\" button to extend.",
+    "account.cancel_subscription": "Cancel Subscription",
+    "account.cancel_button": "Cancel subscription",
+    "account.cancel_confirm": "Confirm Cancellation",
+    "account.cancel_dismiss": "Keep Subscription",
+    "common.error": "Error",
+    "common.close": "Close",
+
+    // Services / Hero products
+    "hero.our_products": "Our Products",
+    "hero.explore_buy": "Explore & Buy",
+    "services.products_subtitle": "Our SaaS products — sign up instantly, add to cart, subscribe monthly.",
+
+    // Footer extras
+    "footer.products": "Products",
+    "footer.all_products": "All Products",
+    "footer.my_cart": "My Cart",
 
     // Hero
     "hero.title": "Your End-to-End Digital Transformation Partner",
@@ -188,6 +229,47 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.contact": "İletişim",
     "nav.customer_panel": "Müşteri Paneli",
     "nav.admin": "Yönetim",
+    "nav.products": "Ürünler",
+    "nav.all_products": "Tüm Ürünler",
+    "nav.account": "Hesabım",
+    "nav.licenses": "Lisanslarım",
+    "nav.cart": "Sepet",
+    "nav.buy": "Satın Al",
+    "nav.logout": "Çıkış Yap",
+    "nav.login": "Giriş Yap",
+    "nav.signup": "Üye Ol",
+    "nav.activation_code": "Aktivasyon Kodu",
+
+    // Account / Sidebar
+    "sidebar.licenses": "Lisanslarım",
+    "sidebar.orders": "Siparişlerim",
+    "sidebar.addresses": "Adres Bilgileri",
+    "sidebar.change_password": "Şifre Değiştir",
+    "sidebar.summary": "Özet",
+    "sidebar.profile": "Profil Bilgileri",
+    "sidebar.welcome": "Hoş geldin",
+    "sidebar.user": "Kullanıcı",
+
+    // Account features
+    "account.auto_renew": "Otomatik Yenileme",
+    "account.auto_renew_on_desc": "Tik açıkken her {cycle} sonu kartından otomatik tahsilat alınır, lisansın kesintisiz devam eder. Yenileme başarısız olursa mail ile bilgilendirilirsin.",
+    "account.auto_renew_off_desc": "Pasif yaptın — süre sonunda lisans otomatik biter, API çağrıların 403 dönmeye başlar. Yenilemek için manuel \"Yeniden Al\" butonuna basman gerekecek.",
+    "account.cancel_subscription": "Aboneliği İptal Et",
+    "account.cancel_button": "Aboneliği iptal et",
+    "account.cancel_confirm": "Aboneliği İptal Et",
+    "account.cancel_dismiss": "Vazgeç",
+    "common.error": "Hata",
+    "common.close": "Kapat",
+
+    // Services / Hero products
+    "hero.our_products": "Ürünlerimiz",
+    "hero.explore_buy": "İncele ve Satın Al",
+    "services.products_subtitle": "SaaS ürünlerimiz — anında üye ol, sepete ekle, aylık abone ol.",
+
+    // Footer extras
+    "footer.products": "Ürünler",
+    "footer.all_products": "Tüm Ürünler",
+    "footer.my_cart": "Sepetim",
 
     "hero.title": "Uçtan Uca Dijital Dönüşüm Partneriniz",
     "hero.subtitle": "Kendi geliştirdiğimiz SaaS ürünlerimiz FinansERPIDE ve CaptchaERPIDE ile KOBİ'lere; kurumsal ERP çözümlerimiz CANIAS, 1C:ERP ve 1C:Drive ile orta ve büyük ölçekli işletmelere uçtan uca hizmet veriyoruz. 15+ yıl ERP sektör tecrübesi, tam şeffaf proje yönetimi, 7/24 AI destekli müşteri hizmetleri.",

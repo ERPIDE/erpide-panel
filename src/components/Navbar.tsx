@@ -36,7 +36,7 @@ export default function Navbar() {
 
   const links = [
     { href: "/", label: t("nav.home") },
-    { href: "/urunler", label: "Ürünler" },
+    { href: "/urunler", label: t("nav.products") },
     { href: "/hizmetler", label: t("nav.services") },
     { href: "/hakkimizda", label: t("nav.about") },
     { href: "/iletisim", label: t("nav.contact") },
@@ -148,7 +148,7 @@ export default function Navbar() {
                       onClick={() => setAppsOpen(false)}
                       className="flex items-center gap-2 px-4 py-2.5 text-xs text-gray-400 hover:bg-white/5 hover:text-white transition"
                     >
-                      <ShoppingBag size={12} /> Tüm Ürünler
+                      <ShoppingBag size={12} /> {t("nav.all_products")}
                     </Link>
                   </div>
                 </div>
@@ -169,21 +169,21 @@ export default function Navbar() {
               {accountOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[180px]">
                   <Link href="/hesabim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
-                    <User size={14} /> Hesabım
+                    <User size={14} /> {t("nav.account")}
                   </Link>
                   <Link href="/hesabim/lisanslarim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
-                    <Key size={14} /> Lisanslarım
+                    <Key size={14} /> {t("nav.licenses")}
                   </Link>
                   <Link href="/hesabim/aktivasyon-kodu" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
-                    <Key size={14} /> Aktivasyon Kodu
+                    <Key size={14} /> {t("nav.activation_code")}
                   </Link>
                   <Link href="/hesabim/siparislerim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
-                    <Package size={14} /> Siparişlerim
+                    <Package size={14} /> {t("sidebar.orders")}
                   </Link>
                   <div className="border-t border-white/5">
                     <form action="/api/shop/auth/logout" method="POST">
                       <button type="submit" className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition">
-                        <LogOut size={14} /> Çıkış
+                        <LogOut size={14} /> {t("nav.logout")}
                       </button>
                     </form>
                   </div>
@@ -193,10 +193,10 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/giris" className="text-sm px-4 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition">
-                Giriş
+                {t("nav.login")}
               </Link>
               <Link href="/uye-ol" className="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition">
-                Üye Ol
+                {t("nav.signup")}
               </Link>
             </>
           )}
@@ -222,7 +222,7 @@ export default function Navbar() {
                 </Link>
               ))}
               <Link href="/sepet" onClick={() => setOpen(false)} className="flex items-center gap-2 text-gray-300 py-2">
-                <ShoppingCart size={16} /> Sepet {itemCount > 0 && <span className="text-blue-400">({itemCount})</span>}
+                <ShoppingCart size={16} /> {t("nav.cart")} {itemCount > 0 && <span className="text-blue-400">({itemCount})</span>}
               </Link>
               {user && (
                 <div className="pt-3 border-t border-white/5">
@@ -237,7 +237,7 @@ export default function Navbar() {
                     <span className="flex items-center gap-2"><Wallet size={16} className="text-blue-400" /> FinansERPIDE</span>
                     {apps.finanserpide
                       ? <ExternalLink size={12} className="text-blue-400" />
-                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                      : <span className="text-[10px] text-gray-500">{t("nav.buy")}</span>}
                   </a>
                   <a
                     href={apps.captchaerpide ? "https://captcha.erpide.com/dashboard" : "/urunler/captchaerpide"}
@@ -249,7 +249,7 @@ export default function Navbar() {
                     <span className="flex items-center gap-2"><Shield size={16} className="text-emerald-400" /> CaptchaERPIDE</span>
                     {apps.captchaerpide
                       ? <ExternalLink size={12} className="text-emerald-400" />
-                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                      : <span className="text-[10px] text-gray-500">{t("nav.buy")}</span>}
                   </a>
                   <Link
                     href={apps.pocketerpide ? "/pocket" : "/urunler/pocketerpide"}
@@ -259,7 +259,7 @@ export default function Navbar() {
                     <span className="flex items-center gap-2"><Wallet size={16} className="text-pink-400" /> PocketERPIDE</span>
                     {apps.pocketerpide
                       ? <ExternalLink size={12} className="text-pink-400" />
-                      : <span className="text-[10px] text-gray-500">Satın Al</span>}
+                      : <span className="text-[10px] text-gray-500">{t("nav.buy")}</span>}
                   </Link>
                 </div>
               )}
@@ -267,10 +267,10 @@ export default function Navbar() {
               <div className="pt-3 border-t border-white/5">
                 {user ? (
                   <>
-                    <Link href="/hesabim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Hesabım</Link>
-                    <Link href="/hesabim/lisanslarim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">Lisanslarım</Link>
+                    <Link href="/hesabim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">{t("nav.account")}</Link>
+                    <Link href="/hesabim/lisanslarim" onClick={() => setOpen(false)} className="block py-2 text-gray-300">{t("nav.licenses")}</Link>
                     <form action="/api/shop/auth/logout" method="POST">
-                      <button type="submit" className="py-2 text-red-400 text-left">Çıkış</button>
+                      <button type="submit" className="py-2 text-red-400 text-left">{t("nav.logout")}</button>
                     </form>
                   </>
                 ) : (
@@ -300,6 +300,7 @@ function AppLauncherItem({
   buyUrl: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   // Aktif veya süresi dolmuş kullanıcı → uygulamanın giriş ekranına yönlendir.
   // App orada "lisansınız bitti, uzatın" veya direkt dashboard gösterir.
   // Hiç almamış kullanıcı → satın al sayfasına yönlendir.
@@ -339,7 +340,7 @@ function AppLauncherItem({
         <p className="text-sm font-medium text-gray-300 truncate">{name}</p>
         <p className="text-[11px] text-gray-500 truncate">{desc}</p>
       </div>
-      <span className="text-[10px] font-semibold text-blue-300 group-hover:text-blue-200 transition flex-shrink-0">Satın Al →</span>
+      <span className="text-[10px] font-semibold text-blue-300 group-hover:text-blue-200 transition flex-shrink-0">{t("nav.buy")} →</span>
     </Link>
   );
 }

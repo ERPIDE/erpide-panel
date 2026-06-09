@@ -40,12 +40,12 @@ export default function Footer() {
           </div>
 
           <div className="lg:col-span-2">
-            <h4 className="font-semibold text-white mb-4 text-sm">Ürünler</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm">{t("footer.products")}</h4>
             <div className="flex flex-col gap-2">
               <Link href="/urunler/finanserpide" className="text-sm text-gray-400 hover:text-blue-400 transition">FinansERPIDE</Link>
               <Link href="/urunler/captchaerpide" className="text-sm text-gray-400 hover:text-blue-400 transition">CaptchaERPIDE</Link>
-              <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">Tüm Ürünler</Link>
-              <Link href="/sepet" className="text-sm text-gray-400 hover:text-white transition">Sepetim</Link>
+              <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">{t("footer.all_products")}</Link>
+              <Link href="/sepet" className="text-sm text-gray-400 hover:text-white transition">{t("footer.my_cart")}</Link>
             </div>
           </div>
 

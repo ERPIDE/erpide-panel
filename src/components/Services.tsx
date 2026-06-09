@@ -25,9 +25,9 @@ export default function Services() {
       <div className="max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold mb-3">
-            <span className="gradient-text">Ürünlerimiz</span>
+            <span className="gradient-text">{t("hero.our_products")}</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">SaaS ürünlerimiz — anında üye ol, sepete ekle, aylık abone ol.</p>
+          <p className="text-gray-400 max-w-2xl mx-auto">{t("services.products_subtitle")}</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-20">
@@ -71,7 +71,7 @@ export default function Services() {
                   href={`/urunler/${p.id}`}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:opacity-90 transition"
                 >
-                  İncele ve Satın Al <ArrowRight size={14} />
+                  {t("hero.explore_buy")} <ArrowRight size={14} />
                 </Link>
               </motion.div>
             );

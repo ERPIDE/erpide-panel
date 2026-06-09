@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, X, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface Props {
   orderId: string;
@@ -19,6 +20,7 @@ export default function CancelSubscriptionButton({
   alreadyCancelled,
 }: Props) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -70,7 +72,7 @@ export default function CancelSubscriptionButton({
         onClick={() => setOpen(true)}
         className="text-xs text-gray-500 hover:text-red-400 underline transition mt-2"
       >
-        Aboneliği iptal et
+        {t("account.cancel_button")}
       </button>
 
       {open && (
@@ -85,12 +87,12 @@ export default function CancelSubscriptionButton({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-bold text-white">Aboneliği İptal Et</h3>
+              <h3 className="text-lg font-bold text-white">{t("account.cancel_subscription")}</h3>
               <button
                 type="button"
                 onClick={() => !submitting && setOpen(false)}
                 className="p-1 rounded text-gray-400 hover:text-white hover:bg-white/10"
-                aria-label="Kapat"
+                aria-label={t("common.close")}
               >
                 <X size={18} />
               </button>
@@ -134,7 +136,7 @@ export default function CancelSubscriptionButton({
                 disabled={submitting}
                 className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition"
               >
-                Vazgeç
+                {t("account.cancel_dismiss")}
               </button>
               <button
                 type="button"
@@ -143,7 +145,7 @@ export default function CancelSubscriptionButton({
                 className="px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-sm text-white font-medium transition flex items-center gap-2"
               >
                 {submitting && <Loader2 size={14} className="animate-spin" />}
-                Aboneliği İptal Et
+                {t("account.cancel_confirm")}
               </button>
             </div>
           </div>

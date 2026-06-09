@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface Props {
   orderId: string;
@@ -12,6 +13,7 @@ export default function AutoRenewToggle({ orderId, initial, cycleLabel }: Props)
   const [enabled, setEnabled] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   async function toggle(next: boolean) {
     setSaving(true);
@@ -53,15 +55,16 @@ export default function AutoRenewToggle({ orderId, initial, cycleLabel }: Props)
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <RefreshCw size={13} className={enabled ? "text-emerald-400" : "text-gray-500"} />
-            <p className="text-sm font-semibold text-white">Otomatik Yenileme</p>
+            <p className="text-sm font-semibold text-white">{t("account.auto_renew")}</p>
             {saving && <Loader2 size={12} className="animate-spin text-gray-400" />}
           </div>
           <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-            {enabled
-              ? `Tik açıkken her ${cycleLabel} sonu kartından otomatik tahsilat alınır, lisansın kesintisiz devam eder. Yenileme başarısız olursa mail ile bilgilendirilirsin.`
-              : `Pasif yaptın — süre sonunda lisans otomatik biter, API çağrıların 403 dönmeye başlar. Yenilemek için manuel "Yeniden Al" butonuna basman gerekecek.`}
+            {(enabled
+              ? t("account.auto_renew_on_desc")
+              : t("account.auto_renew_off_desc")
+            ).replace("{cycle}", cycleLabel)}
           </p>
-          {err && <p className="text-xs text-red-400 mt-1">Hata: {err}</p>}
+          {err && <p className="text-xs text-red-400 mt-1">{t("common.error")}: {err}</p>}
         </div>
       </label>
     </div>
