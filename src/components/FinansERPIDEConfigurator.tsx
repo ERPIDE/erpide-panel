@@ -12,10 +12,10 @@
  * Sepete eklendiğinde her seçim ayrı line item olur (base + her modül × 1 + ek-kullanıcı × N).
  * Bu sayede mevcut sepet yapısı + iyzico checkout aynen çalışır.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Minus, ShoppingCart, Loader2, Sparkles, ArrowRight, Briefcase } from "lucide-react";
+import { Check, Plus, Minus, ShoppingCart, Loader2, Sparkles, ArrowRight, Briefcase, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -31,17 +31,17 @@ interface Props {
 // capture (C:/tmp/erpide-screenshots/capture.js, headless chromium 1920×1080@2x).
 // Yeni özellik geldiğinde script tekrar koşulup public/ altı güncellenir.
 const FINANSERPIDE_SCREENSHOTS = [
-  { src: "/screenshots/finanserpide/02-faturalar.png",        caption: "Faturalar — açık/vadesi geçmiş/ödenmiş filtreleri" },
-  { src: "/screenshots/finanserpide/06-muhasebe-yevmiye.png", caption: "TR Muhasebe — otomatik yevmiye + TDHP hesap planı" },
-  { src: "/screenshots/finanserpide/09-eylul-ai.png",         caption: "Eylül — konuşarak fatura kes, rapor sor, cari aç" },
-  { src: "/screenshots/finanserpide/08-raporlar.png",         caption: "Raporlar — kar/zarar, cari yaşlandırma, mutabakat" },
-  { src: "/screenshots/finanserpide/07-finans-bankalar.png",  caption: "Banka & Kasa — çoklu hesap, döviz, hareket takibi" },
-  { src: "/screenshots/finanserpide/04-stok-urunler.png",     caption: "Stok — ağırlıklı ortalama maliyet, min seviye alarmı" },
-  { src: "/screenshots/finanserpide/03-cari.png",             caption: "Cari — müşteri/tedarikçi, bakiye, mutabakat PDF" },
-  { src: "/screenshots/finanserpide/10-ik-bordro.png",        caption: "Bordro — SGK kesintileri, otomatik personel ödemesi" },
-  { src: "/screenshots/finanserpide/11-uretim-recete.png",    caption: "Üretim — BOM reçeteleri, sipariş bazlı maliyet" },
-  { src: "/screenshots/finanserpide/05-demirbas.png",         caption: "Sabit Kıymet — demirbaş kartları, amortisman planı" },
-  { src: "/screenshots/finanserpide/12-amortisman.png",       caption: "Amortisman — aylık otomatik 770/257 yevmiyesi" },
+  { src: "/screenshots/finanserpide/02-faturalar-demo.png",        caption: "Faturalar — açık/vadesi geçmiş/ödenmiş filtreleri" },
+  { src: "/screenshots/finanserpide/06-muhasebe-yevmiye-demo.png", caption: "TR Muhasebe — otomatik yevmiye + TDHP hesap planı" },
+  { src: "/screenshots/finanserpide/09-eylul-ai-demo.png",         caption: "Eylül — konuşarak fatura kes, rapor sor, cari aç" },
+  { src: "/screenshots/finanserpide/08-raporlar-demo.png",         caption: "Raporlar — kar/zarar, cari yaşlandırma, mutabakat" },
+  { src: "/screenshots/finanserpide/07-finans-bankalar-demo.png",  caption: "Banka & Kasa — çoklu hesap, döviz, hareket takibi" },
+  { src: "/screenshots/finanserpide/04-stok-urunler-demo.png",     caption: "Stok — ağırlıklı ortalama maliyet, min seviye alarmı" },
+  { src: "/screenshots/finanserpide/03-cari-demo.png",             caption: "Cari — müşteri/tedarikçi, bakiye, mutabakat PDF" },
+  { src: "/screenshots/finanserpide/10-ik-bordro-demo.png",        caption: "Bordro — SGK kesintileri, otomatik personel ödemesi" },
+  { src: "/screenshots/finanserpide/11-uretim-recete-demo.png",    caption: "Üretim — BOM reçeteleri, sipariş bazlı maliyet" },
+  { src: "/screenshots/finanserpide/05-demirbas-demo.png",         caption: "Sabit Kıymet — demirbaş kartları, amortisman planı" },
+  { src: "/screenshots/finanserpide/12-amortisman-demo.png",       caption: "Amortisman — aylık otomatik 770/257 yevmiyesi" },
 ];
 
 export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, hasTrialed }: Props) {
@@ -57,6 +57,26 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
   const [extraUsers, setExtraUsers] = useState(0);
   const [adding, setAdding] = useState(false);
   const [addedConfirm, setAddedConfirm] = useState(false);
+  // Lightbox — SS'lere tıklayınca tam boy. -1 kapalı, 0..N-1 hero+gallery indeksleri.
+  // index 0 = HERO dashboard, 1..N = gallery item'ları (FINANSERPIDE_SCREENSHOTS[i-1]).
+  const [lightbox, setLightbox] = useState<number>(-1);
+  const totalImages = 1 + FINANSERPIDE_SCREENSHOTS.length;
+  const allImages = useMemo(() => [
+    { src: "/screenshots/finanserpide/01-dashboard-demo.png", caption: "Dashboard — Komuta Merkezi" },
+    ...FINANSERPIDE_SCREENSHOTS,
+  ], []);
+
+  // ESC ile kapat, ← → ile gez
+  useEffect(() => {
+    if (lightbox < 0) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightbox(-1);
+      else if (e.key === "ArrowLeft") setLightbox((i) => (i > 0 ? i - 1 : totalImages - 1));
+      else if (e.key === "ArrowRight") setLightbox((i) => (i + 1) % totalImages);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, totalImages]);
 
   if (!baseSku || !seatSku) {
     return <div className="text-red-400">Plan konfigürasyonu yüklenemedi — yönetici ile iletişime geçin.</div>;
@@ -111,15 +131,20 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
             <p className="text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">{product.description}</p>
           </div>
         </div>
-        <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+        <button
+          type="button"
+          onClick={() => setLightbox(0)}
+          className="block w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 cursor-zoom-in group"
+          aria-label="Dashboard tam boy görüntüle"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/screenshots/finanserpide/01-dashboard.png"
+            src="/screenshots/finanserpide/01-dashboard-demo.png"
             alt="FinansERPIDE Dashboard — Komuta Merkezi"
-            className="w-full h-auto block"
+            className="w-full h-auto block group-hover:scale-[1.005] transition-transform"
             loading="eager"
           />
-        </div>
+        </button>
         <p className="text-xs text-gray-500 mt-2 text-center italic">
           Komuta Merkezi — net pozisyon, bu ayki satış/alış, açık fatura/vade, finansman yükü ve operasyon, hepsi tek ekranda.
         </p>
@@ -132,15 +157,69 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
           Tüm görüntüler gerçek FinansERPIDE arayüzünden alındı. Yeni özellik eklendiğinde otomatik güncellenir.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {FINANSERPIDE_SCREENSHOTS.map((s) => (
-            <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 hover:border-blue-500/40 transition group">
+          {FINANSERPIDE_SCREENSHOTS.map((s, idx) => (
+            <button
+              type="button"
+              key={s.src}
+              onClick={() => setLightbox(idx + 1)}
+              className="text-left rounded-xl overflow-hidden border border-white/10 hover:border-blue-500/40 transition group cursor-zoom-in"
+              aria-label={`${s.caption} — tam boy görüntüle`}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={s.src} alt={s.caption} className="w-full h-auto block group-hover:scale-[1.02] transition-transform" loading="lazy" />
               <figcaption className="px-3 py-2 text-xs text-gray-400 bg-[#0a0a0f] border-t border-white/5 leading-relaxed">{s.caption}</figcaption>
-            </figure>
+            </button>
           ))}
         </div>
       </div>
+
+      {/* LIGHTBOX — tam boy SS + ← → navigasyon + ESC kapama */}
+      {lightbox >= 0 && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setLightbox(-1)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            onClick={(e) => { e.stopPropagation(); setLightbox(-1); }}
+            aria-label="Kapat (ESC)"
+          >
+            <X size={20} />
+          </button>
+          <button
+            type="button"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            onClick={(e) => { e.stopPropagation(); setLightbox(lightbox > 0 ? lightbox - 1 : totalImages - 1); }}
+            aria-label="Önceki (←)"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <button
+            type="button"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            onClick={(e) => { e.stopPropagation(); setLightbox((lightbox + 1) % totalImages); }}
+            aria-label="Sonraki (→)"
+          >
+            <ChevronRight size={22} />
+          </button>
+          <div
+            className="max-w-[95vw] max-h-[90vh] flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={allImages[lightbox].src}
+              alt={allImages[lightbox].caption}
+              className="max-w-full max-h-[80vh] w-auto h-auto rounded-lg border border-white/10"
+            />
+            <p className="text-sm text-gray-300 text-center max-w-2xl">{allImages[lightbox].caption}</p>
+            <p className="text-xs text-gray-500">{lightbox + 1} / {totalImages}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-8">
       {/* SOL — Konfigüratör */}
