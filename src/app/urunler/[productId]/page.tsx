@@ -3,7 +3,7 @@ import { useState, use, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon, ExternalLink, Mail } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getProduct } from "@/lib/products";
@@ -146,7 +146,7 @@ function Inner({ productId }: { productId: string }) {
     : "en";
   const onecBtn = ONEC_BUTTONS[featureLocale];
   const onecLbl = ONEC_LABELS[featureLocale];
-  const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0].id || "");
+  const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0]?.id || "");
   const [adding, setAdding] = useState(false);
   const [trialing, setTrialing] = useState(false);
   const [trialMsg, setTrialMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -199,6 +199,86 @@ function Inner({ productId }: { productId: string }) {
   }
 
   const Icon = product.icon;
+
+  // 1C ürünleri (1c-erp, 1c-drive) için contactOnly view — Plan/SKU/Sepete Ekle akışı YOK.
+  // Sadece tanıtım + özellikler + demo + iletişim CTA. Diğer ürünler (skus dolu) standart akıştan geçer.
+  if (product.contactOnly && product.skus.length === 0) {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-24 pb-20 px-6 min-h-screen">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/urunler" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6">
+              <ArrowLeft size={14} /> {featureLocale === "tr" ? "Ürünlere dön" : featureLocale === "ru" ? "К продуктам" : featureLocale === "kk" ? "Өнімдерге оралу" : "Back to products"}
+            </Link>
+
+            <div className="mb-8">
+              <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r ${product.color} text-white text-sm mb-4`}>
+                <Icon size={18} />
+                <span>{product.name}</span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{product.tagline}</h1>
+              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{product.description}</p>
+            </div>
+
+            {(product.id === "1c-erp" || product.id === "1c-drive") && (
+              <section className="mb-10 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 border border-blue-500/20 rounded-2xl p-6 md:p-8">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <BookOpen size={20} className="text-blue-400" /> {onecLbl.heading}
+                </h2>
+                <ul className="grid sm:grid-cols-2 gap-2 text-sm text-gray-300 mb-6">
+                  {ONEC_FEATURES[product.id][featureLocale].map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <Check size={14} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-gray-400 leading-relaxed">{onecLbl.pitch(product.name)}</p>
+              </section>
+            )}
+
+            {product.longDescription && (
+              <section className="mb-10 p-6 rounded-2xl bg-[#111118] border border-white/5">
+                <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{product.longDescription}</p>
+              </section>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              {product.demoUrl && (
+                <a
+                  href={product.demoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition"
+                >
+                  <ExternalLink size={14} /> {onecBtn.liveDemo}
+                </a>
+              )}
+              {product.officialUrl && (
+                <a
+                  href={product.officialUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition"
+                >
+                  <ExternalLink size={14} /> {onecBtn.officialPage}
+                </a>
+              )}
+              <Link
+                href="/iletisim"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm text-white font-semibold hover:from-blue-500 hover:to-indigo-500 transition"
+              >
+                <Mail size={14} /> {onecBtn.contactCTA}
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   const currentSku = product.skus.find((s) => s.id === selectedSku) || product.skus[0];
   const inCartQty = lines.find((l) => l.skuId === currentSku.id)?.quantity || 0;
 
