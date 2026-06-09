@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Fragment, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -7,9 +7,30 @@ import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
+import { useTranslation } from "@/lib/i18n";
+
+/** Helper: i18n string'i içindeki {key} placeholder'larını ReactNode'larla
+ * değiştirip JSX array döner. Consent checkbox'larındaki linkler gibi
+ * rich-text interpolation için. */
+function renderWithSlots(text: string, slots: Record<string, React.ReactNode>): React.ReactNode[] {
+  const keys = Object.keys(slots);
+  if (!keys.length) return [text];
+  const re = new RegExp(`\\{(${keys.join("|")})\\}`, "g");
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(<Fragment key={`${m.index}-${m[1]}`}>{slots[m[1]]}</Fragment>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
 
 function Inner() {
   const sp = useSearchParams();
+  const { t } = useTranslation();
   const next = sp.get("next") || "/hesabim";
   const [form, setForm] = useState({ name: "", surname: "", email: "", password: "", passwordConfirm: "" });
   const [consents, setConsents] = useState({ terms: false, kvkk: false, marketing: false });
@@ -22,15 +43,15 @@ function Inner() {
     e.stopPropagation();
     setError("");
     if (form.password !== form.passwordConfirm) {
-      setError("Şifreler eşleşmiyor");
+      setError(t("auth.passwords_mismatch"));
       return;
     }
     if (!consents.terms) {
-      setError("Kullanım Koşulları ve Gizlilik Politikası onayı zorunludur");
+      setError(t("auth.terms_required"));
       return;
     }
     if (!consents.kvkk) {
-      setError("KVKK Aydınlatma Metni onayı zorunludur");
+      setError(t("auth.kvkk_required"));
       return;
     }
     setLoading(true);
@@ -50,14 +71,14 @@ function Inner() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Kayıt başarısız");
+        setError(data.error || t("auth.signup_failed"));
         setLoading(false);
         return;
       }
       setSuccess({ email: data.email || form.email, skipped: data.emailSendSkipped === true });
       setLoading(false);
     } catch (e) {
-      setError("Bağlantı hatası: " + String(e));
+      setError(t("auth.connection_error") + String(e));
       setLoading(false);
     }
   }
@@ -71,26 +92,30 @@ function Inner() {
             {success.skipped ? (
               <>
                 <CheckCircle2 size={56} className="mx-auto mb-4 text-amber-400" />
-                <h1 className="text-2xl font-bold text-white mb-2">Hesabın oluşturuldu</h1>
+                <h1 className="text-2xl font-bold text-white mb-2">{t("auth.account_created")}</h1>
                 <p className="text-sm text-gray-400 mb-6">
-                  Doğrulama e-postası şu anda gönderilemedi. <strong className="text-white">{success.email}</strong> adresine
-                  yakında <Link href="/iletisim" className="text-blue-400 hover:underline">iletişimden bize</Link> yazıp doğrulanmasını isteyebilirsin.
+                  {renderWithSlots(t("auth.email_unsent_desc"), {
+                    email: <strong className="text-white">{success.email}</strong>,
+                    contact_link: <Link href="/iletisim" className="text-blue-400 hover:underline">{t("auth.email_unsent_contact_link")}</Link>,
+                  })}
                 </p>
               </>
             ) : (
               <>
                 <Mail size={56} className="mx-auto mb-4 text-emerald-400" />
-                <h1 className="text-2xl font-bold text-white mb-2">E-postanı kontrol et</h1>
+                <h1 className="text-2xl font-bold text-white mb-2">{t("auth.check_email_title")}</h1>
                 <p className="text-sm text-gray-300 mb-2">
-                  <strong className="text-white">{success.email}</strong> adresine doğrulama bağlantısı gönderdik.
+                  {renderWithSlots(t("auth.check_email_desc"), {
+                    email: <strong className="text-white">{success.email}</strong>,
+                  })}
                 </p>
                 <p className="text-xs text-gray-500 mb-6">
-                  Mail gelmediyse spam/junk klasörüne bak. Bağlantı 24 saat geçerli.
+                  {t("auth.spam_check")}
                 </p>
               </>
             )}
             <Link href={`/giris?next=${encodeURIComponent(next)}`} className="inline-block px-5 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 transition text-sm">
-              Giriş sayfasına git
+              {t("auth.go_to_signin")}
             </Link>
           </motion.div>
         </main>
@@ -104,24 +129,24 @@ function Inner() {
       <Navbar />
       <main className="pt-24 pb-20 px-6 min-h-screen flex items-center justify-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Üye Ol</span></h1>
-          <p className="text-gray-400 text-sm mb-8">ERPIDE hesabını oluştur, tüm ürünlerini tek hesaptan yönet.</p>
+          <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">{t("auth.signup_title")}</span></h1>
+          <p className="text-gray-400 text-sm mb-8">{t("auth.signup_desc")}</p>
 
           <div className="p-8 rounded-2xl bg-[#111118] border border-white/5">
-            <GoogleAuthButton label="Google ile devam et" />
+            <GoogleAuthButton label={t("auth.google_continue")} />
             <div className="flex items-center gap-3 my-5">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[11px] text-gray-500 uppercase tracking-wider">veya e-mail ile</span>
+              <span className="text-[11px] text-gray-500 uppercase tracking-wider">{t("auth.or_email")}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
           <form onSubmit={handleSubmit} noValidate autoComplete="on" className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Ad" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="given-name" />
-              <Field label="Soyad" value={form.surname} onChange={(v) => setForm({ ...form, surname: v })} required autoComplete="family-name" />
+              <Field label={t("auth.name")} value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="given-name" />
+              <Field label={t("auth.surname")} value={form.surname} onChange={(v) => setForm({ ...form, surname: v })} required autoComplete="family-name" />
             </div>
-            <Field label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required autoComplete="email" />
-            <Field label="Şifre (min. 8 karakter, harf+rakam)" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} required autoComplete="new-password" />
-            <Field label="Şifre (tekrar)" type="password" value={form.passwordConfirm} onChange={(v) => setForm({ ...form, passwordConfirm: v })} required autoComplete="new-password" />
+            <Field label={t("auth.email_label")} type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required autoComplete="email" />
+            <Field label={t("auth.password_field")} type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} required autoComplete="new-password" />
+            <Field label={t("auth.password_confirm")} type="password" value={form.passwordConfirm} onChange={(v) => setForm({ ...form, passwordConfirm: v })} required autoComplete="new-password" />
 
             <div className="space-y-2.5 pt-2 border-t border-white/5">
               <ConsentCheckbox
@@ -129,21 +154,25 @@ function Inner() {
                 onChange={(v) => setConsents({ ...consents, terms: v })}
                 required
               >
-                <Link href="/sozlesmeler/kullanim-kosullari" target="_blank" className="text-blue-400 hover:underline">Kullanım Koşulları</Link> ve{" "}
-                <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı okudum, kabul ediyorum.
+                {renderWithSlots(t("auth.consent_terms"), {
+                  terms: <Link href="/sozlesmeler/kullanim-kosullari" target="_blank" className="text-blue-400 hover:underline">{t("auth.consent_terms_link")}</Link>,
+                  privacy: <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">{t("auth.consent_privacy_link")}</Link>,
+                })}
               </ConsentCheckbox>
               <ConsentCheckbox
                 checked={consents.kvkk}
                 onChange={(v) => setConsents({ ...consents, kvkk: v })}
                 required
               >
-                <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">KVKK Aydınlatma Metni</Link>'ni okudum, kişisel verilerimin işlenmesini kabul ediyorum.
+                {renderWithSlots(t("auth.consent_kvkk"), {
+                  kvkk: <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">{t("auth.consent_kvkk_link")}</Link>,
+                })}
               </ConsentCheckbox>
               <ConsentCheckbox
                 checked={consents.marketing}
                 onChange={(v) => setConsents({ ...consents, marketing: v })}
               >
-                <span className="text-gray-400">(İsteğe bağlı)</span> Ticari elektronik ileti (e-posta, SMS) almak istiyorum.
+                {t("auth.consent_marketing")}
               </ConsentCheckbox>
             </div>
 
@@ -155,12 +184,12 @@ function Inner() {
               className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? "Hesap oluşturuluyor..." : "Üye Ol"}
+              {loading ? t("auth.creating_account") : t("auth.signup_button")}
             </button>
 
             <div className="pt-4 border-t border-white/5 text-center text-sm">
-              <span className="text-gray-400">Hesabın var mı? </span>
-              <Link href={`/giris?next=${encodeURIComponent(next)}`} className="text-blue-400 hover:underline">Giriş yap</Link>
+              <span className="text-gray-400">{t("auth.have_account")} </span>
+              <Link href={`/giris?next=${encodeURIComponent(next)}`} className="text-blue-400 hover:underline">{t("auth.signin_link")}</Link>
             </div>
           </form>
           </div>
