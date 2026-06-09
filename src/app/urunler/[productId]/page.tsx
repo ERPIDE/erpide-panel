@@ -179,44 +179,25 @@ function Inner({ productId }: { productId: string }) {
                 </Link>
               </div>
 
-              {/* CaptchaERPIDE — canlı çözüm videosu + SS galerisi (Playwright capture'dan) */}
+              {/* CaptchaERPIDE — yeni oyun temalı demo hazırlanıyor */}
               {product.id === "captchaerpide" && (
-                <>
-                  <section className="mb-10">
-                    <h2 className="text-xl font-bold text-white mb-1">Canlı Çözüm Videosu</h2>
-                    <p className="text-xs text-gray-500 mb-3">Solver'ın gerçek slider captcha çözdüğü kayıt — Playwright + OpenCV, ortalama 28ms.</p>
-                    <video
-                      className="w-full aspect-video rounded-2xl border border-white/10 bg-black"
-                      controls
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      poster="/screenshots/captchaerpide/02-modal.png"
-                    >
-                      <source src="/videos/captcha-solve-demo.webm" type="video/webm" />
-                      Tarayıcınız webm video desteği vermiyor.
-                    </video>
-                  </section>
-
-                  <section className="mb-10">
-                    <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { src: "/screenshots/captchaerpide/01-panel.png",   caption: "Test panel — çek havuzu" },
-                        { src: "/screenshots/captchaerpide/02-modal.png",   caption: "Slider captcha — AI hedefi buluyor" },
-                        { src: "/screenshots/captchaerpide/03-success.png", caption: "Çözüm onaylandı — 5.4s total" },
-                      ].map((s) => (
-                        <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={s.src} alt={s.caption} className="w-full h-auto block" loading="lazy" />
-                          <figcaption className="px-3 py-2 text-[11px] text-gray-400 border-t border-white/5">{s.caption}</figcaption>
-                        </figure>
-                      ))}
+                <section className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-3">Canlı Çözüm Demosu</h2>
+                  <div className="aspect-video rounded-2xl bg-gradient-to-br from-green-950/40 via-[#0a0a0f] to-teal-950/30 border border-green-500/20 flex flex-col items-center justify-center text-center p-6 relative overflow-hidden">
+                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-green-500/10 blur-3xl" />
+                    <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-teal-500/10 blur-3xl" />
+                    <div className="relative">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-xs text-green-300 font-medium mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Demo hazırlanıyor
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Slider Captcha Solver</h3>
+                      <p className="text-sm text-gray-400 max-w-md mx-auto">
+                        OpenCV + edge-template matching ile ortalama 28ms&apos;de çözer. Steril bir demo sayfası + canlı çözüm videosu hazırlanıyor.
+                      </p>
                     </div>
-                  </section>
-                </>
+                  </div>
+                </section>
               )}
 
               {/* AI Kontör — Eylül AI ile chat SS + plan limit akışı */}
@@ -226,7 +207,7 @@ function Inner({ productId }: { productId: string }) {
                   <p className="text-xs text-gray-500 mb-3">Kontör paketi aldığınızda Eylül kesintisiz çalışmaya devam eder — fatura okur, hesaplar, raporlar.</p>
                   <figure className="rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/screenshots/finanserpide/09-eylul-ai.png" alt="Eylül AI — FinansERPIDE içinde" className="w-full h-auto block" loading="lazy" />
+                    <img src="/screenshots/finanserpide/09-eylul-ai-demo.png" alt="Eylül AI — FinansERPIDE içinde" className="w-full h-auto block" loading="lazy" />
                     <figcaption className="px-4 py-3 text-xs text-gray-400 border-t border-white/5">
                       Eylül — FinansERPIDE'nin yerleşik AI asistanı. Plan limiti dolunca bu paketi alır, kaldığınız yerden devam edersiniz.
                     </figcaption>
