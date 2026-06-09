@@ -36,7 +36,7 @@ import {
 } from "@/lib/auth/user-store";
 import { getSku } from "@/lib/products";
 import { chargeSavedCard, isMockMode } from "@/lib/payments/iyzico";
-import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
+import { provisionCaptchaLicense, revokeCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { sendOrderConfirmationEmail, sendRenewalFailedEmail, sendExpiringSoonEmail } from "@/lib/payments/email";
 import { invalidateRemoteLicenseCache } from "@/lib/payments/license-service-invalidate";
 
@@ -298,6 +298,56 @@ async function maybeSendExpiringEmail(order: OrderRecord, now: Date): Promise<vo
 }
 
 
+/**
+ * Süresi geçen PAID order'ları kapat — auto-renew dene/atla DİYE değil, ayrı pass.
+ * Çağrı koşulu:
+ *   - status="PAID"
+ *   - subscriptionExpiresAt < now (gerçekten geçmiş)
+ *   - cancelled veya auto-renew off (auto-renew açıksa renewal pass ele aldı)
+ *
+ * Yapılan:
+ *   - status="EXPIRED" set et
+ *   - Her item için backend-specific revoke (CaptchaERPIDE: revokeCaptchaLicense)
+ *   - License cache invalidate et → diğer ürünler hemen "EXPIRED" görür
+ */
+async function processExpiry(order: OrderRecord, now: Date): Promise<{ status: string; orderId: string; detail?: string }> {
+  if (order.status !== "PAID") return { status: "skip-expire:not-paid", orderId: order.id };
+  if (!order.subscriptionExpiresAt) return { status: "skip-expire:no-expiry", orderId: order.id };
+  if (new Date(order.subscriptionExpiresAt).getTime() >= now.getTime()) {
+    return { status: "skip-expire:still-active", orderId: order.id };
+  }
+  // Auto-renew açıksa renewal pass'in işlemiş olması beklenir; başarısız olduysa
+  // expire pass'i de geçirelim. Aşağıdaki kontrol auto-renew açık + still PAID
+  // + süresi dolmuş VAKAyı bloklamamak için yumuşak: sadece "not expired yet"i atlar.
+
+  // Backend revoke — şimdilik sadece CaptchaERPIDE'da gerek
+  const revokeResults: string[] = [];
+  for (const item of order.items) {
+    if (item.productId === "captchaerpide" && item.backendLicenseId) {
+      const ok = await revokeCaptchaLicense({ backendLicenseId: item.backendLicenseId });
+      revokeResults.push(`${item.skuId}:${ok ? "revoked" : "fail"}`);
+    }
+  }
+
+  await updateOrder(order.id, { status: "EXPIRED" });
+
+  // FinansERPIDE (ve diğer ürünler) cache'ini invalidate — kullanıcı bir sonraki
+  // çağrıda "EXPIRED" state'i görür.
+  try {
+    const user = await findUserById(order.userId, true);
+    if (user?.email) await invalidateRemoteLicenseCache(user.email);
+  } catch (e) {
+    console.error("[cron-expire] invalidate failed:", e);
+  }
+
+  return {
+    status: "ok:expired",
+    orderId: order.id,
+    detail: revokeResults.length ? revokeResults.join(", ") : "no-backend-revoke-needed",
+  };
+}
+
+
 export async function GET(req: Request) {
   // Local-dev convenience: when iyzico isn't configured at all, the whole
   // cron is a no-op, so dev runs don't accidentally mock-renew everything.
@@ -309,12 +359,32 @@ export async function GET(req: Request) {
   const allOrders = await listAllOrders();
 
   const results: Array<{ status: string; orderId: string; detail?: string }> = [];
+
+  // PASS 1: Renewal — auto-renew açık olanları yenile, expiring email at, vs.
   for (const order of allOrders) {
     try {
       results.push(await processOrder(order, now));
     } catch (e) {
       console.error("[cron-renew] processOrder threw:", e);
       results.push({ status: "fail:exception", orderId: order.id, detail: String(e) });
+    }
+  }
+
+  // PASS 2: Expire — süresi gerçekten dolmuş PAID order'ları EXPIRED'a düşür +
+  // backend revoke + license cache invalidate. (Renewal pass başarılı olduysa
+  // o order autoRenewEnabled=false olur ve yeni order PAID kalır; bu pass eski
+  // order'ı bulamaz çünkü status'ü değiştirmedik — eski order'lar süresi geçince
+  // EXPIRED'a düşer.)
+  for (const order of allOrders) {
+    try {
+      const r = await processExpiry(order, now);
+      // Sadece "ok" veya "skip-still-active" dışındakini logla — gürültü azalsın
+      if (r.status.startsWith("ok") || r.status.startsWith("fail")) {
+        results.push(r);
+      }
+    } catch (e) {
+      console.error("[cron-expire] processExpiry threw:", e);
+      results.push({ status: "fail:expire-exception", orderId: order.id, detail: String(e) });
     }
   }
 

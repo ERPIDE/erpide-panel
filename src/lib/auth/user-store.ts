@@ -133,6 +133,12 @@ export interface OrderRecord {
   // Renewal başarısız email tarihi — aynı failure için spam atmamak için.
   renewFailedEmailSentAt?: string;
 
+  // AI Kontör paketleri için (kind="credit" SKU içerenler). FE her mesaj
+  // sonrası /api/internal/credits-consume çağırır; ilk havuzu dolu olan
+  // order'dan düşer. creditsConsumed > sku.creditsGranted toplamına ulaşırsa
+  // havuz biter.
+  creditsConsumed?: number;
+
   createdAt: string;
   paidAt?: string;
 }
