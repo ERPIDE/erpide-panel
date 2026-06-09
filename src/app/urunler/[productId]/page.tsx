@@ -219,33 +219,63 @@ function Inner({ productId }: { productId: string }) {
                 </>
               )}
 
-              {/* Diğer ürünler — placeholder (yakında çekilecek) */}
-              {product.id !== "captchaerpide" && product.id !== "finanserpide" && (
-                <>
-                  <section className="mb-10">
-                    <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
-                    <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
-                      <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
-                        <Play size={26} className="text-gray-400 ml-1" />
-                      </div>
-                      <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
-                      <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
-                    </div>
-                  </section>
+              {/* AI Kontör — Eylül AI ile chat SS + plan limit akışı */}
+              {product.id === "ai-kontor" && (
+                <section className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-1">Eylül AI ile Sohbet</h2>
+                  <p className="text-xs text-gray-500 mb-3">Kontör paketi aldığınızda Eylül kesintisiz çalışmaya devam eder — fatura okur, hesaplar, raporlar.</p>
+                  <figure className="rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/screenshots/finanserpide/09-eylul-ai.png" alt="Eylül AI — FinansERPIDE içinde" className="w-full h-auto block" loading="lazy" />
+                    <figcaption className="px-4 py-3 text-xs text-gray-400 border-t border-white/5">
+                      Eylül — FinansERPIDE'nin yerleşik AI asistanı. Plan limiti dolunca bu paketi alır, kaldığınız yerden devam edersiniz.
+                    </figcaption>
+                  </figure>
+                </section>
+              )}
 
-                  <section className="mb-10">
-                    <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-gray-900 to-[#0a0a0f] border border-white/5 flex flex-col items-center justify-center">
-                          <ImageIcon size={28} className="text-gray-700 mb-2" />
-                          <p className="text-[11px] text-gray-600">Ekran {i}</p>
-                        </div>
-                      ))}
+              {/* PocketERPIDE — coming soon, estetik kart */}
+              {product.id === "pocketerpide" && (
+                <section className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-3">Ürün Hazırlanıyor</h2>
+                  <div className="relative rounded-2xl border border-pink-500/20 bg-gradient-to-br from-pink-950/40 via-[#0a0a0f] to-rose-950/30 p-10 overflow-hidden">
+                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-pink-500/10 blur-3xl" />
+                    <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl" />
+                    <div className="relative">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-xs text-pink-300 font-medium mb-4">
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                        Yakında — ERPIDE Mobil
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-3">Cebinde AI Destekli Cüzdan</h3>
+                      <p className="text-sm text-gray-400 max-w-md mb-6">
+                        Maaşını gir, faturalarını fotoğrafla — AI okur, kategorize eder, bütçeni yönetir. Memur, mühendis, doktor — gelir/gider takip eden herkes için.
+                      </p>
+                      <ul className="space-y-2 text-sm text-gray-300">
+                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> AI ile fatura okuma (foto çek, kaydet)</li>
+                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> Aylık bütçe + tasarruf hedefi</li>
+                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> Otomatik kategorize + grafik analiz</li>
+                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> iOS + Android — tek hesap</li>
+                      </ul>
+                      <p className="text-xs text-gray-500 mt-6 italic">
+                        Geliştirme aktif — ekran görüntüleri ürün release edildiğinde eklenecek.
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">Ürün arayüzünden ekran görüntüleri yakında eklenecek.</p>
-                  </section>
-                </>
+                  </div>
+                </section>
+              )}
+
+              {/* Diğer ürünler (1c-erp, 1c-drive) — generic placeholder */}
+              {product.id !== "captchaerpide" && product.id !== "finanserpide" && product.id !== "ai-kontor" && product.id !== "pocketerpide" && (
+                <section className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
+                  <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
+                    <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                      <Play size={26} className="text-gray-400 ml-1" />
+                    </div>
+                    <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
+                    <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
+                  </div>
+                </section>
               )}
 
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
