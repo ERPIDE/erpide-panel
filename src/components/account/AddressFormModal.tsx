@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { X, Loader2, User, Building2 } from "lucide-react";
 import type { SavedAddress, CustomerType } from "@/lib/auth/user-store";
+import { useTranslation } from "@/lib/i18n";
 
 interface Props {
   initial?: SavedAddress;
@@ -54,6 +55,7 @@ function emptyForm(): FormState {
 }
 
 export default function AddressFormModal({ initial, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<FormState>(() => {
     if (!initial) return emptyForm();
     return {
@@ -97,13 +99,13 @@ export default function AddressFormModal({ initial, onClose, onSaved }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Kaydedilemedi");
+        setError(data.error || t("address.save_failed"));
         setLoading(false);
         return;
       }
       onSaved();
     } catch (e) {
-      setError("Bağlantı hatası: " + String(e));
+      setError(t("auth.connection_error") + String(e));
       setLoading(false);
     }
   }
@@ -115,101 +117,101 @@ export default function AddressFormModal({ initial, onClose, onSaved }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 border-b border-white/5 sticky top-0 bg-[#0d0d14] z-10">
-          <h2 className="text-lg font-bold text-white">{initial ? "Adresi Düzenle" : "Yeni Adres Ekle"}</h2>
+          <h2 className="text-lg font-bold text-white">{initial ? t("address.edit_modal_title") : t("address.add_modal_title")}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          <Field label="Adres Etiketi" placeholder="Örn: Ev, İş, Babamın Evi" value={form.label} onChange={(v) => set("label", v)} required />
+          <Field label={t("address.label_field")} placeholder={t("address.label_placeholder")} value={form.label} onChange={(v) => set("label", v)} required />
 
           <div>
-            <label className="block text-xs text-gray-400 mb-2">Müşteri Tipi</label>
+            <label className="block text-xs text-gray-400 mb-2">{t("address.customer_type")}</label>
             <div className="grid grid-cols-2 gap-2">
               <TypeButton
                 active={form.type === "individual"}
                 onClick={() => set("type", "individual")}
                 icon={User}
-                title="Bireysel"
-                desc="Şahıs şirketi olmayan, kişisel alım"
+                title={t("address.individual")}
+                desc={t("address.individual_desc")}
               />
               <TypeButton
                 active={form.type === "corporate"}
                 onClick={() => set("type", "corporate")}
                 icon={Building2}
-                title="Kurumsal"
-                desc="Şirket adına e-fatura kesilecek"
+                title={t("address.corporate")}
+                desc={t("address.corporate_desc")}
               />
             </div>
           </div>
 
           <fieldset className="space-y-4">
-            <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">İletişim</legend>
+            <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t("address.contact_section")}</legend>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="Ad" value={form.firstName} onChange={(v) => set("firstName", v)} required autoComplete="given-name" />
-              <Field label="Soyad" value={form.lastName} onChange={(v) => set("lastName", v)} required autoComplete="family-name" />
+              <Field label={t("auth.name")} value={form.firstName} onChange={(v) => set("firstName", v)} required autoComplete="given-name" />
+              <Field label={t("auth.surname")} value={form.lastName} onChange={(v) => set("lastName", v)} required autoComplete="family-name" />
             </div>
-            <Field label="Telefon" value={form.phone} onChange={(v) => set("phone", v)} required placeholder="+90 5__ ___ __ __" autoComplete="tel" />
+            <Field label={t("address.phone_label")} value={form.phone} onChange={(v) => set("phone", v)} required placeholder={t("address.phone_placeholder")} autoComplete="tel" />
           </fieldset>
 
           {form.type === "individual" ? (
             <fieldset>
-              <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">Bireysel Bilgiler</legend>
+              <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t("address.individual_section")}</legend>
               <Field
-                label="TC Kimlik No"
+                label={t("profile.identity_label")}
                 value={form.identityNumber}
                 onChange={(v) => set("identityNumber", v.replace(/\D/g, "").slice(0, 11))}
                 required
                 maxLength={11}
-                placeholder="11 hane"
+                placeholder={t("address.identity_placeholder")}
               />
             </fieldset>
           ) : (
             <fieldset className="space-y-3">
-              <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">Kurumsal Bilgiler</legend>
-              <Field label="Şirket Ünvanı" value={form.companyName} onChange={(v) => set("companyName", v)} required placeholder="A.Ş. / Ltd. Şti. / Şahıs Şirketi" />
+              <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t("address.corporate_section")}</legend>
+              <Field label={t("profile.company_name_label")} value={form.companyName} onChange={(v) => set("companyName", v)} required placeholder={t("address.company_placeholder")} />
               <div className="grid sm:grid-cols-2 gap-3">
-                <Field label="Vergi No / VKN" value={form.taxNumber} onChange={(v) => set("taxNumber", v.replace(/\D/g, "").slice(0, 10))} required maxLength={10} placeholder="10 hane" />
-                <Field label="Vergi Dairesi" value={form.taxOffice} onChange={(v) => set("taxOffice", v)} required />
+                <Field label={t("profile.tax_number_label")} value={form.taxNumber} onChange={(v) => set("taxNumber", v.replace(/\D/g, "").slice(0, 10))} required maxLength={10} placeholder={t("address.tax_number_placeholder")} />
+                <Field label={t("address.tax_office_label")} value={form.taxOffice} onChange={(v) => set("taxOffice", v)} required />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.eInvoiceUser} onChange={(e) => set("eInvoiceUser", e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500" />
-                <span className="text-xs text-gray-400">e-Fatura kullanıcısıyım (GİB'de kayıtlı)</span>
+                <span className="text-xs text-gray-400">{t("address.einvoice_label")}</span>
               </label>
             </fieldset>
           )}
 
           <fieldset className="space-y-3">
-            <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">Adres</legend>
+            <legend className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t("address.section")}</legend>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="İl" value={form.city} onChange={(v) => set("city", v)} required />
-              <Field label="İlçe" value={form.district} onChange={(v) => set("district", v)} required />
-              <Field label="Mahalle / Semt" value={form.neighborhood} onChange={(v) => set("neighborhood", v)} />
-              <Field label="Posta Kodu" value={form.postalCode} onChange={(v) => set("postalCode", v.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
+              <Field label={t("address.city_label")} value={form.city} onChange={(v) => set("city", v)} required />
+              <Field label={t("address.district_label")} value={form.district} onChange={(v) => set("district", v)} required />
+              <Field label={t("address.neighborhood_label")} value={form.neighborhood} onChange={(v) => set("neighborhood", v)} />
+              <Field label={t("address.postal_code_label")} value={form.postalCode} onChange={(v) => set("postalCode", v.replace(/\D/g, "").slice(0, 10))} maxLength={10} />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Açık Adres <span className="text-red-400">*</span></label>
+              <label className="block text-xs text-gray-400 mb-1.5">{t("address.full_address_label")} <span className="text-red-400">*</span></label>
               <textarea
                 value={form.fullAddress}
                 onChange={(e) => set("fullAddress", e.target.value)}
                 required
                 rows={3}
-                placeholder="Sokak, bina no, daire no, kat..."
+                placeholder={t("address.full_address_placeholder")}
                 className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm focus:border-blue-500 outline-none transition"
               />
             </div>
           </fieldset>
 
           <fieldset className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
-            <legend className="text-xs uppercase tracking-wider text-gray-500 px-2">Varsayılan Olarak Kullan</legend>
+            <legend className="text-xs uppercase tracking-wider text-gray-500 px-2">{t("address.defaults_legend")}</legend>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.isBillingDefault} onChange={(e) => set("isBillingDefault", e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500" />
-              <span className="text-sm text-gray-300">Varsayılan <strong>fatura</strong> adresi olarak ayarla</span>
+              <span className="text-sm text-gray-300">{t("address.default_billing_label")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.isShippingDefault} onChange={(e) => set("isShippingDefault", e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500" />
-              <span className="text-sm text-gray-300">Varsayılan <strong>teslimat</strong> adresi olarak ayarla</span>
+              <span className="text-sm text-gray-300">{t("address.default_shipping_label")}</span>
             </label>
           </fieldset>
 
@@ -217,7 +219,7 @@ export default function AddressFormModal({ initial, onClose, onSaved }: Props) {
 
           <div className="flex justify-end gap-2 pt-2 sticky bottom-0 bg-[#0d0d14] py-3 -mx-5 px-5 border-t border-white/5">
             <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 transition text-sm">
-              İptal
+              {t("address.cancel_button")}
             </button>
             <button
               type="submit"
@@ -225,7 +227,7 @@ export default function AddressFormModal({ initial, onClose, onSaved }: Props) {
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center gap-2 text-sm"
             >
               {loading && <Loader2 size={14} className="animate-spin" />}
-              {loading ? "Kaydediliyor..." : initial ? "Güncelle" : "Adresi Kaydet"}
+              {loading ? t("address.saving") : initial ? t("address.update_button") : t("address.save_button")}
             </button>
           </div>
         </form>
