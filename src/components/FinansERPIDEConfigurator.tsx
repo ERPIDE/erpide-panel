@@ -40,6 +40,8 @@ const FINANSERPIDE_SCREENSHOTS = [
   { src: "/screenshots/finanserpide/03-cari.png",             caption: "Cari — müşteri/tedarikçi, bakiye, mutabakat PDF" },
   { src: "/screenshots/finanserpide/10-ik-bordro.png",        caption: "Bordro — SGK kesintileri, otomatik personel ödemesi" },
   { src: "/screenshots/finanserpide/11-uretim-recete.png",    caption: "Üretim — BOM reçeteleri, sipariş bazlı maliyet" },
+  { src: "/screenshots/finanserpide/05-demirbas.png",         caption: "Sabit Kıymet — demirbaş kartları, amortisman planı" },
+  { src: "/screenshots/finanserpide/12-amortisman.png",       caption: "Amortisman — aylık otomatik 770/257 yevmiyesi" },
 ];
 
 export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, hasTrialed }: Props) {
