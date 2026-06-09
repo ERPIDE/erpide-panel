@@ -120,6 +120,19 @@ export interface OrderRecord {
   // If this order was created by an auto-renewal, the parent order id.
   renewedFromOrderId?: string;
 
+  // Cancellation — kullanıcı (veya admin) abonelği iptal ettiğinde set edilir.
+  // status hala "PAID" kalır subscriptionExpiresAt'a kadar; cron renewal'i atlar.
+  // Süre dolunca status="EXPIRED" olur, license inactive olur, FinansERPIDE cache
+  // invalidate edilir.
+  cancelledAt?: string;
+  cancelledBy?: "USER" | "ADMIN" | "PAYMENT_FAILED";
+  cancellationReason?: string;
+  // Kullanıcıya bitiyor uyarısı en son ne zaman gönderildi. 7 gün önce 1 kez,
+  // 1 gün önce 1 kez ata; idempotency için bu alana yaz.
+  expiringSoonEmailSentAt?: string;
+  // Renewal başarısız email tarihi — aynı failure için spam atmamak için.
+  renewFailedEmailSentAt?: string;
+
   createdAt: string;
   paidAt?: string;
 }

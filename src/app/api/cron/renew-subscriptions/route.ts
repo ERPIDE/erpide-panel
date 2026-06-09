@@ -37,7 +37,8 @@ import {
 import { getSku } from "@/lib/products";
 import { chargeSavedCard, isMockMode } from "@/lib/payments/iyzico";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
-import { sendOrderConfirmationEmail } from "@/lib/payments/email";
+import { sendOrderConfirmationEmail, sendRenewalFailedEmail, sendExpiringSoonEmail } from "@/lib/payments/email";
+import { invalidateRemoteLicenseCache } from "@/lib/payments/license-service-invalidate";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes — cron can take a while if many renewals
@@ -66,7 +67,15 @@ function hoursBetween(a: Date, b: Date): number {
 
 async function processOrder(order: OrderRecord, now: Date): Promise<{ status: string; orderId: string; detail?: string }> {
   if (order.status !== "PAID") return { status: "skip:not-paid", orderId: order.id };
-  if (order.autoRenewEnabled === false) return { status: "skip:auto-renew-off", orderId: order.id };
+  if (order.cancelledAt) {
+    // Kullanıcı iptal etti — yenileme yapma. Süre dolduğunda EXPIRED'a düşer.
+    return { status: "skip:cancelled", orderId: order.id };
+  }
+  if (order.autoRenewEnabled === false) {
+    // Auto-renew kapalı — "bitiyor" hatırlatma email'i at (7 ve 1 gün kala, 1'er kez)
+    await maybeSendExpiringEmail(order, now);
+    return { status: "skip:auto-renew-off", orderId: order.id };
+  }
   if (!order.subscriptionExpiresAt) return { status: "skip:no-expiry", orderId: order.id };
 
   const expiresAt = new Date(order.subscriptionExpiresAt);
@@ -140,14 +149,31 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
   });
 
   if (charge.status !== "success") {
+    const errorReason = charge.errorMessage || charge.errorCode || "Bilinmeyen ödeme hatası";
     await updateOrder(order.id, {
       lastRenewAttemptAt: now.toISOString(),
-      lastRenewError: charge.errorMessage || charge.errorCode || "Bilinmeyen ödeme hatası",
+      lastRenewError: errorReason,
     });
+    // Email — bu order için failure email'i bugün atılmadıysa at (idempotent).
+    const lastFailureMail = order.renewFailedEmailSentAt ? new Date(order.renewFailedEmailSentAt) : null;
+    const shouldMail = !lastFailureMail || hoursBetween(now, lastFailureMail) > 20;
+    if (shouldMail) {
+      try {
+        await sendRenewalFailedEmail({
+          to: user.email,
+          buyerName: `${user.name} ${user.surname}`.trim(),
+          order,
+          errorReason,
+        });
+        await updateOrder(order.id, { renewFailedEmailSentAt: now.toISOString() });
+      } catch (e) {
+        console.error("[cron-renew] failure email failed:", e);
+      }
+    }
     return {
       status: "fail:charge-declined",
       orderId: order.id,
-      detail: charge.errorMessage || charge.errorCode,
+      detail: errorReason,
     };
   }
 
@@ -224,7 +250,51 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
     console.error("[cron-renew] confirmation email failed:", e);
   }
 
+  // FinansERPIDE (ve diğer ürünler) cache'ini invalidate et — yeni order
+  // panel'de görünür, ürünler hemen yeni state'i çekmeli.
+  try {
+    await invalidateRemoteLicenseCache(user.email);
+  } catch (e) {
+    console.error("[cron-renew] license cache invalidate failed:", e);
+  }
+
   return { status: "ok:renewed", orderId: order.id, detail: newOrder.id };
+}
+
+
+/**
+ * "Aboneliğin bitiyor" hatırlatma email'i. Çağrı koşulu:
+ *   - auto-renew=false (zaten yenilenmeyecek) veya cancelled
+ *   - 7 gün veya 1 gün kala
+ *   - bu eşik için bugün/dün mail atılmadı (renewFailedEmailSentAt'i değil,
+ *     expiringSoonEmailSentAt'i kullanır — ayrı idempotency tracker)
+ */
+async function maybeSendExpiringEmail(order: OrderRecord, now: Date): Promise<void> {
+  if (!order.subscriptionExpiresAt) return;
+  const expiresAt = new Date(order.subscriptionExpiresAt);
+  const msLeft = expiresAt.getTime() - now.getTime();
+  const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+  // Sadece pozitif (geleceğe ait) ve 7 veya 1 gün kalanlar
+  if (daysLeft !== 7 && daysLeft !== 1) return;
+
+  // Spam koruması: aynı eşik için 18+ saat geçmediyse atma.
+  const lastMail = order.expiringSoonEmailSentAt ? new Date(order.expiringSoonEmailSentAt) : null;
+  if (lastMail && hoursBetween(now, lastMail) < 18) return;
+
+  const user = await findUserById(order.userId, true);
+  if (!user) return;
+
+  try {
+    await sendExpiringSoonEmail({
+      to: user.email,
+      buyerName: `${user.name} ${user.surname}`.trim(),
+      order,
+      daysLeft,
+    });
+    await updateOrder(order.id, { expiringSoonEmailSentAt: now.toISOString() });
+  } catch (e) {
+    console.error("[cron-renew] expiring email failed:", e);
+  }
 }
 
 

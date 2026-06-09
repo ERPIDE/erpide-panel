@@ -6,6 +6,7 @@ import { listOrdersByUserId } from "@/lib/auth/user-store";
 import { getProductOfSku } from "@/lib/products";
 import QuickStartTabs from "@/components/account/QuickStartTabs";
 import AutoRenewToggle from "@/components/account/AutoRenewToggle";
+import CancelSubscriptionButton from "@/components/account/CancelSubscriptionButton";
 
 interface LicenseRow {
   orderId: string;
@@ -22,6 +23,7 @@ interface LicenseRow {
   expiresAt?: string;
   autoRenewEnabled?: boolean;
   billingCycle?: "monthly" | "yearly";
+  cancelledAt?: string;
 
   apiKey?: string;
   apiBaseUrl?: string;
@@ -73,6 +75,7 @@ export default async function LisanslarimPage() {
           expiresAt: o.subscriptionExpiresAt,
           autoRenewEnabled: o.autoRenewEnabled,
           billingCycle: o.billingCycle,
+          cancelledAt: o.cancelledAt,
           apiKey: item.apiKey,
           apiBaseUrl: item.apiBaseUrl,
           dashboardUrl: item.dashboardUrl,
@@ -211,6 +214,16 @@ export default async function LisanslarimPage() {
                     orderId={lic.orderId}
                     initial={lic.autoRenewEnabled !== false}
                     cycleLabel={lic.billingCycle === "yearly" ? "yıl" : "ay"}
+                  />
+                )}
+
+                {/* CANCEL — only for active paid orders. Cancelled view inside component. */}
+                {lic.kind === "paid-active" && (
+                  <CancelSubscriptionButton
+                    orderId={lic.orderId}
+                    productName={lic.productName}
+                    subscriptionExpiresAt={lic.expiresAt}
+                    alreadyCancelled={!!lic.cancelledAt}
                   />
                 )}
 
