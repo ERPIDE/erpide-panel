@@ -1,0 +1,13 @@
+# PocketERPIDE Screenshot Klasoru
+
+Bu klasore asagidaki screenshot'lar yuklenecek (web MVP'den /pocket route'unda):
+
+- 01-genel-bakis.png    — Genel Bakis sekmesi (aylik bakiye, gelir/gider, hizli erisim)
+- 02-kredi-kartlari.png — Kredi Kartlari sekmesi (ekstre, limit, son odeme)
+- 03-krediler.png       — Krediler sekmesi (taksitler, kalan bakiye, odeme plani)
+- 04-buyuk-alimlar.png  — Buyuk Alimlar sekmesi (tasarruf hedefi, ilerleme)
+
+Onerilen cozunurluk: 1920x1080 (desktop) + 390x844 (-mobile.png suffix optional).
+PNG optimize: <200KB per file (TinyPNG veya sharp ile).
+
+Tanitim videosu: ../videos/pocketerpide-promo.mp4 veya .webm (H.264, 1080p, 5-10MB)

@@ -132,6 +132,17 @@ const ONEC_BUTTONS: Record<FeatureLocale, { liveDemo: string; officialPage: stri
   kk: { liveDemo: "Тікелей демо", officialPage: "Өндіруші парағы", contactCTA: "бізбен байланысыңыз" },
 };
 
+// PocketERPIDE asset durumu — dosyalar /public/screenshots/pocketerpide/* ve
+// /public/videos/pocketerpide-promo.mp4 yüklendiğinde true'ya çevir, video+galeri açılır.
+const POCKETERPIDE_ASSETS_READY = false;
+
+const POCKETERPIDE_SCREENSHOTS: { src: string; captionKey: string }[] = [
+  { src: "/screenshots/pocketerpide/01-genel-bakis.png",    captionKey: "pocket.ss_overview_caption" },
+  { src: "/screenshots/pocketerpide/02-kredi-kartlari.png", captionKey: "pocket.ss_cards_caption" },
+  { src: "/screenshots/pocketerpide/03-krediler.png",       captionKey: "pocket.ss_loans_caption" },
+  { src: "/screenshots/pocketerpide/04-buyuk-alimlar.png",  captionKey: "pocket.ss_purchases_caption" },
+];
+
 function Inner({ productId }: { productId: string }) {
   const product = getProduct(productId);
   const router = useRouter();
@@ -139,7 +150,7 @@ function Inner({ productId }: { productId: string }) {
   const initialSku = sp.get("sku");
   const { addItem, lines } = useCart();
   const { currency } = useCurrency();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   // 1C feature dili — fallback en'a düşer (sadece tr/en/ru/kk desteklendi)
   const featureLocale: FeatureLocale = (["en", "tr", "ru", "kk"] as const).includes(locale as FeatureLocale)
     ? (locale as FeatureLocale)
@@ -482,34 +493,111 @@ function Inner({ productId }: { productId: string }) {
                 </section>
               )}
 
-              {/* PocketERPIDE — coming soon, estetik kart */}
+              {/* PocketERPIDE — coming soon (hero pitch + opsiyonel video/galeri + native app banner) */}
               {product.id === "pocketerpide" && (
-                <section className="mb-10">
-                  <h2 className="text-xl font-bold text-white mb-3">Ürün Hazırlanıyor</h2>
-                  <div className="relative rounded-2xl border border-pink-500/20 bg-gradient-to-br from-pink-950/40 via-[#0a0a0f] to-rose-950/30 p-10 overflow-hidden">
-                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-pink-500/10 blur-3xl" />
-                    <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl" />
-                    <div className="relative">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-xs text-pink-300 font-medium mb-4">
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-                        Yakında — ERPIDE Mobil
+                <>
+                  {/* Hero pitch card */}
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-3">{t("pocket.section_heading")}</h2>
+                    <div className="relative rounded-2xl border border-pink-500/20 bg-gradient-to-br from-pink-950/40 via-[#0a0a0f] to-rose-950/30 p-10 overflow-hidden">
+                      <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-pink-500/10 blur-3xl" />
+                      <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl" />
+                      <div className="relative">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-xs text-pink-300 font-medium mb-4">
+                          <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                          {t("pocket.coming_soon_badge")}
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-3">{t("pocket.hero_title")}</h3>
+                        <p className="text-sm text-gray-400 max-w-md mb-6">
+                          {t("pocket.hero_subtitle")}
+                        </p>
+                        <ul className="space-y-2 text-sm text-gray-300">
+                          <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> {t("pocket.feature_ai_invoice")}</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> {t("pocket.feature_budget")}</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> {t("pocket.feature_auto_categorize")}</li>
+                          <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> {t("pocket.feature_ios_android")}</li>
+                        </ul>
+                        <p className="text-xs text-gray-500 mt-6 italic">
+                          {t("pocket.assets_note")}
+                        </p>
                       </div>
-                      <h3 className="text-2xl font-bold text-white mb-3">Cebinde AI Destekli Cüzdan</h3>
-                      <p className="text-sm text-gray-400 max-w-md mb-6">
-                        Maaşını gir, faturalarını fotoğrafla — AI okur, kategorize eder, bütçeni yönetir. Memur, mühendis, doktor — gelir/gider takip eden herkes için.
-                      </p>
-                      <ul className="space-y-2 text-sm text-gray-300">
-                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> AI ile fatura okuma (foto çek, kaydet)</li>
-                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> Aylık bütçe + tasarruf hedefi</li>
-                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> Otomatik kategorize + grafik analiz</li>
-                        <li className="flex items-center gap-2"><Check size={14} className="text-pink-400 flex-shrink-0" /> iOS + Android — tek hesap</li>
-                      </ul>
-                      <p className="text-xs text-gray-500 mt-6 italic">
-                        Geliştirme aktif — ekran görüntüleri ürün release edildiğinde eklenecek.
-                      </p>
                     </div>
-                  </div>
-                </section>
+                  </section>
+
+                  {/* Promo video — sadece asset hazırsa render */}
+                  {POCKETERPIDE_ASSETS_READY && (
+                    <section className="mb-10">
+                      <h2 className="text-xl font-bold text-white mb-1">{t("pocket.promo_heading")}</h2>
+                      <p className="text-xs text-gray-500 mb-3">{t("pocket.promo_caption")}</p>
+                      <video
+                        className="w-full rounded-2xl border border-white/10 bg-black"
+                        controls
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        poster={POCKETERPIDE_SCREENSHOTS[0].src}
+                      >
+                        <source src="/videos/pocketerpide-promo.webm" type="video/webm" />
+                        <source src="/videos/pocketerpide-promo.mp4" type="video/mp4" />
+                      </video>
+                    </section>
+                  )}
+
+                  {/* Screenshot galerisi — sadece asset hazırsa render */}
+                  {POCKETERPIDE_ASSETS_READY && (
+                    <section className="mb-10">
+                      <h2 className="text-xl font-bold text-white mb-1">{t("pocket.gallery_heading")}</h2>
+                      <p className="text-xs text-gray-500 mb-4">{t("pocket.gallery_caption")}</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {POCKETERPIDE_SCREENSHOTS.map((s) => (
+                          <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={s.src} alt={t(s.captionKey)} className="w-full h-auto block" loading="lazy" />
+                            <figcaption className="px-3 py-2 text-[11px] text-gray-400 border-t border-white/5">{t(s.captionKey)}</figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Native app coming soon — App Store + Google Play placeholder badges + Web MVP CTA */}
+                  <section className="mb-10">
+                    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-pink-950/20 via-[#0a0a0f] to-rose-950/15 p-6">
+                      <h2 className="text-lg font-bold text-white mb-1">{t("pocket.mobile_app_coming")}</h2>
+                      <p className="text-sm text-gray-400 mb-5 max-w-2xl">{t("pocket.mobile_app_coming_desc")}</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div
+                          aria-disabled="true"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-gray-400 cursor-not-allowed opacity-70"
+                          title="App Store · Soon"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 384 512" fill="currentColor" className="text-gray-300">
+                            <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                          </svg>
+                          <span>{t("pocket.app_store_soon")}</span>
+                        </div>
+                        <div
+                          aria-disabled="true"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-gray-400 cursor-not-allowed opacity-70"
+                          title="Google Play · Soon"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 512 512" fill="currentColor" className="text-gray-300">
+                            <path d="M325.3 234.3 104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
+                          </svg>
+                          <span>{t("pocket.google_play_soon")}</span>
+                        </div>
+                        <Link
+                          href="/pocket"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 text-sm text-white font-semibold hover:opacity-90 transition"
+                        >
+                          <Play size={14} /> {t("pocket.try_web_mvp")}
+                        </Link>
+                      </div>
+                    </div>
+                  </section>
+                </>
               )}
 
               {/* 1C ürünleri — generic placeholder */}
