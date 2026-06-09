@@ -135,7 +135,7 @@ const ONEC_BUTTONS: Record<FeatureLocale, { liveDemo: string; officialPage: stri
 // PocketERPIDE asset durumu — true: 4 ekran SS'i hazır, galeri render edilir.
 // Promo video ayrı flag — henüz üretilmedi.
 const POCKETERPIDE_ASSETS_READY = true;
-const POCKETERPIDE_VIDEO_READY = false;
+const POCKETERPIDE_VIDEO_READY = true;
 
 const POCKETERPIDE_SCREENSHOTS: { src: string; captionKey: string }[] = [
   { src: "/screenshots/pocketerpide/01-genel-bakis.png",    captionKey: "pocket.ss_overview_caption" },
