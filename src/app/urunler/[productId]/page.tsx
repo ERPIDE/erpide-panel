@@ -179,31 +179,74 @@ function Inner({ productId }: { productId: string }) {
                 </Link>
               </div>
 
-              {/* Tanıtım videosu placeholder (diğer ürünler için — FinansERPIDE kendi configurator'unda gösterir) */}
-              <section className="mb-10">
-                <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
-                <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
-                  <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
-                    <Play size={26} className="text-gray-400 ml-1" />
-                  </div>
-                  <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
-                  <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
-                </div>
-              </section>
+              {/* CaptchaERPIDE — canlı çözüm videosu + SS galerisi (Playwright capture'dan) */}
+              {product.id === "captchaerpide" && (
+                <>
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-1">Canlı Çözüm Videosu</h2>
+                    <p className="text-xs text-gray-500 mb-3">Solver'ın gerçek slider captcha çözdüğü kayıt — Playwright + OpenCV, ortalama 28ms.</p>
+                    <video
+                      className="w-full aspect-video rounded-2xl border border-white/10 bg-black"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      poster="/screenshots/captchaerpide/02-modal.png"
+                    >
+                      <source src="/videos/captcha-solve-demo.webm" type="video/webm" />
+                      Tarayıcınız webm video desteği vermiyor.
+                    </video>
+                  </section>
 
-              {/* Ekran görüntüleri placeholder */}
-              <section className="mb-10">
-                <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-gray-900 to-[#0a0a0f] border border-white/5 flex flex-col items-center justify-center">
-                      <ImageIcon size={28} className="text-gray-700 mb-2" />
-                      <p className="text-[11px] text-gray-600">Ekran {i}</p>
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { src: "/screenshots/captchaerpide/01-panel.png",   caption: "Test panel — çek havuzu" },
+                        { src: "/screenshots/captchaerpide/02-modal.png",   caption: "Slider captcha — AI hedefi buluyor" },
+                        { src: "/screenshots/captchaerpide/03-success.png", caption: "Çözüm onaylandı — 5.4s total" },
+                      ].map((s) => (
+                        <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={s.src} alt={s.caption} className="w-full h-auto block" loading="lazy" />
+                          <figcaption className="px-3 py-2 text-[11px] text-gray-400 border-t border-white/5">{s.caption}</figcaption>
+                        </figure>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Ürün arayüzünden ekran görüntüleri yakında eklenecek.</p>
-              </section>
+                  </section>
+                </>
+              )}
+
+              {/* Diğer ürünler — placeholder (yakında çekilecek) */}
+              {product.id !== "captchaerpide" && product.id !== "finanserpide" && (
+                <>
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
+                    <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
+                      <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                        <Play size={26} className="text-gray-400 ml-1" />
+                      </div>
+                      <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
+                      <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
+                    </div>
+                  </section>
+
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-3">Ekran Görüntüleri</h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-gray-900 to-[#0a0a0f] border border-white/5 flex flex-col items-center justify-center">
+                          <ImageIcon size={28} className="text-gray-700 mb-2" />
+                          <p className="text-[11px] text-gray-600">Ekran {i}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Ürün arayüzünden ekran görüntüleri yakında eklenecek.</p>
+                  </section>
+                </>
+              )}
 
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-white">Plan Seçin</h2>
