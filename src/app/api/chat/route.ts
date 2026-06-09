@@ -12,6 +12,8 @@
  */
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { randomUUID } from "crypto";
+import { upsertSupportRequest, type SupportMessage } from "@/lib/support-requests";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -172,10 +174,16 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Geçersiz istek" }, { status: 400 }); }
 
   type MsgIn = { role: "user" | "assistant"; content: string };
-  const messages = (body as { messages?: MsgIn[] })?.messages;
+  const reqBody = body as { messages?: MsgIn[]; sessionId?: string };
+  const messages = reqBody?.messages;
   if (!Array.isArray(messages) || messages.length === 0) {
     return NextResponse.json({ error: "Mesaj boş olamaz" }, { status: 400 });
   }
+  // sessionId yoksa yeni üret — istemci ilk POST'tan sonra hep aynı id'yi yollar
+  // (sessionStorage'da tutar). Bu sayede admin paneli her chat'i tek bir kayıt
+  // olarak görür, AI yanıt eklendikçe transcript güncellenir.
+  const sessionId = (typeof reqBody.sessionId === "string" && reqBody.sessionId) || randomUUID();
+
   // Maks 30 mesaj history — uzun konuşmalarda eski mesajları kırp.
   const trimmed = messages.slice(-30).filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string");
 
@@ -191,10 +199,15 @@ export async function POST(req: Request) {
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("\n");
-    return NextResponse.json({
-      ok: true,
-      reply: text || "Üzgünüm, bir cevap üretemedim. Tekrar dener misin?",
+    const reply = text || "Üzgünüm, bir cevap üretemedim. Tekrar dener misin?";
+
+    // Transcript'i blob'a kaydet (admin paneli "Destek Talepleri" sekmesi
+    // okur). Hata olursa chat akışını bozmasın — bg fire-and-forget.
+    persistChatTranscript(sessionId, trimmed, reply, ip).catch((err) => {
+      console.error("[chat] persist error:", err);
     });
+
+    return NextResponse.json({ ok: true, reply, sessionId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Bilinmeyen hata";
     return NextResponse.json({
@@ -202,4 +215,29 @@ export async function POST(req: Request) {
       detail: msg,
     }, { status: 500 });
   }
+}
+
+/** Chat transcript'i support-requests blob'una upsert eder. Çağıran await
+ * etmesin; chat response latency'sini etkilemesin. Email/isim henüz yoksa
+ * boş geçer — admin paneli yine de konuşmayı görür, ileride summary'den
+ * çıkarılabilir. */
+async function persistChatTranscript(sessionId: string, history: { role: "user" | "assistant"; content: string }[], reply: string, ip: string) {
+  const now = new Date().toISOString();
+  const transcript: SupportMessage[] = [
+    ...history.map((m) => ({ role: m.role, content: m.content, at: now })),
+    { role: "assistant" as const, content: reply, at: now },
+  ];
+  // İlk N karakter ön-izleme için summary
+  const firstUser = history.find((m) => m.role === "user")?.content || "";
+  const summary = firstUser.slice(0, 140);
+  await upsertSupportRequest({
+    id: sessionId,
+    channel: "chat",
+    summary,
+    transcript,
+    meta: { ip },
+    status: "open",
+    createdAt: now, // upsert createdAt'i ilk seferinde yazar (storage'da overwrite varsa ilk değer korunmaz; ileride iyileştirilebilir)
+    updatedAt: now,
+  });
 }

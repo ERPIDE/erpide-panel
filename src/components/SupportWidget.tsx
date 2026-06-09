@@ -109,6 +109,16 @@ export default function SupportWidget() {
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState("");
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  // sessionId — server-side talep kaydında her chat aynı id ile gruplanır.
+  // İlk POST'tan sonra server sessionId döner; sessionStorage'da tutuyoruz ki
+  // sayfa yenilense bile aynı kayda devam etsin (kullanıcı pencereyi kapatana kadar).
+  const sessionIdRef = useRef<string>("");
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("erpide_chat_session");
+      if (saved) sessionIdRef.current = saved;
+    } catch { /* sandboxed iframe */ }
+  }, []);
 
   useEffect(() => {
     chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" });
@@ -148,12 +158,20 @@ export default function SupportWidget() {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.filter((m) => m.role === "user" || m.role === "assistant") }),
+        body: JSON.stringify({
+          messages: next.filter((m) => m.role === "user" || m.role === "assistant"),
+          sessionId: sessionIdRef.current || undefined,
+        }),
       });
       const data = await r.json();
       if (!r.ok || !data.ok) {
         setChatError(data.error || `Hata (${r.status})`);
         return;
+      }
+      // İlk POST'tan dönen sessionId'yi sakla; sonraki POST'larda aynı id'yi yolla.
+      if (data.sessionId && !sessionIdRef.current) {
+        sessionIdRef.current = data.sessionId;
+        try { sessionStorage.setItem("erpide_chat_session", data.sessionId); } catch { /* noop */ }
       }
       setChatMsgs([...next, { role: "assistant", content: data.reply }]);
     } catch (e) {
@@ -165,8 +183,11 @@ export default function SupportWidget() {
 
   function resetChat() {
     if (chatMsgs.length > 1 && !confirm("Sohbeti baştan başlat?")) return;
-    setChatMsgs([{ role: "assistant", content: "Merhaba! ERPIDE'ye hoş geldin. Sana nasıl yardımcı olabilirim?" }]);
+    setChatMsgs([{ role: "assistant", content: "Merhaba, ben Eylül — ERPIDE'nin AI destek asistanıyım. Sizi tanıyabilir miyim, isminiz nedir?" }]);
     setChatError("");
+    // Yeni konuşma → yeni sessionId (admin panelinde ayrı kayıt olarak görünür).
+    sessionIdRef.current = "";
+    try { sessionStorage.removeItem("erpide_chat_session"); } catch { /* noop */ }
   }
 
   return (

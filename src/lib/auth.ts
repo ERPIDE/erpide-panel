@@ -20,28 +20,39 @@ export interface Session {
   expiresAt: string;
 }
 
-/** Site sahibi (owner) — sadece bu email tüm admin sekmelerini görür.
- * Captcha Panel / Ödemeler / Kullanıcılar diğer adminlere kapalıdır. */
+/** Site sahibi (owner) — yedek email tabanlı check (audit log/owner-only edge case için).
+ * Asıl RBAC role tabanlıdır: isElevated() ile kontrol edilir. */
 export const OWNER_EMAIL = "admin@erpide.com";
 export function isOwner(email?: string | null): boolean {
   return !!email && email.toLowerCase() === OWNER_EMAIL;
 }
 
-/** API route guard: çağıran sadece site sahibiyse session döner; aksi halde null.
- * Eski session'larda userEmail olmayabilir — admin listesinden backfill yapılır. */
-export async function getOwnerSession(token: string | undefined): Promise<Session | null> {
+/** Yetkili (müdür-tipi) admin — role === "admin". Geliştirici (role: "developer")
+ * adminler false döner; onlara Captcha/Ödemeler/Kullanıcılar/Destek Talepleri kapalı. */
+export function isElevated(role?: string | null): boolean {
+  return role === "admin";
+}
+
+/** API route guard: çağıran yetkili admin'se (role === "admin") session döner.
+ * Geliştirici/developer adminler için null. Eski session'larda userEmail
+ * olmayabilir — admin listesinden backfill yapılır. */
+export async function getElevatedSession(token: string | undefined): Promise<Session | null> {
   if (!token) return null;
   const session = await getSession(token);
   if (!session || session.userType !== "admin") return null;
+  if (!isElevated(session.userRole)) return null;
 
   let email = session.userEmail;
   if (!email) {
     const admins = await getAdmins();
     email = admins.find((a) => a.id === session.userId)?.email;
   }
-  if (!isOwner(email)) return null;
   return { ...session, userEmail: email };
 }
+
+/** Backward-compat alias — eski API'ler getOwnerSession import etmiş olabilir.
+ * Aynı role-based gating; isOwner'a düşürmüyoruz. */
+export const getOwnerSession = getElevatedSession;
 
 export const SESSION_COOKIE = "erpide_session";
 const SESSION_EXPIRY_DAYS = 7;
