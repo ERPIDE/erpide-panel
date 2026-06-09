@@ -132,9 +132,10 @@ const ONEC_BUTTONS: Record<FeatureLocale, { liveDemo: string; officialPage: stri
   kk: { liveDemo: "Тікелей демо", officialPage: "Өндіруші парағы", contactCTA: "бізбен байланысыңыз" },
 };
 
-// PocketERPIDE asset durumu — dosyalar /public/screenshots/pocketerpide/* ve
-// /public/videos/pocketerpide-promo.mp4 yüklendiğinde true'ya çevir, video+galeri açılır.
-const POCKETERPIDE_ASSETS_READY = false;
+// PocketERPIDE asset durumu — true: 4 ekran SS'i hazır, galeri render edilir.
+// Promo video ayrı flag — henüz üretilmedi.
+const POCKETERPIDE_ASSETS_READY = true;
+const POCKETERPIDE_VIDEO_READY = false;
 
 const POCKETERPIDE_SCREENSHOTS: { src: string; captionKey: string }[] = [
   { src: "/screenshots/pocketerpide/01-genel-bakis.png",    captionKey: "pocket.ss_overview_caption" },
@@ -524,8 +525,8 @@ function Inner({ productId }: { productId: string }) {
                     </div>
                   </section>
 
-                  {/* Promo video — sadece asset hazırsa render */}
-                  {POCKETERPIDE_ASSETS_READY && (
+                  {/* Promo video — ayrı flag (henüz üretilmedi) */}
+                  {POCKETERPIDE_VIDEO_READY && (
                     <section className="mb-10">
                       <h2 className="text-xl font-bold text-white mb-1">{t("pocket.promo_heading")}</h2>
                       <p className="text-xs text-gray-500 mb-3">{t("pocket.promo_caption")}</p>
