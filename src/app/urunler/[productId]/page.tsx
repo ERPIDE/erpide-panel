@@ -11,6 +11,126 @@ import { useCart } from "@/components/CartProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
 import FinansERPIDEConfigurator from "@/components/FinansERPIDEConfigurator";
+import { useTranslation } from "@/lib/i18n";
+
+// 1C ürünleri için lokalize özellik listeleri. Top-level sabit — render
+// içinde ternary + Array literal hesaplamayı SSR'da minify'la bozulma
+// riskini eliminate eder, hem de TR/EN/RU/KK dilinde tutarlı içerik sağlar.
+type FeatureLocale = "en" | "tr" | "ru" | "kk";
+const ONEC_FEATURES: Record<"1c-erp" | "1c-drive", Record<FeatureLocale, string[]>> = {
+  "1c-erp": {
+    tr: [
+      "Üretim Planlama (MPS) — kesikli + sürekli",
+      "MRP — malzeme ihtiyaç planlama",
+      "Make-to-Order + Make-to-Stock",
+      "Çok depolu envanter + maliyet",
+      "Tedarik zinciri yönetimi",
+      "Finans + bütçeleme + regulated raporlama",
+      "KPI dashboard'ları + analitik",
+      "1C:Enterprise platform üstü ölçeklenir",
+    ],
+    en: [
+      "Production Planning (MPS) — discrete + process",
+      "MRP — material requirements planning",
+      "Make-to-Order + Make-to-Stock",
+      "Multi-warehouse inventory + costing",
+      "Supply chain management",
+      "Finance + budgeting + regulated reporting",
+      "KPI dashboards + analytics",
+      "Scalable on 1C:Enterprise platform",
+    ],
+    ru: [
+      "Планирование производства (MPS) — дискретное + непрерывное",
+      "MRP — планирование потребности в материалах",
+      "Производство на заказ + на склад",
+      "Многоскладской учет + себестоимость",
+      "Управление цепями поставок",
+      "Финансы + бюджетирование + регламентированная отчетность",
+      "KPI-дашборды + аналитика",
+      "Масштабируется на 1C:Enterprise",
+    ],
+    kk: [
+      "Өндірісті жоспарлау (MPS) — дискретті + үздіксіз",
+      "MRP — материалдық қажеттіліктерді жоспарлау",
+      "Тапсырыс бойынша + қоймаға өндіру",
+      "Бірнеше қоймадағы есеп + өзіндік құн",
+      "Жабдықтау тізбегін басқару",
+      "Қаржы + бюджеттеу + реттелетін есептілік",
+      "KPI-дашбордтар + аналитика",
+      "1C:Enterprise платформасында масштабталады",
+    ],
+  },
+  "1c-drive": {
+    tr: [
+      "Çok seviyeli BOM (reçete)",
+      "MRP + tedarik planlama",
+      "Satış / sipariş / sevkiyat / fatura akışı",
+      "Stok + depo + sayım",
+      "Müşteri/tedarikçi (CRM)",
+      "Hizmet yönetimi + servis",
+      "Mobil uygulama (iOS + Android)",
+      "1C:Drive Lite — bulut ön-muhasebe",
+    ],
+    en: [
+      "Multi-level BOM (recipes)",
+      "MRP + supply planning",
+      "Sales / order / shipment / invoice flow",
+      "Stock + warehouse + inventory count",
+      "Customer/supplier (CRM)",
+      "Service management",
+      "Mobile app (iOS + Android)",
+      "1C:Drive Lite — cloud pre-accounting",
+    ],
+    ru: [
+      "Многоуровневая BOM (рецепты)",
+      "MRP + планирование закупок",
+      "Продажи / заказ / отгрузка / счет",
+      "Склад + инвентаризация",
+      "Клиенты/поставщики (CRM)",
+      "Управление услугами + сервис",
+      "Мобильное приложение (iOS + Android)",
+      "1C:Drive Lite — облачный предучет",
+    ],
+    kk: [
+      "Көп деңгейлі BOM (рецепттер)",
+      "MRP + жабдықтауды жоспарлау",
+      "Сату / тапсырыс / жөнелту / шот",
+      "Қойма + түгендеу",
+      "Клиенттер/жеткізушілер (CRM)",
+      "Қызмет көрсету + сервис",
+      "Мобильді қосымша (iOS + Android)",
+      "1C:Drive Lite — бұлттық алдын ала есеп",
+    ],
+  },
+};
+
+// Locale-aware 1C section başlık + ERPIDE pitch metinleri
+const ONEC_LABELS: Record<FeatureLocale, { heading: string; pitch: (productName: string) => React.ReactNode }> = {
+  tr: {
+    heading: "Öne Çıkan Özellikler",
+    pitch: (n) => (<><strong className="text-gray-300">ERPIDE</strong> {n} için Türkiye&apos;de: lisanslama · kurulum · TR/KZ yerelleştirme · veri taşıma · kullanıcı eğitimi · özelleştirme · canlı destek.</>),
+  },
+  en: {
+    heading: "Key Features",
+    pitch: (n) => (<><strong className="text-gray-300">ERPIDE</strong> delivers {n} in Türkiye: licensing · installation · TR/KZ localization · data migration · user training · customization · live support.</>),
+  },
+  ru: {
+    heading: "Ключевые возможности",
+    pitch: (n) => (<><strong className="text-gray-300">ERPIDE</strong> поставляет {n} в Турции: лицензирование · внедрение · локализация TR/KZ · миграция данных · обучение · доработка · поддержка.</>),
+  },
+  kk: {
+    heading: "Негізгі мүмкіндіктер",
+    pitch: (n) => (<><strong className="text-gray-300">ERPIDE</strong> Түркияда {n} ұсынады: лицензиялау · орнату · TR/KZ локализация · деректерді көшіру · оқыту · бейімдеу · қолдау.</>),
+  },
+};
+
+// Demo + Resmi link buton metinleri
+const ONEC_BUTTONS: Record<FeatureLocale, { liveDemo: string; officialPage: string; contactCTA: string }> = {
+  tr: { liveDemo: "Canlı Demo", officialPage: "Resmi Üretici Sayfası", contactCTA: "iletişime geçin" },
+  en: { liveDemo: "Live Demo", officialPage: "Official Vendor Page", contactCTA: "contact us" },
+  ru: { liveDemo: "Живая демонстрация", officialPage: "Страница производителя", contactCTA: "связаться с нами" },
+  kk: { liveDemo: "Тікелей демо", officialPage: "Өндіруші парағы", contactCTA: "бізбен байланысыңыз" },
+};
 
 function Inner({ productId }: { productId: string }) {
   const product = getProduct(productId);
@@ -19,6 +139,13 @@ function Inner({ productId }: { productId: string }) {
   const initialSku = sp.get("sku");
   const { addItem, lines } = useCart();
   const { currency } = useCurrency();
+  const { locale } = useTranslation();
+  // 1C feature dili — fallback en'a düşer (sadece tr/en/ru/kk desteklendi)
+  const featureLocale: FeatureLocale = (["en", "tr", "ru", "kk"] as const).includes(locale as FeatureLocale)
+    ? (locale as FeatureLocale)
+    : "en";
+  const onecBtn = ONEC_BUTTONS[featureLocale];
+  const onecLbl = ONEC_LABELS[featureLocale];
   const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0].id || "");
   const [adding, setAdding] = useState(false);
   const [trialing, setTrialing] = useState(false);
@@ -184,7 +311,7 @@ function Inner({ productId }: { productId: string }) {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/15 border border-blue-500/30 text-sm text-blue-300 hover:bg-blue-600/25 transition"
                   >
-                    <Play size={14} /> Canlı Demo
+                    <Play size={14} /> {onecBtn.liveDemo}
                   </a>
                 )}
                 {product.officialUrl && (
@@ -194,36 +321,18 @@ function Inner({ productId }: { productId: string }) {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 transition"
                   >
-                    <ArrowLeft size={14} className="rotate-[135deg]" /> Resmi Üretici Sayfası
+                    <BookOpen size={14} /> {onecBtn.officialPage}
                   </a>
                 )}
               </div>
 
-              {/* 1C:ERP / 1C:Drive — resmi 1ci.com bilgi kartı + özellik listesi */}
+              {/* 1C:ERP / 1C:Drive — lokalize özellik kartı + ERPIDE pitch */}
               {(product.id === "1c-erp" || product.id === "1c-drive") && (
                 <section className="mb-10">
-                  <h2 className="text-xl font-bold text-white mb-3">Öne Çıkan Özellikler</h2>
+                  <h2 className="text-xl font-bold text-white mb-3">{onecLbl.heading}</h2>
                   <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-950/30 via-[#0a0a0f] to-blue-950/20 p-6">
                     <ul className="grid sm:grid-cols-2 gap-3 mb-6">
-                      {(product.id === "1c-erp" ? [
-                        "Üretim Planlama (MPS) — kesikli + sürekli",
-                        "MRP — malzeme ihtiyaç planlama",
-                        "Make-to-Order + Make-to-Stock",
-                        "Çok depolu envanter + maliyet",
-                        "Tedarik zinciri yönetimi",
-                        "Finans + bütçeleme + regulated raporlama",
-                        "KPI dashboard'ları + analitik",
-                        "1C:Enterprise platform üstü ölçeklenir",
-                      ] : [
-                        "Çok seviyeli BOM (reçete)",
-                        "MRP + tedarik planlama",
-                        "Satış / sipariş / sevkiyat / fatura akışı",
-                        "Stok + depo + sayım",
-                        "Müşteri/tedarikçi (CRM)",
-                        "Hizmet yönetimi + servis",
-                        "Mobil uygulama (iOS + Android)",
-                        "1C:Drive Lite — bulut ön-muhasebe",
-                      ]).map((f) => (
+                      {ONEC_FEATURES[product.id][featureLocale].map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                           <Check size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
                           <span>{f}</span>
@@ -231,9 +340,7 @@ function Inner({ productId }: { productId: string }) {
                       ))}
                     </ul>
                     <div className="pt-5 border-t border-white/10 text-xs text-gray-400 leading-relaxed">
-                      <strong className="text-gray-300">ERPIDE</strong> {product.name} için Türkiye'de:
-                      lisanslama · kurulum · TR/KZ yerelleştirme · veri taşıma · kullanıcı eğitimi ·
-                      özelleştirme · canlı destek. Detay için <Link href="/iletisim" className="text-blue-400 hover:underline">iletişime geçin</Link>.
+                      {onecLbl.pitch(product.name)} <Link href="/iletisim" className="text-blue-400 hover:underline">{onecBtn.contactCTA}</Link>.
                     </div>
                   </div>
                 </section>
