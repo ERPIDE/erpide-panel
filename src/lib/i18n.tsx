@@ -23,6 +23,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (saved && translations[saved]) {
       setLocaleState(saved);
       document.documentElement.lang = saved;
+      // Cookie de senkronize et — server component'ler bunu okur (i18n-server.ts).
+      document.cookie = `erpide_lang=${saved}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }, []);
 
@@ -30,6 +32,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(newLocale);
     localStorage.setItem("erpide_lang", newLocale);
     document.documentElement.lang = newLocale;
+    document.cookie = `erpide_lang=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
   };
 
   const t = (key: string): string => {

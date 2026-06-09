@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/session";
 import { listOrdersByUserId, findUserById } from "@/lib/auth/user-store";
 import { Package, Key, User as UserIcon, Mail, ShoppingBag, Sparkles, ArrowRight, Wallet, Shield, ExternalLink } from "lucide-react";
 import { redirect } from "next/navigation";
+import { getServerTranslations } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,7 @@ export default async function HesabimPage() {
   const session = await requireUser();
   if (!session) redirect("/giris?next=/hesabim");
 
-  // forceFresh: hesabim sayfası account state'in en güncel olduğu yer; cache
-  // ile false-positive "doğrulanmamış" banner gösterilmesin diye blob'tan
-  // doğrudan oku.
+  const { t, dateLocale } = await getServerTranslations();
   const user = await findUserById(session.userId!, true);
   const orders = await listOrdersByUserId(session.userId!);
   const now = Date.now();
@@ -21,7 +20,6 @@ export default async function HesabimPage() {
   const activeTrialCount = orders.filter((o) => o.status === "TRIAL" && o.isTrial && (!o.trialExpiresAt || new Date(o.trialExpiresAt).getTime() > now)).reduce((sum, o) => sum + o.items.length, 0);
   const totalActive = paidLicenseCount + activeTrialCount;
 
-  // Hangi ürünlere aktif (paid veya trial-non-expired) erişimi var?
   const activeProductIds = new Set<string>();
   for (const o of orders) {
     if (o.status === "PAID") {
@@ -38,18 +36,18 @@ export default async function HesabimPage() {
     <>
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          <span className="gradient-text">Özet</span>
+          <span className="gradient-text">{t("sidebar.summary")}</span>
         </h1>
         <p className="text-gray-400 text-sm">
-          Hoş geldin {user?.name || session.email} — siparişlerini, lisanslarını ve profil bilgilerini buradan yönet.
+          {t("account.welcome_desc").replace("{name}", user?.name || session.email || "")}
         </p>
       </header>
 
       {hasAnyApp && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Uygulamalarım</h2>
-            <span className="text-[11px] text-gray-500">Tıkla, uygulamaya git</span>
+            <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">{t("account.my_apps")}</h2>
+            <span className="text-[11px] text-gray-500">{t("account.click_to_go")}</span>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             {activeProductIds.has("finanserpide") && (
@@ -57,8 +55,10 @@ export default async function HesabimPage() {
                 href="https://finans.erpide.com/giris"
                 icon={Wallet}
                 title="FinansERPIDE"
-                desc="Multi-tenant ERP + AI muhasebe asistanı"
+                desc={t("account.app_finanserpide_desc")}
                 tone="blue"
+                activeLabel={t("account.app_active_badge")}
+                openLabel={t("account.app_open")}
               />
             )}
             {activeProductIds.has("captchaerpide") && (
@@ -66,8 +66,10 @@ export default async function HesabimPage() {
                 href="https://captcha.erpide.com/dashboard"
                 icon={Shield}
                 title="CaptchaERPIDE"
-                desc="AI captcha çözücü dashboard + API"
+                desc={t("account.app_captcha_desc")}
                 tone="emerald"
+                activeLabel={t("account.app_active_badge")}
+                openLabel={t("account.app_open")}
               />
             )}
           </div>
@@ -75,50 +77,61 @@ export default async function HesabimPage() {
       )}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <Stat icon={Package} label="Sipariş Sayısı" value={orders.length.toString()} />
-        <Stat icon={Key} label="Aktif Lisans" value={totalActive.toString()} sub={activeTrialCount > 0 ? `${activeTrialCount} deneme` : undefined} />
-        <Stat icon={UserIcon} label="Üyelik" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString("tr-TR") : "—"} />
+        <Stat icon={Package} label={t("account.stat_orders")} value={orders.length.toString()} />
+        <Stat
+          icon={Key}
+          label={t("account.stat_active_licenses")}
+          value={totalActive.toString()}
+          sub={activeTrialCount > 0 ? t("account.stat_trial_count").replace("{count}", String(activeTrialCount)) : undefined}
+        />
+        <Stat icon={UserIcon} label={t("account.stat_membership")} value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString(dateLocale) : "—"} />
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <NavCard href="/hesabim/profil" icon={UserIcon} title="Profil" desc="Ad, telefon, TC kimlik" tone="blue" />
-        <NavCard href="/hesabim/lisanslarim" icon={Key} title="Lisanslarım" desc={`${totalActive} aktif`} tone="emerald" />
-        <NavCard href="/hesabim/siparislerim" icon={ShoppingBag} title="Siparişlerim" desc={`${orders.length} sipariş`} tone="purple" />
-        <NavCard href="/hesabim/aktivasyon-kodu" icon={Key} title="Aktivasyon Kodu" desc="E-pin ile lisans aktive et" tone="amber" />
-        <NavCard href="/hesabim/adres" icon={UserIcon} title="Adreslerim" desc="Fatura adresleri" tone="blue" />
-        <NavCard href="/urunler" icon={Sparkles} title="Yeni Ürün" desc="Trial başlat ya da satın al" tone="purple" />
+        <NavCard href="/hesabim/profil" icon={UserIcon} title={t("account.nav_profile")} desc={t("account.nav_profile_desc")} tone="blue" />
+        <NavCard href="/hesabim/lisanslarim" icon={Key} title={t("sidebar.licenses")} desc={t("account.nav_licenses_desc").replace("{count}", String(totalActive))} tone="emerald" />
+        <NavCard href="/hesabim/siparislerim" icon={ShoppingBag} title={t("sidebar.orders")} desc={t("account.nav_orders_desc").replace("{count}", String(orders.length))} tone="purple" />
+        <NavCard href="/hesabim/aktivasyon-kodu" icon={Key} title={t("nav.activation_code")} desc={t("account.nav_activation_desc")} tone="amber" />
+        <NavCard href="/hesabim/adres" icon={UserIcon} title={t("account.nav_addresses")} desc={t("account.nav_addresses_desc")} tone="blue" />
+        <NavCard href="/urunler" icon={Sparkles} title={t("account.nav_new_product")} desc={t("account.nav_new_product_desc")} tone="purple" />
       </div>
 
       {user && user.emailVerified === false && (
         <div className="mb-8 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-start gap-3">
           <Mail className="text-amber-400 mt-0.5 flex-shrink-0" size={18} />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-200 mb-1">E-postanı doğrula</p>
-            <p className="text-xs text-gray-400">Bazı işlemler (deneme başlatma, ödeme) için e-postanı doğrulaman gerekiyor. Mailini bulamıyorsan tekrar gönderebilirsin.</p>
+            <p className="text-sm font-semibold text-amber-200 mb-1">{t("account.verify_email")}</p>
+            <p className="text-xs text-gray-400">{t("account.verify_email_desc")}</p>
           </div>
         </div>
       )}
 
       <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-white">Son Lisanslar</h2>
+          <h2 className="font-semibold text-white">{t("account.recent_licenses")}</h2>
           {allLicenses.length > 0 && (
             <Link href="/hesabim/lisanslarim" className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1">
-              Tümü <ArrowRight size={12} />
+              {t("account.see_all")} <ArrowRight size={12} />
             </Link>
           )}
         </div>
         {allLicenses.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Key size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Henüz lisansın yok.</p>
-            <Link href="/urunler" className="text-blue-400 hover:underline text-sm">Ürünleri incele →</Link>
+            <p className="text-sm">{t("account.no_licenses")}</p>
+            <Link href="/urunler" className="text-blue-400 hover:underline text-sm">{t("account.browse_products")} →</Link>
           </div>
         ) : (
           <div className="space-y-2">
             {allLicenses.slice(0, 5).map((lic, i) => {
               const expired = lic.isTrial && lic.trialExpiresAt && new Date(lic.trialExpiresAt).getTime() < now;
-              const label = lic.orderStatus === "PAID" ? "Aktif" : lic.isTrial && !expired ? "Deneme" : expired ? "Süresi Doldu" : "Beklemede";
+              const label = lic.orderStatus === "PAID"
+                ? t("account.lic_status_active")
+                : lic.isTrial && !expired
+                  ? t("account.lic_status_trial")
+                  : expired
+                    ? t("account.lic_status_expired")
+                    : t("account.lic_status_pending");
               const tone = lic.orderStatus === "PAID"
                 ? "bg-green-500/15 text-green-400"
                 : lic.isTrial && !expired
@@ -162,8 +175,8 @@ const toneClass: Record<string, string> = {
 };
 
 function NavCard({ href, icon: Icon, title, desc, tone }: { href: string; icon: React.ComponentType<{ size?: number; className?: string }>; title: string; desc: string; tone: string }) {
-  const t = toneClass[tone] || toneClass.blue;
-  const [borderCls, , iconCls] = t.split(" ");
+  const tc = toneClass[tone] || toneClass.blue;
+  const [borderCls, , iconCls] = tc.split(" ");
   return (
     <Link href={href} className={`block p-5 rounded-2xl bg-[#111118] border transition ${borderCls} hover:bg-white/[0.02]`}>
       <Icon size={22} className={iconCls + " mb-3"} />
@@ -175,13 +188,15 @@ function NavCard({ href, icon: Icon, title, desc, tone }: { href: string; icon: 
 
 
 function AppLaunchCard({
-  href, icon: Icon, title, desc, tone,
+  href, icon: Icon, title, desc, tone, activeLabel, openLabel,
 }: {
   href: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   title: string;
   desc: string;
   tone: "blue" | "emerald";
+  activeLabel: string;
+  openLabel: string;
 }) {
   const cls = tone === "blue"
     ? "from-blue-500/10 to-cyan-500/10 border-blue-500/30 hover:border-blue-500/50 text-blue-300"
@@ -199,12 +214,12 @@ function AppLaunchCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-semibold text-white text-base">{title}</h3>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">AKTİF</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">{activeLabel}</span>
         </div>
         <p className="text-xs text-gray-400 truncate">{desc}</p>
       </div>
       <div className="flex-shrink-0 flex items-center gap-1 text-sm font-semibold opacity-80 group-hover:opacity-100">
-        Aç <ExternalLink size={14} />
+        {openLabel} <ExternalLink size={14} />
       </div>
     </a>
   );
