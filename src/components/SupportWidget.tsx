@@ -118,7 +118,7 @@ export default function SupportWidget() {
     setPanel("chat");
     setChatError("");
     if (chatMsgs.length === 0) {
-      setChatMsgs([{ role: "assistant", content: "Merhaba! ERPIDE'ye hoş geldin. Sana nasıl yardımcı olabilirim?" }]);
+      setChatMsgs([{ role: "assistant", content: "Merhaba, ben Eylül — ERPIDE'nin AI destek asistanıyım. Sizi tanıyabilir miyim, isminiz nedir?" }]);
     }
   }
 
