@@ -7,8 +7,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PRODUCTS } from "@/lib/products";
 import { priceFor, formatPrice } from "@/lib/currency";
+import { useTranslation } from "@/lib/i18n";
 
 export default function UrunlerPage() {
+  const { t } = useTranslation();
   const [trialedProducts, setTrialedProducts] = useState<Set<string>>(new Set());
   const [activeSkuByProduct, setActiveSkuByProduct] = useState<Record<string, string>>({});
   const [lastSkuByProduct, setLastSkuByProduct] = useState<Record<string, string>>({});
@@ -37,18 +39,16 @@ export default function UrunlerPage() {
             className="text-center mb-16"
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              <span className="gradient-text">Ürünler</span>
+              <span className="gradient-text">{t("products.title")}</span>
             </h1>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              ERPIDE SaaS ürünleri. Üye ol, sepete ekle, aylık abone ol. İstediğin zaman iptal et.
+              {t("products.subtitle")}
             </p>
           </motion.div>
 
           <div className="space-y-16">
             {PRODUCTS.map((product) => {
               const Icon = product.icon;
-              // Liste sayfasında "module" ve "seat" tipi SKU'lar gizlenir — onlar detay sayfasının
-              // konfigüratöründen seçilir. base/standalone/credit kart olarak gösterilir.
               const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
               return (
                 <motion.section
@@ -67,7 +67,7 @@ export default function UrunlerPage() {
                         <h2 className="text-2xl md:text-3xl font-bold text-white">{product.name}</h2>
                         {product.comingSoon && (
                           <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
-                            BETA
+                            {t("products.beta_badge")}
                           </span>
                         )}
                       </div>
@@ -77,7 +77,7 @@ export default function UrunlerPage() {
                         href={`/urunler/${product.id}`}
                         className="inline-flex items-center gap-1.5 mt-3 text-sm text-blue-400 hover:text-blue-300 transition"
                       >
-                        Detaylı incele <ArrowRight size={13} />
+                        {t("products.detailed_view")} <ArrowRight size={13} />
                       </Link>
                     </div>
                   </div>
@@ -105,22 +105,22 @@ export default function UrunlerPage() {
                       >
                         {activeSkuByProduct[product.id] === sku.id ? (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500/90 text-white text-xs font-semibold">
-                            MEVCUT PLANINIZ
+                            {t("products.current_plan_badge")}
                           </div>
                         ) : appStates[product.id] === "expired" && lastSkuByProduct[product.id] === sku.id ? (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-amber-500/90 text-white text-xs font-semibold">
-                            SÜRESİ DOLDU
+                            {t("products.expired_badge")}
                           </div>
                         ) : sku.highlight ? (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold">
-                            EN POPÜLER
+                            {t("products.popular_badge")}
                           </div>
                         ) : null}
                         <h3 className="text-xl font-bold text-white mb-1">{sku.name}</h3>
                         <p className="text-xs text-gray-400 mb-4">{sku.description}</p>
                         <div className="mb-4">
                           <span className="text-3xl font-bold text-white">{formatPrice(price, currency, { short: true })}</span>
-                          <span className="text-gray-400 ml-1 text-sm">/ay</span>
+                          <span className="text-gray-400 ml-1 text-sm">{t("products.per_month")}</span>
                         </div>
                         <div className="space-y-2 mb-4">
                           {(() => {
@@ -136,12 +136,11 @@ export default function UrunlerPage() {
                                   href={`/urunler/${product.id}?sku=${sku.id}`}
                                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
                                 >
-                                  <Check size={14} /> Aktif Plan — Detayı Gör
+                                  <Check size={14} /> {t("products.active_plan_view")}
                                 </Link>
                               );
                             }
 
-                            // Expired lisansı olan kullanıcı: son SKU'su ise "Uzat", diğerleri "Yükselt"
                             if (isExpiredProduct) {
                               return (
                                 <Link
@@ -152,12 +151,11 @@ export default function UrunlerPage() {
                                       : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
                                   }`}
                                 >
-                                  {isLastSku ? "Lisansı Uzat" : "Bu Plana Yükselt"}
+                                  {isLastSku ? t("products.renew_license") : t("products.upgrade_to_plan")}
                                 </Link>
                               );
                             }
 
-                            // Hiç aktif/expired lisansı yok — yeni kullanıcı veya ilk satın alma akışı.
                             return (
                               <>
                                 {!hasTrialed && !hasActiveOnProduct && (
@@ -165,7 +163,7 @@ export default function UrunlerPage() {
                                     href={`/urunler/${product.id}?sku=${sku.id}&trial=1`}
                                     className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90 transition"
                                   >
-                                    <Sparkles size={14} /> 3 Gün Ücretsiz Dene
+                                    <Sparkles size={14} /> {t("products.free_trial_3day")}
                                   </Link>
                                 )}
                                 <Link
@@ -178,7 +176,7 @@ export default function UrunlerPage() {
                                       : "border border-white/10 text-white hover:bg-white/5"
                                   }`}
                                 >
-                                  {hasActiveOnProduct ? "Bu Plana Yükselt" : "Sepete Ekle"}
+                                  {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
                                 </Link>
                               </>
                             );
@@ -192,7 +190,9 @@ export default function UrunlerPage() {
                             </li>
                           ))}
                           {sku.features.length > 5 && (
-                            <li className="text-xs text-gray-600 pl-4">+ {sku.features.length - 5} özellik daha</li>
+                            <li className="text-xs text-gray-600 pl-4">
+                              {t("products.more_features").replace("{count}", String(sku.features.length - 5))}
+                            </li>
                           )}
                         </ul>
                       </motion.div>
@@ -213,10 +213,8 @@ export default function UrunlerPage() {
 
 
 function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?: string } }) {
-  // No public price for 1C:ERP/Drive — customer must talk to sales (AI call
-  // center / WhatsApp / contact form). Demo URL opens in new tab so they can
-  // poke around before deciding.
-  const waMsg = encodeURIComponent(`Merhaba, ${product.name} hakkında bilgi almak istiyorum.`);
+  const { t } = useTranslation();
+  const waMsg = encodeURIComponent(t("products.wa_message").replace("{name}", product.name));
   return (
     <div className="grid md:grid-cols-3 gap-4">
       {product.demoUrl && (
@@ -227,11 +225,11 @@ function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?
           className="p-6 rounded-2xl bg-[#111118] border border-blue-500/30 hover:border-blue-500/60 transition group"
         >
           <ExternalLink size={20} className="text-blue-400 mb-3" />
-          <h3 className="font-bold text-white mb-1">Canlı Demo</h3>
+          <h3 className="font-bold text-white mb-1">{t("products.live_demo")}</h3>
           <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-            Resmi demo ortamında {product.name}'i kurulum gerekmeden deneyimle.
+            {t("products.live_demo_desc").replace("{name}", product.name)}
           </p>
-          <span className="text-xs text-blue-400 group-hover:underline">Demoyu Aç →</span>
+          <span className="text-xs text-blue-400 group-hover:underline">{t("products.open_demo")}</span>
         </a>
       )}
       <Link
@@ -239,11 +237,11 @@ function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?
         className="p-6 rounded-2xl bg-[#111118] border border-purple-500/30 hover:border-purple-500/60 transition group"
       >
         <MessageCircle size={20} className="text-purple-400 mb-3" />
-        <h3 className="font-bold text-white mb-1">AI Asistan ile Konuş</h3>
+        <h3 className="font-bold text-white mb-1">{t("products.ai_assistant_chat")}</h3>
         <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-          Fiyat, modül seçimi ve ihtiyaç analizini AI asistanımız üzerinden hızlıca yap.
+          {t("products.ai_assistant_desc")}
         </p>
-        <span className="text-xs text-purple-400 group-hover:underline">Sohbet Başlat →</span>
+        <span className="text-xs text-purple-400 group-hover:underline">{t("products.start_chat")}</span>
       </Link>
       <a
         href={`https://wa.me/908504474237?text=${waMsg}`}
@@ -252,11 +250,11 @@ function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?
         className="p-6 rounded-2xl bg-[#111118] border border-emerald-500/30 hover:border-emerald-500/60 transition group"
       >
         <Phone size={20} className="text-emerald-400 mb-3" />
-        <h3 className="font-bold text-white mb-1">WhatsApp Hattı</h3>
+        <h3 className="font-bold text-white mb-1">{t("products.whatsapp_line")}</h3>
         <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-          Doğrudan satış ekibimize WhatsApp üzerinden ulaş, ihtiyacına özel teklif al.
+          {t("products.whatsapp_desc")}
         </p>
-        <span className="text-xs text-emerald-400 group-hover:underline">Mesaj Gönder →</span>
+        <span className="text-xs text-emerald-400 group-hover:underline">{t("products.send_message")}</span>
       </a>
     </div>
   );
