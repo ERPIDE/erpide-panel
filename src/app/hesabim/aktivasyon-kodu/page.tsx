@@ -4,9 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Key, Loader2, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
+
+const DATE_LOCALE: Record<string, string> = {
+  en: "en-US", tr: "tr-TR", ru: "ru-RU", kk: "kk-KZ",
+};
 
 export default function AktivasyonKoduPage() {
   const router = useRouter();
+  const { t, locale } = useTranslation();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,7 +20,6 @@ export default function AktivasyonKoduPage() {
     productName: string; skuName: string; expiresAt: string; orderId: string;
   } | null>(null);
 
-  // Kullanıcının yazdığı kod büyük harfe ve XXXX-XXXX-XXXX maskeye yakın çevrilir.
   function onChangeCode(raw: string) {
     let v = raw.toUpperCase().replace(/[^A-Z0-9-]/g, "");
     if (v.length > 19) v = v.slice(0, 19);
@@ -32,13 +37,13 @@ export default function AktivasyonKoduPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Kod doğrulanamadı");
+        setError(data.error || t("activation.code_invalid"));
         return;
       }
       setSuccess(data);
       setCode("");
     } catch (e) {
-      setError("Bağlantı hatası: " + String(e));
+      setError(t("auth.connection_error") + String(e));
     } finally {
       setLoading(false);
     }
@@ -46,10 +51,9 @@ export default function AktivasyonKoduPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Aktivasyon Kodu</span></h1>
+      <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">{t("nav.activation_code")}</span></h1>
       <p className="text-gray-400 text-sm mb-8">
-        ERPIDE e-pin kodunu, kurumsal lisans kodunuzu veya promosyon kodunuzu burada aktif edin.
-        Aktif edildikten sonra ürün hesabınıza tanımlanır.
+        {t("activation.subtitle")}
       </p>
 
       <motion.div
@@ -62,16 +66,16 @@ export default function AktivasyonKoduPage() {
             <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 size={32} className="text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-1">Lisans Aktive Edildi 🎉</h2>
+            <h2 className="text-xl font-bold text-white mb-1">{t("activation.success_title")}</h2>
             <p className="text-sm text-gray-400 mb-5">
-              <strong className="text-white">{success.productName}</strong> &mdash;{" "}
-              <strong className="text-white">{success.skuName}</strong>{" "}
-              hesabınıza tanımlandı.
+              {t("activation.success_desc")
+                .replace("{product}", success.productName)
+                .replace("{sku}", success.skuName)}
             </p>
             <div className="p-4 rounded-xl bg-black/40 border border-white/5 mb-5 text-left">
-              <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Bitiş Tarihi</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">{t("activation.end_date")}</p>
               <p className="text-lg font-bold text-white">
-                {new Date(success.expiresAt).toLocaleString("tr-TR")}
+                {new Date(success.expiresAt).toLocaleString(DATE_LOCALE[locale] || "en-US")}
               </p>
             </div>
             <div className="flex gap-2">
@@ -79,13 +83,13 @@ export default function AktivasyonKoduPage() {
                 href="/hesabim/lisanslarim"
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition"
               >
-                Lisanslarımı Gör <ArrowRight size={14} />
+                {t("activation.see_licenses")} <ArrowRight size={14} />
               </Link>
               <button
                 onClick={() => { setSuccess(null); setCode(""); }}
                 className="px-4 py-3 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 transition text-sm"
               >
-                Yeni Kod
+                {t("activation.new_code")}
               </button>
             </div>
           </div>
@@ -93,7 +97,7 @@ export default function AktivasyonKoduPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider font-semibold">
-                Aktivasyon Kodu
+                {t("activation.code_label")}
               </label>
               <div className="relative">
                 <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -108,7 +112,7 @@ export default function AktivasyonKoduPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-2">
-                Kodlar &quot;ERP&quot; ile başlar, tire ile ayrılmış 12 karakterlidir. Büyük/küçük harf önemli değildir.
+                {t("activation.code_hint")}
               </p>
             </div>
 
@@ -124,7 +128,7 @@ export default function AktivasyonKoduPage() {
               className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? "Doğrulanıyor..." : "Lisansı Aktive Et"}
+              {loading ? t("activation.verifying") : t("activation.activate_button")}
             </button>
           </form>
         )}
@@ -132,12 +136,17 @@ export default function AktivasyonKoduPage() {
 
       <div className="mt-8 max-w-xl p-5 rounded-2xl bg-blue-500/5 border border-blue-500/20">
         <p className="text-xs text-blue-200/80 leading-relaxed">
-          💡 <strong>Kod nasıl edinilir?</strong> Hepsiburada/N11 gibi pazaryerlerinden satın aldığınız
-          ERPIDE e-pin&apos;in kutusunda veya elektronik teslimde mail/SMS ile size gelen kod.
-          Kurumsal müşterilerimize toplu lisans dağıtımı için satış ekibimiz de aktivasyon kodu üretebilir.
+          <strong>{t("activation.how_to_get_title")}</strong> {t("activation.how_to_get_desc")}
         </p>
         <p className="text-xs text-blue-200/60 mt-2">
-          Sorun yaşıyorsanız <button onClick={() => router.push("/iletisim")} className="underline">iletişim formundan</button> bize yazın.
+          {t("activation.contact_hint").split(/\{contact_link\}/).map((part, i, arr) => (
+            <span key={i}>
+              {part}
+              {i < arr.length - 1 && (
+                <button onClick={() => router.push("/iletisim")} className="underline">{t("activation.contact_link")}</button>
+              )}
+            </span>
+          ))}
         </p>
       </div>
     </>

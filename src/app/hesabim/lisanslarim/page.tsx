@@ -7,6 +7,7 @@ import { getProductOfSku } from "@/lib/products";
 import QuickStartTabs from "@/components/account/QuickStartTabs";
 import AutoRenewToggle from "@/components/account/AutoRenewToggle";
 import CancelSubscriptionButton from "@/components/account/CancelSubscriptionButton";
+import { getServerTranslations } from "@/lib/i18n-server";
 
 interface LicenseRow {
   orderId: string;
@@ -17,9 +18,6 @@ interface LicenseRow {
   licenseKey: string;
   orderDate: string;
   kind: "paid-active" | "paid-expired" | "trial-active" | "trial-expired";
-  // For trials the expiry is trialExpiresAt; for paid it's subscriptionExpiresAt.
-  // Either way it's the moment after which the backend stops accepting calls
-  // and the UI should show "Yenile" / "Satın Al" CTAs.
   expiresAt?: string;
   autoRenewEnabled?: boolean;
   billingCycle?: "monthly" | "yearly";
@@ -31,8 +29,6 @@ interface LicenseRow {
   maxSolvesPerDay?: number;
 }
 
-/** Backend provisioning dashboardUrl döndürmemişse productId'ye göre default app URL'i ver.
- *  PocketERPIDE panel içinde çalıştığı için /pocket; FinansERPIDE harici subdomain. */
 function defaultAppUrl(productId: string): string | null {
   switch (productId) {
     case "pocketerpide":  return "/pocket";
@@ -42,20 +38,29 @@ function defaultAppUrl(productId: string): string | null {
   }
 }
 
-function formatRemaining(expiresAt: string): string {
+/** Kalan süreyi locale'e göre formatla — i18n string'leri "{days}", "{hours}",
+ * "{minutes}" placeholder'larıyla 4 dilde tanımlı. */
+function formatRemaining(expiresAt: string, t: (k: string) => string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return "Süresi doldu";
+  if (ms <= 0) return t("license.expired");
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
   const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-  if (days > 0) return `${days} gün ${hours} saat kaldı`;
+  if (days > 0) {
+    return t("license.remaining_days_hours")
+      .replace("{days}", String(days))
+      .replace("{hours}", String(hours));
+  }
   const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
-  return `${hours}s ${minutes}dk kaldı`;
+  return t("license.remaining_hours_minutes")
+    .replace("{hours}", String(hours))
+    .replace("{minutes}", String(minutes));
 }
 
 export default async function LisanslarimPage() {
   const session = await requireUser();
   if (!session) redirect("/giris?next=/hesabim/lisanslarim");
 
+  const { t, dateLocale } = await getServerTranslations();
   const orders = await listOrdersByUserId(session.userId!);
   const licenses: LicenseRow[] = [];
   const now = Date.now();
@@ -106,14 +111,14 @@ export default async function LisanslarimPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Lisanslarım</span></h1>
-      <p className="text-gray-400 text-sm mb-8">Tüm ürünlerinin API anahtarları ve deneme sürümleri</p>
+      <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">{t("sidebar.licenses")}</span></h1>
+      <p className="text-gray-400 text-sm mb-8">{t("license.subtitle")}</p>
 
       {licenses.length === 0 ? (
         <div className="p-16 rounded-2xl bg-[#111118] border border-white/5 text-center">
-          <p className="text-gray-400 mb-4">Henüz lisansın yok.</p>
+          <p className="text-gray-400 mb-4">{t("account.no_licenses")}</p>
           <Link href="/urunler" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition">
-            Ürünleri İncele
+            {t("cart.browse_products")}
           </Link>
         </div>
       ) : (
@@ -138,30 +143,30 @@ export default async function LisanslarimPage() {
                       </h3>
                       {lic.kind === "trial-active" && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          DENEME
+                          {t("license.trial_badge")}
                         </span>
                       )}
                       {expired && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
-                          SÜRESİ DOLDU
+                          {t("license.expired_badge")}
                         </span>
                       )}
                       {lic.kind === "paid-active" && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-                          AKTİF {lic.billingCycle === "yearly" ? "(Yıllık)" : "(Aylık)"}
+                          {lic.billingCycle === "yearly" ? t("license.active_yearly") : t("license.active_monthly")}
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      Alındı: {new Date(lic.orderDate).toLocaleDateString("tr-TR")}
+                      {t("license.purchased_at").replace("{date}", new Date(lic.orderDate).toLocaleDateString(dateLocale))}
                       {lic.expiresAt && (
                         <span className={`ml-3 inline-flex items-center gap-1 ${expired ? "text-red-400" : needsRenewSoon ? "text-amber-300" : isTrial ? "text-emerald-300" : "text-gray-400"}`}>
-                          <Clock size={11} /> {formatRemaining(lic.expiresAt)}
+                          <Clock size={11} /> {formatRemaining(lic.expiresAt, t)}
                         </span>
                       )}
                       {lic.maxSolvesPerDay && (
                         <span className="ml-3 text-gray-400">
-                          Günlük limit: <strong className="text-white">{lic.maxSolvesPerDay.toLocaleString("tr-TR")}</strong> istek
+                          {t("license.daily_limit").replace("{limit}", lic.maxSolvesPerDay.toLocaleString(dateLocale))}
                         </span>
                       )}
                     </p>
@@ -172,7 +177,7 @@ export default async function LisanslarimPage() {
                         href={`/docs/${product.id}`}
                         className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
                       >
-                        <BookOpen size={12} /> Belgeler
+                        <BookOpen size={12} /> {t("license.docs_button")}
                       </Link>
                     )}
                     {(isTrial || expired) && (
@@ -185,7 +190,7 @@ export default async function LisanslarimPage() {
                         }`}
                       >
                         <ShoppingCart size={12} />
-                        {lic.kind === "paid-expired" ? "Lisansı Uzat" : (expired ? "Satın Al" : "Satın Al")}
+                        {lic.kind === "paid-expired" ? t("products.renew_license") : t("license.purchase_button")}
                       </Link>
                     )}
                     {(() => {
@@ -200,7 +205,7 @@ export default async function LisanslarimPage() {
                           rel={isExternal ? "noopener noreferrer" : undefined}
                           className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition font-medium"
                         >
-                          {lic.productId === "pocketerpide" ? "Cüzdanı Aç" : "Uygulamayı Aç"}
+                          {lic.productId === "pocketerpide" ? t("license.open_wallet") : t("license.open_app")}
                           {isExternal ? <ExternalLink size={12} /> : null}
                         </Link>
                       );
@@ -213,7 +218,7 @@ export default async function LisanslarimPage() {
                   <AutoRenewToggle
                     orderId={lic.orderId}
                     initial={lic.autoRenewEnabled !== false}
-                    cycleLabel={lic.billingCycle === "yearly" ? "yıl" : "ay"}
+                    cycleLabel={lic.billingCycle === "yearly" ? t("license.cycle_year") : t("license.cycle_month")}
                   />
                 )}
 
@@ -232,14 +237,16 @@ export default async function LisanslarimPage() {
                   <div className="space-y-3">
                     <CredentialRow
                       icon={<Globe size={14} className="text-blue-400" />}
-                      label="API Endpoint"
+                      label={t("license.api_endpoint")}
                       value={lic.apiBaseUrl}
+                      copyLabel={t("license.copy_button")}
                       copy
                     />
                     <CredentialRow
                       icon={<Key size={14} className="text-emerald-400" />}
-                      label="API Key"
+                      label={t("license.api_key")}
                       value={lic.apiKey}
+                      copyLabel={t("license.copy_button")}
                       copy
                       monospace
                     />
@@ -250,16 +257,21 @@ export default async function LisanslarimPage() {
                 {/* PROVISION FAILED — explain why no key is here */}
                 {!expired && !lic.apiKey && (
                   <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
-                    API anahtarın hazırlanıyor. Birkaç dakika sonra sayfayı yenile —
-                    eğer hala görünmüyorsa{" "}
-                    <Link href="/iletisim" className="underline">iletişimden</Link> bize yaz.
+                    {t("license.api_pending").split(/\{contact_link\}/).map((part, idx, arr) => (
+                      <span key={idx}>
+                        {part}
+                        {idx < arr.length - 1 && (
+                          <Link href="/iletisim" className="underline">{t("license.api_pending_contact_link")}</Link>
+                        )}
+                      </span>
+                    ))}
                   </div>
                 )}
 
                 {/* LEGACY license key display (informational) */}
                 {!expired && lic.licenseKey && (
                   <div className="mt-4 pt-4 border-t border-white/5">
-                    <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Sipariş referans kodu</p>
+                    <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">{t("license.order_ref_code")}</p>
                     <code className="text-xs font-mono text-gray-500 break-all">{lic.licenseKey}</code>
                   </div>
                 )}
@@ -274,12 +286,13 @@ export default async function LisanslarimPage() {
 
 
 function CredentialRow({
-  icon, label, value, copy, monospace,
+  icon, label, value, copy, copyLabel, monospace,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   copy?: boolean;
+  copyLabel: string;
   monospace?: boolean;
 }) {
   return (
@@ -294,19 +307,19 @@ function CredentialRow({
             {value}
           </code>
         </div>
-        {copy && <CopyButton text={value} />}
+        {copy && <CopyButton text={value} title={copyLabel} />}
       </div>
     </div>
   );
 }
 
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, title }: { text: string; title: string }) {
   return (
     <button
       data-copy={text}
       className="p-2 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition flex-shrink-0"
-      title="Kopyala"
+      title={title}
     >
       <Copy size={14} />
     </button>
