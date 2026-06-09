@@ -13,6 +13,13 @@ interface Props {
   alreadyCancelled?: boolean;
 }
 
+const DATE_LOCALE: Record<string, string> = {
+  en: "en-US",
+  tr: "tr-TR",
+  ru: "ru-RU",
+  kk: "kk-KZ",
+};
+
 export default function CancelSubscriptionButton({
   orderId,
   productName,
@@ -20,22 +27,29 @@ export default function CancelSubscriptionButton({
   alreadyCancelled,
 }: Props) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(DATE_LOCALE[locale] ?? "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
   if (alreadyCancelled) {
     return (
       <div className="mb-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-200 flex items-start gap-2">
         <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold mb-0.5">Abonelik iptal edildi</p>
+          <p className="font-semibold mb-0.5">{t("account.cancelled_title")}</p>
           <p className="text-amber-200/70">
             {subscriptionExpiresAt
-              ? `Erişimin ${new Date(subscriptionExpiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })} tarihine kadar devam edecek (parası ödendi). Sonrasında otomatik kapanır.`
-              : "Bu lisans iptal edildi — süresi bitince erişim kapanır."}
+              ? t("account.cancelled_continues_until").replace("{date}", fmtDate(subscriptionExpiresAt))
+              : t("account.cancelled_no_date")}
           </p>
         </div>
       </div>
@@ -55,7 +69,6 @@ export default function CancelSubscriptionButton({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      // Sayfayı yenile ki yeni state görünsün
       router.refresh();
       setOpen(false);
     } catch (e) {
@@ -99,33 +112,32 @@ export default function CancelSubscriptionButton({
             </div>
 
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-100">
-              <p className="font-semibold mb-1">⚠ <strong>{productName}</strong> aboneliği iptal edilecek</p>
-              {subscriptionExpiresAt ? (
-                <p className="text-xs text-amber-200/80">
-                  Erişimin <strong>{new Date(subscriptionExpiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}</strong> tarihine kadar devam edecek.
-                  Otomatik yenileme kapatılır, sonrasında lisans biter.
-                </p>
-              ) : (
-                <p className="text-xs text-amber-200/80">Otomatik yenileme kapatılır.</p>
-              )}
+              <p className="font-semibold mb-1">
+                ⚠ {t("account.cancel_modal_warning").replace("{product}", productName)}
+              </p>
+              <p className="text-xs text-amber-200/80">
+                {subscriptionExpiresAt
+                  ? t("account.cancel_modal_until").replace("{date}", fmtDate(subscriptionExpiresAt))
+                  : t("account.cancel_modal_no_date")}
+              </p>
             </div>
 
             <label className="block mb-4">
-              <span className="text-xs text-gray-400 block mb-1.5">İptal nedeniniz (opsiyonel — geri bildiriminiz değerli)</span>
+              <span className="text-xs text-gray-400 block mb-1.5">{t("account.cancel_reason_label")}</span>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 disabled={submitting}
                 rows={3}
                 maxLength={500}
-                placeholder="Örn: Şirket kapanışı, ihtiyacım kalmadı, fiyat yüksek geldi..."
+                placeholder={t("account.cancel_reason_placeholder")}
                 className="w-full px-3 py-2 rounded-lg bg-[#0a0a0f] border border-white/10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/40"
               />
             </label>
 
             {err && (
               <div className="mb-3 p-2 rounded bg-red-500/10 border border-red-500/30 text-xs text-red-300">
-                Hata: {err}
+                {t("common.error")}: {err}
               </div>
             )}
 

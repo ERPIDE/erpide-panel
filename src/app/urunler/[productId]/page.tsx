@@ -432,8 +432,8 @@ function Inner({ productId }: { productId: string }) {
                 </section>
               )}
 
-              {/* Diğer ürünler (1c-erp, 1c-drive) — generic placeholder */}
-              {product.id !== "captchaerpide" && product.id !== "finanserpide" && product.id !== "ai-kontor" && product.id !== "pocketerpide" && (
+              {/* 1C ürünleri — generic placeholder */}
+              {(product.id === "1c-erp" || product.id === "1c-drive") && (
                 <section className="mb-10">
                   <h2 className="text-xl font-bold text-white mb-3">Tanıtım Videosu</h2>
                   <div className="aspect-video rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-white/5 flex flex-col items-center justify-center text-center p-6">
