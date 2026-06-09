@@ -177,7 +177,67 @@ function Inner({ productId }: { productId: string }) {
                 >
                   <BookOpen size={14} /> Kurulum Kılavuzu
                 </Link>
+                {product.demoUrl && (
+                  <a
+                    href={product.demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600/15 border border-blue-500/30 text-sm text-blue-300 hover:bg-blue-600/25 transition"
+                  >
+                    <Play size={14} /> Canlı Demo
+                  </a>
+                )}
+                {product.officialUrl && (
+                  <a
+                    href={product.officialUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 transition"
+                  >
+                    <ArrowLeft size={14} className="rotate-[135deg]" /> Resmi Üretici Sayfası
+                  </a>
+                )}
               </div>
+
+              {/* 1C:ERP / 1C:Drive — resmi 1ci.com bilgi kartı + özellik listesi */}
+              {(product.id === "1c-erp" || product.id === "1c-drive") && (
+                <section className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-3">Öne Çıkan Özellikler</h2>
+                  <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-950/30 via-[#0a0a0f] to-blue-950/20 p-6">
+                    <ul className="grid sm:grid-cols-2 gap-3 mb-6">
+                      {(product.id === "1c-erp" ? [
+                        "Üretim Planlama (MPS) — kesikli + sürekli",
+                        "MRP — malzeme ihtiyaç planlama",
+                        "Make-to-Order + Make-to-Stock",
+                        "Çok depolu envanter + maliyet",
+                        "Tedarik zinciri yönetimi",
+                        "Finans + bütçeleme + regulated raporlama",
+                        "KPI dashboard'ları + analitik",
+                        "1C:Enterprise platform üstü ölçeklenir",
+                      ] : [
+                        "Çok seviyeli BOM (reçete)",
+                        "MRP + tedarik planlama",
+                        "Satış / sipariş / sevkiyat / fatura akışı",
+                        "Stok + depo + sayım",
+                        "Müşteri/tedarikçi (CRM)",
+                        "Hizmet yönetimi + servis",
+                        "Mobil uygulama (iOS + Android)",
+                        "1C:Drive Lite — bulut ön-muhasebe",
+                      ]).map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                          <Check size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="pt-5 border-t border-white/10 text-xs text-gray-400 leading-relaxed">
+                      <strong className="text-gray-300">ERPIDE</strong> {product.name} için Türkiye'de:
+                      lisanslama · kurulum · TR/KZ yerelleştirme · veri taşıma · kullanıcı eğitimi ·
+                      özelleştirme · canlı destek. Detay için <Link href="/iletisim" className="text-blue-400 hover:underline">iletişime geçin</Link>.
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* CaptchaERPIDE — yeni oyun temalı demo hazırlanıyor */}
               {product.id === "captchaerpide" && (

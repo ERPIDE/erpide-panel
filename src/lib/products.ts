@@ -64,6 +64,9 @@ export interface Product {
   contactOnly?: boolean;
   /** Optional live demo URL. Shown as a "Demoyu İncele" button on the product card. */
   demoUrl?: string;
+  /** Optional official product page (external — e.g. 1ci.com). Shown as
+   *  "Resmi Üretici Sayfası" button alongside demoUrl. */
+  officialUrl?: string;
   skus: SKU[];
 }
 
@@ -394,31 +397,34 @@ export const PRODUCTS: Product[] = [
   {
     id: "1c-erp",
     name: "1C:ERP",
-    tagline: "Kurumsal ERP Çözümü — Üretim, Lojistik, Finans",
+    tagline: "Üretim İçin Esnek Kurumsal ERP — MRP, Tedarik, Finans",
     description:
-      "1C:ERP; orta ve büyük ölçekli üretim/lojistik firmaları için tam kapsamlı kurumsal kaynak planlama. Üretim planlama, MRP, depo yönetimi, finans, bütçeleme — hepsi tek platformda. ERPIDE olarak kurulum, eğitim, yerelleştirme ve destek sunarız.",
+      "1C:ERP, kesikli ve sürekli üretim süreçlerini destekleyen, orta ve büyük ölçekli üretim firmaları için yüksek fonksiyonlu kurumsal ERP. ERPIDE olarak Türkiye'de lisanslama, kurulum, yerelleştirme, eğitim ve destek sunarız.",
     longDescription:
-      "1C:ERP, üretim odaklı orta-büyük şirketler için Rusya ve Türk Cumhuriyetleri pazarında en yaygın kullanılan ERP'lerden biridir. Modüller: üretim planlama (MPS), malzeme ihtiyaç planlama (MRP), tedarik zinciri, depo, satış, finans, bütçeleme, regulated raporlama. ERPIDE; lisanslama, kurulum, yerelleştirme (TR/KZ vergi mevzuatı), kullanıcı eğitimi, özelleştirme ve canlı destek hizmetleri sunar. Fiyatlandırma şirket büyüklüğüne, kullanıcı sayısına ve modül ihtiyacına göre değişir — detay için iletişime geçin.",
+      "1C:ERP; binlerce kullanıcılı orta-büyük üretim firmalarında make-to-order, make-to-stock, kesikli ve sürekli tüm üretim stratejilerini destekler. Çekirdek modüller: Planlama (MPS), Üretim, Satınalma, Depo, Tahsilat/Tediye ve Maliyet Hesaplama. KPI dashboard'ları ve veriye dayalı karar için görsel analitik. 1C:Enterprise platformu üstünde tek bir entegre çözüm — birbiriyle 'konuşmayan' ayrı uygulamalar değil. ERPIDE; lisanslama, TR/KZ yerelleştirme, kurulum, eğitim, özelleştirme ve canlı destek paketleri sunar.",
     icon: Boxes,
     color: "from-indigo-600 to-blue-700",
     domain: "1c-erp.erpide.com",
     contactOnly: true,
     demoUrl: "https://app902777.1capp.net/ERPWEDemo/en_US/",
+    officialUrl: "https://www.1ci.com/applications/1c-erp/",
     skus: [],
   },
   {
     id: "1c-drive",
     name: "1C:Drive",
-    tagline: "KOBİ İçin Hızlı ERP — Operasyon, CRM, Stok",
+    tagline: "KOBİ İçin Tam Kapsamlı ERP — Üretim, Stok, CRM, Mobil",
     description:
-      "1C:Drive; küçük ve orta ölçekli işletmeler için hazır bulut ERP. Satış, satınalma, stok, hizmet yönetimi, müşteri ilişkileri, basit muhasebe — kısa sürede devreye alın. ERPIDE'den kurulum + destek paketleri ile sıfırdan operasyonel olun.",
+      "1C:Drive, küçük ve orta ölçekli şirketler için tam kapsamlı bir ERP. MRP destekli üretim, çok seviyeli BOM, gerçek zamanlı sipariş takibi, mobil uygulama. ERPIDE'den kurulum + destek paketleri ile hızlı operasyonel olun.",
     longDescription:
-      "1C:Drive; KOBİ'ler için hızlı devreye alınan, operasyon odaklı bulut ERP'dir. Satış sürecinin başından sonuna (teklif, sipariş, sevkiyat, fatura), satınalma, stok takibi, depo, basit muhasebe, müşteri/tedarikçi ilişkileri ve hizmet yönetimi kapsanır. ERPIDE; demo kurulum, veri taşıma, kullanıcı eğitimi ve aylık destek paketleri sunar. Fiyatlandırma kullanıcı sayısı ve eklenecek modüllere göre değişir — iletişime geçin, ihtiyacınıza özel teklif hazırlayalım.",
+      "1C:Drive; satıştan satınalmaya, üretimden stoğa kadar tüm operasyonu gerçek zamanlı izlemenizi sağlar. Çok seviyeli BOM ile reçete + iş merkezi yüklemesi + tedarik planlama tek ekranda. Sipariş/finans/stok/maliyet raporları esnek ve özelleştirilebilir. Mobil app ile sahada da erişim. 1C:Drive Lite ise tamamen bulut tabanlı, 700.000+ firmanın güvendiği teknolojiyle ön-muhasebe için ideal. Lisans ve kurulum maliyetleri KOBİ bütçesine uygun, şirketinizle birlikte büyür. ERPIDE; demo kurulum, veri taşıma, eğitim ve aylık destek paketleri sunar.",
     icon: Truck,
     color: "from-cyan-600 to-teal-600",
     domain: "1c-drive.erpide.com",
     contactOnly: true,
-    demoUrl: "https://app.1c-demo.de/drive_demo_loc_tr/tr/",
+    // Önceki demoUrl (app.1c-demo.de) cevap vermiyor — 1ci.com sayfasını yönlendir.
+    demoUrl: "https://drive-lite.1ci.com/",
+    officialUrl: "https://www.1ci.com/applications/1c-drive/",
     skus: [],
   },
 ];
