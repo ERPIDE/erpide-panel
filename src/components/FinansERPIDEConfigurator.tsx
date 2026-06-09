@@ -131,22 +131,22 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
             <p className="text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">{product.description}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setLightbox(0)}
-          className="block w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 cursor-zoom-in group"
-          aria-label="Dashboard tam boy görüntüle"
+        {/* HERO VİDEO — modül turu (~70 sn, alt yazılı, autoplay+loop+muted) */}
+        <video
+          className="w-full rounded-2xl border border-white/10 shadow-2xl bg-black"
+          controls
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/screenshots/finanserpide/01-dashboard-demo.png"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/screenshots/finanserpide/01-dashboard-demo.png"
-            alt="FinansERPIDE Dashboard — Komuta Merkezi"
-            className="w-full h-auto block group-hover:scale-[1.005] transition-transform"
-            loading="eager"
-          />
-        </button>
+          <source src="/videos/finanserpide-module-tour.webm" type="video/webm" />
+          Tarayıcınız webm video desteği vermiyor.
+        </video>
         <p className="text-xs text-gray-500 mt-2 text-center italic">
-          Komuta Merkezi — net pozisyon, bu ayki satış/alış, açık fatura/vade, finansman yükü ve operasyon, hepsi tek ekranda.
+          Modül turu — 9 modül + Eylül AI, ~70 saniye. Sesli değil, alt yazılı; istediğiniz anda durdurup büyük SS galerisine geçebilirsiniz.
         </p>
       </div>
 
