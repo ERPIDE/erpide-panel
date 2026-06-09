@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getSession,
   getAdmins,
   saveAdmins,
   getCustomers,
   saveCustomers,
   SESSION_COOKIE,
+  getOwnerSession,
 } from "@/lib/auth";
 
+/** Kullanıcı CRUD = sadece site sahibinin işi. Geliştirici rolündeki adminler
+ * kendi şifresini /api/admin/profil ile günceller; başka kullanıcıyı
+ * yönetemez (mustafa/berkay/dilyar şirketten ayrıldığında kötü niyetli
+ * kullanıcı açma riskini elimine eder). */
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const session = await getSession(token);
-  if (!session || session.userType !== "admin") return null;
-  return session;
+  return await getOwnerSession(token);
 }
 
 // GET — list all users

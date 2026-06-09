@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         userType: "admin",
         userName: user.name,
+        userEmail: user.email,
         userRole: user.role,
       });
 

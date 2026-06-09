@@ -13,10 +13,34 @@ export interface Session {
   userId: string;
   userType: "admin" | "customer";
   userName: string;
+  userEmail?: string;
   userRole?: string;
   customerCode?: string;
   createdAt: string;
   expiresAt: string;
+}
+
+/** Site sahibi (owner) — sadece bu email tüm admin sekmelerini görür.
+ * Captcha Panel / Ödemeler / Kullanıcılar diğer adminlere kapalıdır. */
+export const OWNER_EMAIL = "admin@erpide.com";
+export function isOwner(email?: string | null): boolean {
+  return !!email && email.toLowerCase() === OWNER_EMAIL;
+}
+
+/** API route guard: çağıran sadece site sahibiyse session döner; aksi halde null.
+ * Eski session'larda userEmail olmayabilir — admin listesinden backfill yapılır. */
+export async function getOwnerSession(token: string | undefined): Promise<Session | null> {
+  if (!token) return null;
+  const session = await getSession(token);
+  if (!session || session.userType !== "admin") return null;
+
+  let email = session.userEmail;
+  if (!email) {
+    const admins = await getAdmins();
+    email = admins.find((a) => a.id === session.userId)?.email;
+  }
+  if (!isOwner(email)) return null;
+  return { ...session, userEmail: email };
 }
 
 export const SESSION_COOKIE = "erpide_session";
@@ -86,6 +110,7 @@ export async function createSession(data: {
   userId: string;
   userType: "admin" | "customer";
   userName: string;
+  userEmail?: string;
   userRole?: string;
   customerCode?: string;
 }): Promise<string> {
@@ -100,6 +125,7 @@ export async function createSession(data: {
     userId: data.userId,
     userType: data.userType,
     userName: data.userName,
+    userEmail: data.userEmail,
     userRole: data.userRole,
     customerCode: data.customerCode,
     createdAt: now.toISOString(),

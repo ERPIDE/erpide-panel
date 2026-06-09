@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, SESSION_COOKIE } from "@/lib/auth";
+import { getSession, SESSION_COOKIE, getAdmins } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,9 +21,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Backfill userEmail: pre-RBAC session'larda userEmail yok — admin
+    // listesinden userId ile bul ki mevcut adminlerin yeniden login olmasına
+    // gerek kalmasın (isOwner check'i tutarlı çalışsın).
+    let userEmail = session.userEmail;
+    if (!userEmail && session.userType === "admin") {
+      const admins = await getAdmins();
+      userEmail = admins.find((a) => a.id === session.userId)?.email;
+    }
+
     return NextResponse.json({
       userId: session.userId,
       userName: session.userName,
+      userEmail,
       userType: session.userType,
       userRole: session.userRole,
       customerCode: session.customerCode,

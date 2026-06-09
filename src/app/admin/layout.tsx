@@ -4,18 +4,25 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
-  Menu, ChevronRight, Loader2, Shield, Key, Banknote
+  Menu, ChevronRight, Loader2, Shield, Banknote, UserCircle
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
 
-const navItems = [
+// Owner-only sekmeler: sadece admin@erpide.com görür. Geliştiriciler
+// (mustafa.el, berkay.yasar vb.) sadece Dashboard/Task/Raporlar/Profil görür —
+// kullanıcı listesi, ödemeler ve captcha paneli onlara kapalıdır.
+const OWNER_EMAIL = "admin@erpide.com";
+
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; ownerOnly?: boolean };
+const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/odemeler", label: "Ödemeler", icon: Banknote },
+  { href: "/admin/odemeler", label: "Ödemeler", icon: Banknote, ownerOnly: true },
   { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
   { href: "/admin/reports", label: "Raporlar", icon: FileText },
-  { href: "/admin/users", label: "Kullanıcılar", icon: Users },
-  { href: "/admin/captcha", label: "Captcha Panel", icon: Shield },
+  { href: "/admin/users", label: "Kullanıcılar", icon: Users, ownerOnly: true },
+  { href: "/admin/captcha", label: "Captcha Panel", icon: Shield, ownerOnly: true },
+  { href: "/admin/profil", label: "Profilim", icon: UserCircle },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,10 +30,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Login page — no sidebar, no auth check
   const isLoginPage = pathname === "/admin";
+  const isOwner = userEmail.toLowerCase() === OWNER_EMAIL;
 
   useEffect(() => {
     if (isLoginPage) { setAuthChecked(true); return; }
@@ -35,7 +43,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (res.ok) {
           const data = await res.json();
           setUserName(data.userName || "");
+          setUserEmail(data.userEmail || "");
           setAuthChecked(true);
+          // Owner-only route'a non-owner direkt URL ile geldiyse dashboard'a çevir
+          const hitOwnerRoute = navItems.find((n) => n.ownerOnly && (pathname === n.href || pathname.startsWith(n.href + "/")));
+          if (hitOwnerRoute && (data.userEmail || "").toLowerCase() !== OWNER_EMAIL) {
+            router.replace("/admin/dashboard");
+          }
         } else {
           router.replace("/admin");
         }
@@ -52,6 +66,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     );
   }
+
+  const visibleNav = navItems.filter((n) => !n.ownerOnly || isOwner);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -71,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
+          {visibleNav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
@@ -108,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Menu size={22} />
           </button>
           <h1 className="text-sm font-medium text-gray-300">
-            {navItems.find(n => pathname.startsWith(n.href))?.label || "Admin"}
+            {visibleNav.find(n => pathname.startsWith(n.href))?.label || "Admin"}
           </h1>
         </header>
 

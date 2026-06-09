@@ -10,7 +10,7 @@
  */
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getSession, SESSION_COOKIE } from "@/lib/auth";
+import { getOwnerSession, SESSION_COOKIE } from "@/lib/auth";
 import {
   getBankTransferRequest,
   approveBankTransferRequest,
@@ -26,10 +26,7 @@ export const runtime = "nodejs";
 async function requireAdmin() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const session = await getSession(token);
-  if (!session || session.userType !== "admin") return null;
-  return session;
+  return await getOwnerSession(token);
 }
 
 function generateLicenseKey(productId: string): string {
