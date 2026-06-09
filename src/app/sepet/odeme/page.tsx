@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -10,9 +10,30 @@ import { useCart } from "@/components/CartProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
 import AddressFormModal from "@/components/account/AddressFormModal";
 import type { SavedAddress } from "@/lib/auth/user-store";
+import { useTranslation } from "@/lib/i18n";
+import { getProduct } from "@/lib/products";
+
+/** Consent satırlarında {link}, {kvkk}, {privacy} placeholder'larını gerçek
+ * Link node'larıyla değiştirir — uye-ol'daki helper'ın aynısı. */
+function renderWithSlots(text: string, slots: Record<string, React.ReactNode>): React.ReactNode[] {
+  const keys = Object.keys(slots);
+  if (!keys.length) return [text];
+  const re = new RegExp(`\\{(${keys.join("|")})\\}`, "g");
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(<Fragment key={`${m.index}-${m[1]}`}>{slots[m[1]]}</Fragment>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
 
 export default function SepetOdemePage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { getLineWithSku, total, itemCount } = useCart();
   const items = getLineWithSku();
 
@@ -62,14 +83,13 @@ export default function SepetOdemePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (items.length === 0) { setError("Sepetin boş"); return; }
-    // E-pin için adres + consents gereksiz — direkt redirect
+    if (items.length === 0) { setError(t("payment.cart_empty_error")); return; }
     if (paymentMethod === "e-pin") {
       router.push("/hesabim/aktivasyon-kodu");
       return;
     }
-    if (!selectedAddressId) { setError("Bir fatura adresi seç veya yeni ekle"); return; }
-    if (!allConsents) { setError("Tüm onay kutularını işaretle"); return; }
+    if (!selectedAddressId) { setError(t("payment.select_billing_address")); return; }
+    if (!allConsents) { setError(t("payment.all_consents_required")); return; }
     setLoading(true);
     try {
       if (paymentMethod === "bank-transfer") {
@@ -80,14 +100,13 @@ export default function SepetOdemePage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          setError(data.error || "Havale isteği oluşturulamadı");
+          setError(data.error || t("payment.bank_transfer_failed"));
           setLoading(false);
           return;
         }
         router.push(data.redirectUrl);
         return;
       }
-      // Default: iyzico
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,13 +118,13 @@ export default function SepetOdemePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Ödeme başlatılamadı");
+        setError(data.error || t("payment.checkout_failed"));
         setLoading(false);
         return;
       }
       window.location.href = data.paymentPageUrl;
     } catch (e) {
-      setError("Bağlantı hatası: " + String(e));
+      setError(t("auth.connection_error") + String(e));
       setLoading(false);
     }
   }
@@ -127,8 +146,8 @@ export default function SepetOdemePage() {
       <>
         <Navbar />
         <main className="pt-32 pb-20 px-6 min-h-screen text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Sepetin boş</h1>
-          <Link href="/urunler" className="text-blue-400 hover:underline">Ürünleri incele →</Link>
+          <h1 className="text-2xl font-bold text-white mb-4">{t("cart.empty")}</h1>
+          <Link href="/urunler" className="text-blue-400 hover:underline">{t("cart.browse_products")} →</Link>
         </main>
         <Footer />
       </>
@@ -141,36 +160,36 @@ export default function SepetOdemePage() {
       <main className="pt-24 pb-20 px-6 min-h-screen">
         <div className="max-w-5xl mx-auto">
           <Link href="/sepet" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6">
-            <ArrowLeft size={14} /> Sepete dön
+            <ArrowLeft size={14} /> {t("payment.back_to_cart")}
           </Link>
-          <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">Ödeme</span></h1>
+          <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">{t("payment.title")}</span></h1>
           <p className="text-gray-400 text-sm mb-8">
-            Dijital ürün — fatura adresini seç, iyzico'ya yönlendirilirsin. Teslimat yok, lisans anahtarı maille gelir.
+            {t("payment.digital_product_desc")}
           </p>
 
           <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_380px] gap-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <div className="flex items-center justify-between mb-4">
-                  <legend className="px-1 text-xs text-gray-400 uppercase tracking-wider">Fatura Adresi</legend>
+                  <legend className="px-1 text-xs text-gray-400 uppercase tracking-wider">{t("payment.billing_address")}</legend>
                   <button
                     type="button"
                     onClick={() => setShowAddressModal(true)}
                     className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
                   >
-                    <Plus size={12} /> Yeni Adres
+                    <Plus size={12} /> {t("payment.new_address")}
                   </button>
                 </div>
 
                 {addresses.length === 0 ? (
                   <div className="p-6 rounded-xl border border-dashed border-white/10 text-center">
-                    <p className="text-sm text-gray-400 mb-3">Henüz kayıtlı adresin yok.</p>
+                    <p className="text-sm text-gray-400 mb-3">{t("payment.no_addresses_short")}</p>
                     <button
                       type="button"
                       onClick={() => setShowAddressModal(true)}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition"
                     >
-                      <Plus size={14} /> İlk Adresini Ekle
+                      <Plus size={14} /> {t("payment.add_first_address")}
                     </button>
                   </div>
                 ) : (
@@ -188,43 +207,52 @@ export default function SepetOdemePage() {
               </fieldset>
 
               <fieldset className="p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-2">
-                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Ödeme Yöntemi</legend>
+                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">{t("payment.payment_method")}</legend>
                 <PaymentRadio
                   selected={paymentMethod === "iyzico"}
                   onSelect={() => setPaymentMethod("iyzico")}
                   icon={<CreditCard size={16} />}
-                  title="iyzico ile Kredi Kartı"
-                  desc="Anında aktivasyon · 256-bit SSL · Kart bilgisi bizde değil"
+                  title={t("payment.iyzico_card")}
+                  desc={t("payment.iyzico_card_desc")}
                 />
                 <PaymentRadio
                   selected={paymentMethod === "bank-transfer"}
                   onSelect={() => setPaymentMethod("bank-transfer")}
                   icon={<Banknote size={16} />}
-                  title="Havale / EFT"
-                  desc="Günün TCMB kuruyla TL tutarı + IBAN bilgisi sonraki adımda gösterilir. 1-2 iş günü içinde manuel onaylanır."
+                  title={t("payment.bank_transfer")}
+                  desc={t("payment.bank_transfer_desc")}
                 />
                 <PaymentRadio
                   selected={paymentMethod === "e-pin"}
                   onSelect={() => setPaymentMethod("e-pin")}
                   icon={<Key size={16} />}
-                  title="E-Pin / Aktivasyon Kodu"
-                  desc="Bayilerden/etkinliklerden aldığınız ERP-XXXX-XXXX-XXXX kodunu girerek lisansı anında aktive edin."
+                  title={t("payment.epin")}
+                  desc={t("payment.epin_desc")}
                 />
               </fieldset>
 
               <fieldset className={`p-6 rounded-2xl bg-[#111118] border border-white/5 space-y-3 ${paymentMethod === "e-pin" ? "opacity-50 pointer-events-none" : ""}`}>
-                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">Yasal Onaylar {paymentMethod === "e-pin" && <span className="normal-case text-gray-500">(e-pin için gereksiz)</span>}</legend>
+                <legend className="px-2 text-xs text-gray-400 uppercase tracking-wider">
+                  {t("payment.legal_consents")} {paymentMethod === "e-pin" && <span className="normal-case text-gray-500">{t("payment.epin_no_consents")}</span>}
+                </legend>
                 <Consent checked={consents.preInfo} onChange={(v) => setConsents({ ...consents, preInfo: v })}>
-                  <Link href="/sozlesmeler/on-bilgilendirme" target="_blank" className="text-blue-400 hover:underline">Ön Bilgilendirme Formu</Link>'nu okudum.
+                  {renderWithSlots(t("payment.consent_pre_info"), {
+                    link: <Link href="/sozlesmeler/on-bilgilendirme" target="_blank" className="text-blue-400 hover:underline">{t("payment.consent_pre_info_link")}</Link>,
+                  })}
                 </Consent>
                 <Consent checked={consents.distance} onChange={(v) => setConsents({ ...consents, distance: v })}>
-                  <Link href="/sozlesmeler/mesafeli-satis" target="_blank" className="text-blue-400 hover:underline">Mesafeli Satış Sözleşmesi</Link>'ni kabul ediyorum.
+                  {renderWithSlots(t("payment.consent_distance"), {
+                    link: <Link href="/sozlesmeler/mesafeli-satis" target="_blank" className="text-blue-400 hover:underline">{t("payment.consent_distance_link")}</Link>,
+                  })}
                 </Consent>
                 <Consent checked={consents.kvkk} onChange={(v) => setConsents({ ...consents, kvkk: v })}>
-                  <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">KVKK</Link> ve <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">Gizlilik Politikası</Link>'nı okudum.
+                  {renderWithSlots(t("payment.consent_kvkk"), {
+                    kvkk: <Link href="/sozlesmeler/kvkk" target="_blank" className="text-blue-400 hover:underline">{t("payment.consent_kvkk_link")}</Link>,
+                    privacy: <Link href="/sozlesmeler/gizlilik-politikasi" target="_blank" className="text-blue-400 hover:underline">{t("payment.consent_privacy_link")}</Link>,
+                  })}
                 </Consent>
                 <Consent checked={consents.digitalDelivery} onChange={(v) => setConsents({ ...consents, digitalDelivery: v })}>
-                  Dijital içerik anında teslim edilecek, <strong>cayma hakkımdan feragat ediyorum</strong>.
+                  {t("payment.consent_digital")}
                 </Consent>
               </fieldset>
 
@@ -233,13 +261,14 @@ export default function SepetOdemePage() {
 
             <motion.aside initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:sticky lg:top-24 h-fit">
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
-                <h3 className="font-semibold text-white mb-4">{itemCount} ürün</h3>
+                <h3 className="font-semibold text-white mb-4">{t("payment.items_label").replace("{count}", String(itemCount))}</h3>
                 <div className="space-y-2 mb-4">
                   {items.map(({ line, sku }) => {
                     const { price, currency } = priceFor(sku, "USD");
+                    const prodName = getProduct(sku.productId)?.name || sku.productId;
                     return (
                       <div key={sku.id} className="flex justify-between text-sm">
-                        <span className="text-gray-400 truncate">{sku.productId === "finanserpide" ? "Finans" : "Captcha"} {sku.name} ×{line.quantity}</span>
+                        <span className="text-gray-400 truncate">{prodName} {sku.name} ×{line.quantity}</span>
                         <span className="text-gray-300 font-mono">{formatPrice(price * line.quantity, currency, { short: true })}</span>
                       </div>
                     );
@@ -247,10 +276,10 @@ export default function SepetOdemePage() {
                 </div>
                 <div className="pt-4 border-t border-white/5 mb-6">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-white font-semibold">Aylık</span>
+                    <span className="text-white font-semibold">{t("payment.monthly")}</span>
                     <span className="text-2xl font-bold text-white">{formatPrice(total, "USD", { short: true })}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">KDV dahil • TL karşılığı tahsil edilir</p>
+                  <p className="text-xs text-gray-500 mt-1">{t("payment.tax_note_short")}</p>
                 </div>
                 <button
                   type="submit"
@@ -258,16 +287,16 @@ export default function SepetOdemePage() {
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 size={16} className="animate-spin" />}
-                  {loading ? "Yönlendiriliyor..." :
-                    paymentMethod === "iyzico"        ? "iyzico ile Öde" :
-                    paymentMethod === "bank-transfer" ? "Havale Bilgilerini Al" :
-                                                        "Aktivasyon Koduyla Devam"}
+                  {loading ? t("payment.redirecting") :
+                    paymentMethod === "iyzico"        ? t("payment.pay_with_iyzico") :
+                    paymentMethod === "bank-transfer" ? t("payment.get_bank_info") :
+                                                        t("payment.continue_with_epin")}
                 </button>
                 <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">
                   <ShieldCheck size={12} />
-                  {paymentMethod === "iyzico" && "Kart bilgilerin iyzico'da, biz görmeyiz."}
-                  {paymentMethod === "bank-transfer" && "TL tutarı sonraki adımda kesinleşir."}
-                  {paymentMethod === "e-pin" && "Aktivasyon kodu sayfasına yönlendirileceksin."}
+                  {paymentMethod === "iyzico" && t("payment.iyzico_note")}
+                  {paymentMethod === "bank-transfer" && t("payment.bank_transfer_note")}
+                  {paymentMethod === "e-pin" && t("payment.epin_note")}
                 </div>
               </div>
             </motion.aside>
@@ -287,6 +316,7 @@ export default function SepetOdemePage() {
 }
 
 function AddressRadio({ addr, selected, onSelect }: { addr: SavedAddress; selected: boolean; onSelect: () => void }) {
+  const { t } = useTranslation();
   const TypeIcon = addr.type === "corporate" ? Building2 : User;
   return (
     <button
@@ -307,10 +337,10 @@ function AddressRadio({ addr, selected, onSelect }: { addr: SavedAddress; select
             <TypeIcon size={14} className="text-gray-500" />
             <span className="font-semibold text-white text-sm">{addr.label}</span>
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${addr.type === "corporate" ? "bg-purple-500/15 text-purple-300 border-purple-500/30" : "bg-blue-500/15 text-blue-300 border-blue-500/30"}`}>
-              {addr.type === "corporate" ? "KURUMSAL" : "BİREYSEL"}
+              {addr.type === "corporate" ? t("address.corporate_badge") : t("address.individual_badge")}
             </span>
             {addr.isBillingDefault && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">FATURA</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">{t("payment.billing_badge")}</span>
             )}
           </div>
           <p className="text-xs text-gray-300">{addr.firstName} {addr.lastName} • {addr.phone}</p>
