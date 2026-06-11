@@ -26,6 +26,7 @@ export interface PocketDataRecord {
 
 const TOKENS_KEY = "data/pocket-tokens.json";
 const DATA_KEY = "data/pocket-data.json";
+const PUSH_TOKENS_KEY = "data/pocket-push-tokens.json";
 
 function getBlobBaseUrl(): string {
   const token = process.env.BLOB_READ_WRITE_TOKEN || "";
@@ -131,4 +132,68 @@ export async function setUserData(userId: string, data: unknown): Promise<Pocket
   map[userId] = rec;
   await writeAllData(map);
   return rec;
+}
+
+// ===== PUSH TOKENS =====
+// Bir kullanıcı birden fazla cihazdan giriş yapabilir (iPhone + iPad gibi);
+// her cihazın expoPushToken'ını ayrı satır olarak tutuyoruz. Aynı token tekrar
+// register'lanırsa update edilir (uniqueness expoPushToken üstünden).
+
+export interface PushTokenRecord {
+  expoPushToken: string;
+  userId: string;
+  platform: string;     // "ios" | "android" | "web"
+  deviceName: string;
+  createdAt: string;
+  lastUsedAt: string;
+}
+
+type PushTokenMap = Record<string, PushTokenRecord>;  // expoPushToken → record
+
+async function readPushTokens(): Promise<PushTokenMap> {
+  return await readBlob<PushTokenMap>(PUSH_TOKENS_KEY, {});
+}
+
+async function writePushTokens(map: PushTokenMap): Promise<void> {
+  await writeBlob(PUSH_TOKENS_KEY, map);
+}
+
+export async function registerPushToken(
+  userId: string,
+  expoPushToken: string,
+  platform: string,
+  deviceName: string,
+): Promise<PushTokenRecord> {
+  const map = await readPushTokens();
+  const now = new Date().toISOString();
+  const existing = map[expoPushToken];
+  const rec: PushTokenRecord = {
+    expoPushToken,
+    userId,
+    platform,
+    deviceName,
+    createdAt: existing?.createdAt ?? now,
+    lastUsedAt: now,
+  };
+  map[expoPushToken] = rec;
+  await writePushTokens(map);
+  return rec;
+}
+
+export async function unregisterPushToken(
+  userId: string,
+  expoPushToken: string,
+): Promise<boolean> {
+  const map = await readPushTokens();
+  const rec = map[expoPushToken];
+  // Sadece sahibi unregister edebilir (cross-user delete'i engelle)
+  if (!rec || rec.userId !== userId) return false;
+  delete map[expoPushToken];
+  await writePushTokens(map);
+  return true;
+}
+
+export async function listPushTokensForUser(userId: string): Promise<PushTokenRecord[]> {
+  const map = await readPushTokens();
+  return Object.values(map).filter((r) => r.userId === userId);
 }
