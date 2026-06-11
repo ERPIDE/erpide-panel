@@ -20,6 +20,10 @@ export default function Navbar() {
   const [user, setUser] = useState<MeUser | null>(null);
   const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false, pocketerpide: false });
   const [appStates, setAppStates] = useState<AppStatesMap>({ finanserpide: "none", captchaerpide: "none", pocketerpide: "none" });
+  // Hangi ürünler için kullanıcı zaten trial almış? Dropdown'daki "3 Gün Dene"
+  // butonu sadece henüz denenmemiş ürünler için gösterilir; aksi halde
+  // "Satın Al" fallback'i.
+  const [trialedProducts, setTrialedProducts] = useState<string[]>([]);
   const { t, locale, setLocale } = useTranslation();
   const { itemCount } = useCart();
 
@@ -30,9 +34,17 @@ export default function Navbar() {
         setUser(d.user || null);
         if (d.apps) setApps(d.apps);
         if (d.appStates) setAppStates(d.appStates);
+        if (Array.isArray(d.trialedProducts)) setTrialedProducts(d.trialedProducts);
       })
       .catch(() => {});
   }, []);
+
+  // Hangi ürün için hangi SKU trial sunulur — /hesabim'daki TRIAL_OFFERS ile
+  // tutarlı. Tek kaynak yapmak için ileride lib'e taşınabilir.
+  const TRIAL_SKU: Record<string, string> = {
+    finanserpide:  "finanserpide-base-monthly",
+    captchaerpide: "captchaerpide-starter-monthly",
+  };
 
   const links = [
     { href: "/", label: t("nav.home") },
@@ -122,6 +134,8 @@ export default function Navbar() {
                     state={appStates.finanserpide}
                     appUrl="https://finans.erpide.com/giris"
                     buyUrl="/urunler/finanserpide"
+                    trialSkuId={TRIAL_SKU.finanserpide}
+                    trialEligible={!trialedProducts.includes("finanserpide")}
                     onClose={() => setAppsOpen(false)}
                   />
                   <AppLauncherItem
@@ -131,6 +145,8 @@ export default function Navbar() {
                     state={appStates.captchaerpide}
                     appUrl="https://captcha.erpide.com/dashboard"
                     buyUrl="/urunler/captchaerpide"
+                    trialSkuId={TRIAL_SKU.captchaerpide}
+                    trialEligible={!trialedProducts.includes("captchaerpide")}
                     onClose={() => setAppsOpen(false)}
                   />
                   <AppLauncherItem
@@ -290,7 +306,7 @@ export default function Navbar() {
 
 
 function AppLauncherItem({
-  icon, name, desc, state, appUrl, buyUrl, onClose,
+  icon, name, desc, state, appUrl, buyUrl, onClose, trialSkuId, trialEligible,
 }: {
   icon: React.ReactNode;
   name: string;
@@ -299,11 +315,16 @@ function AppLauncherItem({
   appUrl: string;
   buyUrl: string;
   onClose: () => void;
+  /** Bu ürün için trial başlatılabilecek SKU id'si. Yoksa trial CTA gösterilmez. */
+  trialSkuId?: string;
+  /** false ise kullanıcı trial'ı zaten kullanmış; "3 Gün Dene" yerine "Satın Al". */
+  trialEligible?: boolean;
 }) {
   const { t } = useTranslation();
+  const [trialing, setTrialing] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
+
   // Aktif veya süresi dolmuş kullanıcı → uygulamanın giriş ekranına yönlendir.
-  // App orada "lisansınız bitti, uzatın" veya direkt dashboard gösterir.
-  // Hiç almamış kullanıcı → satın al sayfasına yönlendir.
   if (state === "active" || state === "expired") {
     const label = state === "active" ? "AKTİF" : "SÜRESİ DOLDU";
     const badgeCls = state === "active"
@@ -329,18 +350,69 @@ function AppLauncherItem({
       </a>
     );
   }
+
+  // Lisansı yok, trial almamış → tek tık "3 Gün Dene" — sepete ekle akışına
+  // gitmeden direkt trial başlat, sonra lisanslarım'a yönlendir.
+  // trialSkuId tanımlı + trialEligible=true ise bu yol; aksi halde "Satın Al".
+  async function handleStartTrial(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!trialSkuId || trialing) return;
+    setTrialing(true);
+    setTrialError(null);
+    try {
+      const res = await fetch("/api/trial/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skuId: trialSkuId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTrialError(data.error || "Deneme başlatılamadı");
+        setTrialing(false);
+        return;
+      }
+      onClose();
+      // Lisanslarım sayfasına yönlendir — "Şirket Hesabımı Kur" akışı oradan
+      window.location.href = "/hesabim/lisanslarim";
+    } catch (err) {
+      setTrialError("Bağlantı hatası: " + String(err));
+      setTrialing(false);
+    }
+  }
+
+  const showTrial = !!trialSkuId && trialEligible === true;
+
   return (
-    <Link
-      href={buyUrl}
-      onClick={onClose}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition group"
-    >
-      <div className="flex-shrink-0 opacity-50">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-300 truncate">{name}</p>
-        <p className="text-[11px] text-gray-500 truncate">{desc}</p>
+    <div className="px-4 py-3 hover:bg-white/5 transition">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 opacity-50">{icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-300 truncate">{name}</p>
+          <p className="text-[11px] text-gray-500 truncate">{desc}</p>
+        </div>
       </div>
-      <span className="text-[10px] font-semibold text-blue-300 group-hover:text-blue-200 transition flex-shrink-0">{t("nav.buy")} →</span>
-    </Link>
+      <div className="mt-2 flex gap-2">
+        {showTrial && (
+          <button
+            onClick={handleStartTrial}
+            disabled={trialing}
+            className="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[11px] font-semibold hover:opacity-90 disabled:opacity-50 transition"
+          >
+            {trialing ? "Başlatılıyor…" : "3 Gün Ücretsiz Dene"}
+          </button>
+        )}
+        <Link
+          href={buyUrl}
+          onClick={onClose}
+          className="flex-1 py-1.5 rounded-lg border border-white/10 text-gray-300 text-[11px] font-semibold hover:bg-white/5 transition text-center"
+        >
+          {showTrial ? "İncele" : `${t("nav.buy")} →`}
+        </Link>
+      </div>
+      {trialError && (
+        <p className="mt-1.5 text-[10px] text-red-400">{trialError}</p>
+      )}
+    </div>
   );
 }
