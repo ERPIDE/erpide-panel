@@ -1,11 +1,43 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/session";
-import { listOrdersByUserId, findUserById } from "@/lib/auth/user-store";
+import { listOrdersByUserId, findUserById, hasUsedTrialForSku } from "@/lib/auth/user-store";
 import { Package, Key, User as UserIcon, Mail, ShoppingBag, Sparkles, ArrowRight, Wallet, Shield, ExternalLink } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getServerTranslations } from "@/lib/i18n-server";
+import QuickTrialCard from "@/components/account/QuickTrialCard";
 
 export const dynamic = "force-dynamic";
+
+interface TrialOffer {
+  productId: string;
+  productName: string;
+  skuId: string;
+  planName: string;
+  description: string;
+  gradient: string;
+}
+
+// Hesabıma açar açmaz tek tıklı trial başlatma için sunulan ürünler.
+// hasUsedTrialForSku/active license kontrolüyle her ürünün kartı yalnızca
+// uygunsa render edilir.
+const TRIAL_OFFERS: TrialOffer[] = [
+  {
+    productId: "finanserpide",
+    productName: "FinansERPIDE",
+    skuId: "finanserpide-base-monthly",
+    planName: "Temel Paket",
+    description: "Çok şirketli ERP — e-Fatura, banka mutabakatı, vergi, cari, fatura. 3 gün boyunca tam erişim.",
+    gradient: "from-blue-600 to-purple-600",
+  },
+  {
+    productId: "captchaerpide",
+    productName: "CaptchaERPIDE",
+    skuId: "captchaerpide-starter-monthly",
+    planName: "Starter",
+    description: "Captcha çözüm API'si — reCAPTCHA, hCaptcha, image-to-text. 3 gün boyunca günlük 500 çözüm.",
+    gradient: "from-emerald-600 to-teal-600",
+  },
+];
 
 export default async function HesabimPage() {
   const session = await requireUser();
@@ -21,16 +53,26 @@ export default async function HesabimPage() {
   const totalActive = paidLicenseCount + activeTrialCount;
 
   const activeProductIds = new Set<string>();
+  const activeSkuIds = new Set<string>();
   for (const o of orders) {
     if (o.status === "PAID") {
       const exp = o.subscriptionExpiresAt && new Date(o.subscriptionExpiresAt).getTime() < now;
-      if (!exp) o.items.forEach((it) => activeProductIds.add(it.productId));
+      if (!exp) o.items.forEach((it) => { activeProductIds.add(it.productId); activeSkuIds.add(it.skuId); });
     } else if (o.status === "TRIAL" && o.isTrial) {
       const exp = o.trialExpiresAt && new Date(o.trialExpiresAt).getTime() < now;
-      if (!exp) o.items.forEach((it) => activeProductIds.add(it.productId));
+      if (!exp) o.items.forEach((it) => { activeProductIds.add(it.productId); activeSkuIds.add(it.skuId); });
     }
   }
   const hasAnyApp = activeProductIds.size > 0;
+
+  // Trial başlatabileceği ürünler — aktif lisansı/aktif trial'ı olmayan
+  // VE bu SKU için daha önce trial almamış olanlar.
+  const offerableTrials: TrialOffer[] = [];
+  for (const offer of TRIAL_OFFERS) {
+    if (activeProductIds.has(offer.productId)) continue;
+    const used = await hasUsedTrialForSku(session.userId!, offer.skuId);
+    if (!used) offerableTrials.push(offer);
+  }
 
   return (
     <>
@@ -106,6 +148,33 @@ export default async function HesabimPage() {
         </div>
       )}
 
+      {/* Trial CTA paneli — lisansı yokken ön plana çıkar; her durumda uygun
+          ürünler için tek tık başlatma sunar (eğer henüz denemediyse). */}
+      {offerableTrials.length > 0 && (
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-blue-500/5 border border-emerald-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="text-emerald-300" size={18} />
+            <h2 className="font-semibold text-white">3 Gün Ücretsiz Dene</h2>
+          </div>
+          <p className="text-xs text-gray-400 mb-5">
+            Kart bilgisi gerekmez. Tıkla, lisansın anında oluşur ve uygulamayı kullanmaya başla.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {offerableTrials.map((o) => (
+              <QuickTrialCard
+                key={o.skuId}
+                productId={o.productId}
+                productName={o.productName}
+                skuId={o.skuId}
+                planName={o.planName}
+                description={o.description}
+                gradient={o.gradient}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-white">{t("account.recent_licenses")}</h2>
@@ -116,9 +185,14 @@ export default async function HesabimPage() {
           )}
         </div>
         {allLicenses.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-10 text-gray-500">
             <Key size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">{t("account.no_licenses")}</p>
+            <p className="text-sm mb-1">{t("account.no_licenses")}</p>
+            <p className="text-xs text-gray-600 mb-3">
+              {offerableTrials.length > 0
+                ? "Yukarıdaki '3 Gün Ücretsiz Dene' kartından başla."
+                : "Ürünleri inceleyip satın al."}
+            </p>
             <Link href="/urunler" className="text-blue-400 hover:underline text-sm">{t("account.browse_products")} →</Link>
           </div>
         ) : (
