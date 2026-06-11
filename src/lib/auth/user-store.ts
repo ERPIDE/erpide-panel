@@ -399,8 +399,13 @@ export async function findActiveTrialForUserSku(userId: string, skuId: string): 
   return undefined;
 }
 
-export async function hasUsedTrialForSku(userId: string, skuId: string): Promise<boolean> {
-  const s = await loadState();
+export async function hasUsedTrialForSku(userId: string, skuId: string, forceFresh = false): Promise<boolean> {
+  // forceFresh is critical at the /api/trial/start endpoint: a stale read
+  // here allows two near-simultaneous POSTs to both see "no prior trial"
+  // and both create orders — a double-click yields two trial licenses for
+  // the same SKU. Pages that only read for display can leave forceFresh
+  // at the default to avoid hammering Vercel Blob on every render.
+  const s = await loadState(forceFresh);
   for (const order of Object.values(s.orders)) {
     if (order.userId !== userId) continue;
     if (!order.isTrial) continue;

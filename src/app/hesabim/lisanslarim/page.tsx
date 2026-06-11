@@ -60,6 +60,24 @@ function productNeedsApiCredentials(productId: string): boolean {
   return productId === "captchaerpide";
 }
 
+/** Aynı SKU için birden fazla aktif trial varsa (geçmiş cache yarışı
+ *  yüzünden oluşmuş duplicate'ler), kronolojik olarak en eskisini tut.
+ *  forceFresh fix sonrası yeni duplicate oluşmaz, bu dedup geçmiş kayıtları
+ *  UI'da gizler — backend'de kalır ve 3 günde expire olur. */
+function dedupActiveTrials(rows: LicenseRow[]): LicenseRow[] {
+  const seen = new Set<string>();
+  const result: LicenseRow[] = [];
+  const sorted = rows.slice().sort((a, b) => a.orderDate.localeCompare(b.orderDate));
+  for (const r of sorted) {
+    if (r.kind === "trial-active") {
+      if (seen.has(r.skuId)) continue;
+      seen.add(r.skuId);
+    }
+    result.push(r);
+  }
+  return result;
+}
+
 /** Kalan süreyi locale'e göre formatla — i18n string'leri "{days}", "{hours}",
  * "{minutes}" placeholder'larıyla 4 dilde tanımlı. */
 function formatRemaining(expiresAt: string, t: (k: string) => string): string {
@@ -140,7 +158,7 @@ export default async function LisanslarimPage() {
         <EmptyLicenses session={session} t={t} />
       ) : (
         <div className="space-y-4">
-          {licenses.map((lic, i) => {
+          {dedupActiveTrials(licenses).map((lic, i) => {
             const product = getProductOfSku(lic.skuId);
             const isTrial = lic.kind === "trial-active" || lic.kind === "trial-expired";
             const expired = lic.kind === "trial-expired" || lic.kind === "paid-expired";
@@ -295,20 +313,37 @@ export default async function LisanslarimPage() {
                   </div>
                 )}
 
-                {/* FinansERPIDE için yönlendirme ipucu — kullanıcı "Şirket
-                    Hesabımı Kur" akışına ne için yönlendirildiğini bilsin. */}
+                {/* FinansERPIDE için yönlendirme + lisans key prominent.
+                    Adam butonu kullanmayıp manuel /lisans sayfasına gitse de
+                    burada kopyalayabilsin. CredentialRow zaten kopya butonu
+                    sağlıyor. */}
                 {!expired && lic.productId === "finanserpide" && (
-                  <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-200/90">
-                    <strong className="text-blue-300">İlk kez mi gidiyorsun?</strong> &quot;Şirket Hesabımı Kur&quot; tıkla,
-                    lisans kodun otomatik doğrulanacak. Sonra VKN + şirket
-                    bilgilerini girip yeni bir şifre belirleyeceksin (erpide.com
-                    şifrenden farklı). Hesap kurulduktan sonra aynı buton
-                    doğrudan FinansERPIDE&apos;i açar.
+                  <div className="space-y-3">
+                    <CredentialRow
+                      icon={<Key size={14} className="text-emerald-400" />}
+                      label="LİSANS ANAHTARI"
+                      value={lic.licenseKey}
+                      copyLabel={t("license.copy_button")}
+                      copy
+                      monospace
+                    />
+                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-200/90">
+                      <strong className="text-blue-300">İlk kez mi gidiyorsun?</strong> &quot;Şirket Hesabımı Kur&quot; tıkla,
+                      lisans kodun otomatik doğrulanacak. Sonra VKN + şirket
+                      bilgilerini girip yeni bir şifre belirleyeceksin (erpide.com
+                      şifrenden farklı). Hesap kurulduktan sonra aynı buton
+                      doğrudan FinansERPIDE&apos;i açar.
+                      <br /><br />
+                      <span className="text-blue-300/70">Veya:</span> yukarıdaki anahtarı kopyalayıp
+                      finans.erpide.com/lisans sayfasına manuel yapıştırabilirsin.
+                    </div>
                   </div>
                 )}
 
-                {/* LEGACY license key display (informational) */}
-                {!expired && lic.licenseKey && (
+                {/* LEGACY license key display — FinansERPIDE için yukarıda
+                    prominent CredentialRow'da zaten gösterdik, tekrar etme.
+                    Diğer ürünler için referans olarak küçük gri kalsın. */}
+                {!expired && lic.licenseKey && lic.productId !== "finanserpide" && (
                   <div className="mt-4 pt-4 border-t border-white/5">
                     <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">{t("license.order_ref_code")}</p>
                     <code className="text-xs font-mono text-gray-500 break-all">{lic.licenseKey}</code>

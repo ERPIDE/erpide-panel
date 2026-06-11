@@ -43,7 +43,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 });
   }
 
-  const already = await hasUsedTrialForSku(session.userId, skuId);
+  // forceFresh: double-click veya stale-cache yarışı sonucu iki trial
+  // oluşmasını engelle. Blob'tan kesin son state'i oku.
+  const already = await hasUsedTrialForSku(session.userId, skuId, true);
   if (already) {
     return NextResponse.json(
       { error: "Bu ürün için zaten bir deneme sürümü kullandınız" },
