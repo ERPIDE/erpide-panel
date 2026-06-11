@@ -39,16 +39,21 @@ interface LicenseRow {
 }
 
 /** Lisans → uygulamaya yönlendirme URL'i.
- *  FinansERPIDE için lisans kodunu prefill ederek doğrudan /lisans?key=XXX
- *  sayfasına gönderiyoruz — kullanıcı kodu manuel kopyalamasın, lisans
- *  otomatik doğrulansın ve /uye-ol akışına geçsin (yeni tenant kurulumu). */
-function defaultAppUrl(productId: string, licenseKey?: string): string | null {
+ *  - FinansERPIDE: lisans kodunu prefill ederek /lisans?key=XXX sayfasına
+ *    gönderiyoruz — adam kodu manuel kopyalamasın, lisans otomatik
+ *    doğrulansın, /uye-ol akışına geçsin.
+ *  - CaptchaERPIDE: provision sırasında random şifre üretildiği için adam
+ *    dashboard'a şifre ile giremez. /sso?api_key=XXX → backend api key'i
+ *    doğrular, access token mint eder, dashboard'a yönlendirir. */
+function defaultAppUrl(productId: string, licenseKey?: string, apiKey?: string): string | null {
   switch (productId) {
     case "pocketerpide":  return "/pocket";
     case "finanserpide":  return licenseKey
       ? `https://finans.erpide.com/lisans?key=${encodeURIComponent(licenseKey)}`
       : "https://finans.erpide.com/lisans";
-    case "captchaerpide": return "https://captcha.erpide.com/dashboard";
+    case "captchaerpide": return apiKey
+      ? `https://captcha.erpide.com/sso?api_key=${encodeURIComponent(apiKey)}`
+      : "https://captcha.erpide.com/dashboard";
     default:              return null;
   }
 }
@@ -230,15 +235,19 @@ export default async function LisanslarimPage() {
                     )}
                     {(() => {
                       if (expired) return null;
-                      const url = lic.dashboardUrl || defaultAppUrl(lic.productId, lic.licenseKey);
+                      // CaptchaERPIDE için backend'in döndürdüğü dashboardUrl
+                      // (/dashboard) yerine SSO URL'i tercih et — adam şifre
+                      // bilmeden dashboard'a girer.
+                      const computedUrl = defaultAppUrl(lic.productId, lic.licenseKey, lic.apiKey);
+                      const url = lic.productId === "captchaerpide"
+                        ? (computedUrl || lic.dashboardUrl)
+                        : (lic.dashboardUrl || computedUrl);
                       if (!url) return null;
                       const isExternal = url.startsWith("http");
-                      // FinansERPIDE için: lisans henüz tenant'a bağlanmadıysa
-                      // "Şirket Hesabımı Kur" — kullanıcı /lisans → /uye-ol
-                      // akışına yönlendirilir. Aksi halde "Uygulamayı Aç".
                       const label =
                         lic.productId === "pocketerpide" ? t("license.open_wallet")
                         : lic.productId === "finanserpide" ? "Şirket Hesabımı Kur / Aç"
+                        : lic.productId === "captchaerpide" ? "Dashboard'a Tek Tıkla Gir"
                         : t("license.open_app");
                       return (
                         <Link
