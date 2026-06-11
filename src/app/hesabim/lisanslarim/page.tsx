@@ -38,13 +38,26 @@ interface LicenseRow {
   maxSolvesPerDay?: number;
 }
 
-function defaultAppUrl(productId: string): string | null {
+/** Lisans → uygulamaya yönlendirme URL'i.
+ *  FinansERPIDE için lisans kodunu prefill ederek doğrudan /lisans?key=XXX
+ *  sayfasına gönderiyoruz — kullanıcı kodu manuel kopyalamasın, lisans
+ *  otomatik doğrulansın ve /uye-ol akışına geçsin (yeni tenant kurulumu). */
+function defaultAppUrl(productId: string, licenseKey?: string): string | null {
   switch (productId) {
     case "pocketerpide":  return "/pocket";
-    case "finanserpide":  return "https://finans.erpide.com/giris";
+    case "finanserpide":  return licenseKey
+      ? `https://finans.erpide.com/lisans?key=${encodeURIComponent(licenseKey)}`
+      : "https://finans.erpide.com/lisans";
     case "captchaerpide": return "https://captcha.erpide.com/dashboard";
     default:              return null;
   }
+}
+
+/** API anahtarı/dashboard credential mantığı yalnızca CaptchaERPIDE için
+ *  geçerli (FinansERPIDE ve PocketERPIDE'da API key yok). "API anahtarın
+ *  hazırlanıyor" gibi mesajlar bu ürünlerde yanıltıcı. */
+function productNeedsApiCredentials(productId: string): boolean {
+  return productId === "captchaerpide";
 }
 
 /** Kalan süreyi locale'e göre formatla — i18n string'leri "{days}", "{hours}",
@@ -199,9 +212,16 @@ export default async function LisanslarimPage() {
                     )}
                     {(() => {
                       if (expired) return null;
-                      const url = lic.dashboardUrl || defaultAppUrl(lic.productId);
+                      const url = lic.dashboardUrl || defaultAppUrl(lic.productId, lic.licenseKey);
                       if (!url) return null;
                       const isExternal = url.startsWith("http");
+                      // FinansERPIDE için: lisans henüz tenant'a bağlanmadıysa
+                      // "Şirket Hesabımı Kur" — kullanıcı /lisans → /uye-ol
+                      // akışına yönlendirilir. Aksi halde "Uygulamayı Aç".
+                      const label =
+                        lic.productId === "pocketerpide" ? t("license.open_wallet")
+                        : lic.productId === "finanserpide" ? "Şirket Hesabımı Kur / Aç"
+                        : t("license.open_app");
                       return (
                         <Link
                           href={url}
@@ -209,7 +229,7 @@ export default async function LisanslarimPage() {
                           rel={isExternal ? "noopener noreferrer" : undefined}
                           className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition font-medium"
                         >
-                          {lic.productId === "pocketerpide" ? t("license.open_wallet") : t("license.open_app")}
+                          {label}
                           {isExternal ? <ExternalLink size={12} /> : null}
                         </Link>
                       );
@@ -258,8 +278,11 @@ export default async function LisanslarimPage() {
                   </div>
                 )}
 
-                {/* PROVISION FAILED — explain why no key is here */}
-                {!expired && !lic.apiKey && (
+                {/* PROVISION FAILED — only show for products that actually
+                    need API credentials (CaptchaERPIDE). FinansERPIDE and
+                    PocketERPIDE don't issue API keys, so this warning would
+                    be misleading there. */}
+                {!expired && !lic.apiKey && productNeedsApiCredentials(lic.productId) && (
                   <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
                     {t("license.api_pending").split(/\{contact_link\}/).map((part, idx, arr) => (
                       <span key={idx}>
@@ -269,6 +292,18 @@ export default async function LisanslarimPage() {
                         )}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {/* FinansERPIDE için yönlendirme ipucu — kullanıcı "Şirket
+                    Hesabımı Kur" akışına ne için yönlendirildiğini bilsin. */}
+                {!expired && lic.productId === "finanserpide" && (
+                  <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-200/90">
+                    <strong className="text-blue-300">İlk kez mi gidiyorsun?</strong> &quot;Şirket Hesabımı Kur&quot; tıkla,
+                    lisans kodun otomatik doğrulanacak. Sonra VKN + şirket
+                    bilgilerini girip yeni bir şifre belirleyeceksin (erpide.com
+                    şifrenden farklı). Hesap kurulduktan sonra aynı buton
+                    doğrudan FinansERPIDE&apos;i açar.
                   </div>
                 )}
 
