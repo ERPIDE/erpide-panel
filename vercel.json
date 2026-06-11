@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/renew-subscriptions",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/pocket-bill-reminder",
+      "schedule": "0 6 * * *"
     }
   ]
 }
