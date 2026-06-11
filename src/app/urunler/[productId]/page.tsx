@@ -476,6 +476,53 @@ function Inner({ productId }: { productId: string }) {
                       ))}
                     </div>
                   </section>
+
+                  {/* Desteklenen Tipler — 18 captcha çözümü */}
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-1">Desteklenen Captcha Tipleri</h2>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Native AI solver + CapMonster/2Captcha agregatör — tek API'den 18 farklı captcha çeşidi.
+                    </p>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[
+                        { name: "reCAPTCHA v2", desc: "Checkbox + invisible", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "reCAPTCHA v3", desc: "Score-based, action", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "reCAPTCHA Enterprise", desc: "Premium v2 Enterprise", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "hCaptcha", desc: "Cloudflare alternatifi", badge: "", color: "border-white/10 bg-white/[0.02]" },
+                        { name: "Cloudflare Turnstile", desc: "CF korumalı siteler", badge: "", color: "border-white/10 bg-white/[0.02]" },
+                        { name: "GeeTest", desc: "GT3 + GT4 slider/icon", badge: "", color: "border-white/10 bg-white/[0.02]" },
+                        { name: "AWS WAF", desc: "Amazon bot kontrolü", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "FunCaptcha / Arkose", desc: "Twitter/Roblox tarzı", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "DataDome", desc: "Slider — 2Captcha exclusive", badge: "YENİ", color: "border-green-500/30 bg-green-500/5" },
+                        { name: "Slider Captcha", desc: "Native solver — 100ms", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Rotate Captcha", desc: "Native — açı tahmini", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Jigsaw Puzzle", desc: "Native — parça yerleşimi", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Text Captcha", desc: "Native OCR + AI", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Math Captcha", desc: "Native — aritmetik", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Icon Captcha (3 tip)", desc: "Native — ikon seçme", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                        { name: "Odd-one-out", desc: "Native — farklı obje", badge: "NATIVE", color: "border-blue-500/30 bg-blue-500/5" },
+                      ].map((t) => (
+                        <div key={t.name} className={`rounded-xl border p-3 ${t.color} flex items-start justify-between gap-2`}>
+                          <div>
+                            <p className="text-sm font-semibold text-white">{t.name}</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">{t.desc}</p>
+                          </div>
+                          {t.badge && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                              t.badge === "YENİ" ? "bg-green-500/20 text-green-300" :
+                              t.badge === "NATIVE" ? "bg-blue-500/20 text-blue-300" :
+                              "bg-white/10 text-gray-400"
+                            }`}>{t.badge}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-4 leading-relaxed">
+                      <span className="text-blue-400 font-semibold">NATIVE</span> — kendi AI solver'ımız, en hızlı çözüm.{" "}
+                      <span className="text-green-400 font-semibold">YENİ</span> — 2026 Haziran güncellemesinde eklendi.{" "}
+                      Token-tabanlı captcha'lar (reCAPTCHA, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome) CapMonster veya 2Captcha key'leri üzerinden BYOK ile çözülür — kendi hesabınızı kullanabilir ya da bizim Pro/Enterprise planımıza dahil bakiyeden harcayabilirsiniz.
+                    </p>
+                  </section>
                 </>
               )}
 
