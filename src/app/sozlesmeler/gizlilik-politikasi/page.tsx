@@ -79,7 +79,21 @@ export default function Page() {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-white mt-8 mb-3">7. Değişiklikler</h2>
+        <h2 className="text-xl font-semibold text-white mt-8 mb-3" id="captchaerpide-extension">7. CaptchaERPIDE Tarayıcı Uzantısı</h2>
+        <p>Chrome / Edge / Brave tarayıcılarına yüklenebilen <strong>CaptchaERPIDE</strong> uzantısı için ek aydınlatma:</p>
+        <ul className="list-disc pl-6 space-y-2">
+          <li><strong>Saklanan veri:</strong> Yalnızca sizin sağladığınız <em>API anahtarı</em> ve <em>kullanım sayacı</em> (günlük/toplam çözüm sayısı) <code>chrome.storage.local</code> içinde saklanır — bu veri ERPİDE sunucularına gönderilmez, sadece cihazınızda kalır.</li>
+          <li><strong>Sunucuya gönderilen:</strong> Uzantı bir captcha tespit ettiğinde yalnızca şu bilgiler <code>captcha.erpide.com</code>'a gönderilir: captcha tipi (örn. reCAPTCHA v2), captcha'nın <em>sitekey</em> değeri, sayfa URL'si ve gerektiğinde User-Agent. <strong>Sayfa içeriği, form alanları, kişisel veriler veya başka herhangi bir veri sunucumuza gönderilmez.</strong></li>
+          <li><strong>İzinler:</strong> Uzantı yalnızca <code>storage</code>, <code>activeTab</code> ve <code>scripting</code> izinlerini ister. Hassas izinler (cookies, history, geolocation) istemez.</li>
+          <li><strong>Host izinleri:</strong> Yalnızca <code>https://captcha.erpide.com/*</code> adresine ağ erişimi vardır; başka hiçbir alan adına dış istek yapmaz.</li>
+          <li><strong>Yapay zeka ile çözüm:</strong> Captcha'lar ERPİDE'nin yapay zeka destekli çözüm motoru tarafından çözülür; üçüncü taraf agregatör (CapMonster, 2Captcha) yalnızca ihtiyaç halinde ve şeffaf şekilde kullanılır (BYOK opsiyonu mevcuttur).</li>
+          <li><strong>Çerez/Tracking:</strong> Uzantı reklam veya analitik amaçlı çerez yerleştirmez, ziyaret ettiğiniz siteleri loglamaz, anonim telemetri toplamaz.</li>
+          <li><strong>Kaynak kodu açıktır:</strong> Uzantı kaynak kodu <a href="https://github.com/ERPIDE/captcha-erpide-extension" target="_blank" rel="noopener" className="text-blue-400 hover:underline">github.com/ERPIDE/captcha-erpide-extension</a> adresinde herkese açıktır; denetlenebilir.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold text-white mt-8 mb-3">8. Değişiklikler</h2>
         <p>Bu politika güncellenebilir; önemli değişiklikler e-posta ile bildirilir.</p>
       </section>
     </LegalPageLayout>
