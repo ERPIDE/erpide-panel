@@ -4,6 +4,7 @@ import { getSku, getProductOfSku } from "@/lib/products";
 import { generateLicenseKey } from "@/lib/payments/license";
 import { createOrder, hasUsedTrialForSku, findUserById, type OrderItem } from "@/lib/auth/user-store";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
+import { sendTrialWelcomeEmail } from "@/lib/payments/email";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -108,6 +109,27 @@ export async function POST(req: Request) {
     isTrial: true,
     trialExpiresAt: expiresAt,
   });
+
+  // Welcome email — best-effort, başarısız olursa trial yine aktif kalır.
+  // Şu an sadece CaptchaERPIDE için anlamlı çünkü onun api key+docs CTA'sı
+  // var. Diğer ürünler trial verince burada productId switch eklenir.
+  if (product.id === "captchaerpide") {
+    try {
+      await sendTrialWelcomeEmail({
+        to: user.email,
+        buyerName: user.name || "Müşterimiz",
+        productName: `${product.name} — ${sku.name}`,
+        apiKey: item.apiKey,
+        apiBaseUrl: item.apiBaseUrl,
+        dashboardUrl: item.dashboardUrl,
+        trialExpiresAt: expiresAt,
+        trialDays: TRIAL_DAYS,
+        docsUrl: "https://captcha.erpide.com/docs-page",
+      });
+    } catch (e) {
+      console.warn("[trial-welcome-email] gönderilemedi:", e);
+    }
+  }
 
   return NextResponse.json({
     success: true,

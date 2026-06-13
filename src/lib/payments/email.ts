@@ -145,6 +145,103 @@ export async function sendRenewalFailedEmail(opts: {
  * Sadece autoRenewEnabled=false olan (veya cancelled) abonelikler için —
  * auto-renew açıksa zaten otomatik yenilenecek, spam atmaya gerek yok.
  */
+/**
+ * Trial başlatıldı — kullanıcıya hoş geldin maili. Şu an sadece
+ * CaptchaERPIDE için çağrılır; daha sonra diğer ürünler trial verirse
+ * burada productId switch'i ile özelleştirilir.
+ */
+export async function sendTrialWelcomeEmail(opts: {
+  to: string;
+  buyerName: string;
+  productName: string;
+  apiKey?: string;
+  apiBaseUrl?: string;
+  dashboardUrl?: string;
+  trialExpiresAt: string;
+  trialDays: number;
+  docsUrl?: string;
+}) {
+  const { to, buyerName, productName, apiKey, apiBaseUrl, dashboardUrl, trialExpiresAt, trialDays, docsUrl } = opts;
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[trial-welcome-email] RESEND_API_KEY tanımsız:", { to, productName });
+    return { skipped: true };
+  }
+
+  const expDate = new Date(trialExpiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  const dashUrl = dashboardUrl || "https://captcha.erpide.com/dashboard";
+  const docsLink = docsUrl || "https://captcha.erpide.com/docs-page";
+  const baseUrl = apiBaseUrl || "https://captcha.erpide.com/api/v1";
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif">
+<table cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;margin:0 auto;background-color:#ffffff">
+<tr><td>${emailHeader}</td></tr>
+<tr><td style="padding:32px">
+  <h1 style="font-size:24px;color:#0f172a;margin:0 0 8px">🎉 Hoş geldin ${buyerName}!</h1>
+  <p style="font-size:15px;color:#6b7280;margin:0 0 24px">
+    <strong>${productName}</strong> deneme sürümün başladı — <strong>${trialDays} gün boyunca</strong> tüm özellikler açık.
+    Deneme süresi <strong>${expDate}</strong> tarihinde sona erer.
+  </p>
+
+  ${apiKey ? `
+  <div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:20px;margin:24px 0">
+    <p style="font-size:11px;color:#94a3b8;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px">API Anahtarın</p>
+    <p style="font-family:'Courier New',monospace;font-size:13px;color:#10b981;margin:0;word-break:break-all">${apiKey}</p>
+    <p style="font-size:11px;color:#94a3b8;margin:12px 0 0">Base URL: <span style="color:#cbd5e1">${baseUrl}</span></p>
+  </div>
+  ` : ""}
+
+  <table cellpadding="0" cellspacing="0" style="width:100%;margin:24px 0">
+    <tr>
+      <td style="width:50%;padding-right:8px;vertical-align:top">
+        <a href="${dashUrl}" style="display:block;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#ffffff;text-decoration:none;padding:14px 16px;border-radius:10px;font-weight:600;font-size:14px;text-align:center">📊 Panele Git</a>
+      </td>
+      <td style="width:50%;padding-left:8px;vertical-align:top">
+        <a href="${docsLink}" style="display:block;background:#f3f4f6;color:#0f172a;text-decoration:none;padding:14px 16px;border-radius:10px;font-weight:600;font-size:14px;text-align:center;border:1px solid #e5e7eb">📖 API Dokümanı</a>
+      </td>
+    </tr>
+  </table>
+
+  <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin:24px 0">
+    <p style="font-size:14px;color:#92400e;margin:0 0 8px;font-weight:600">⚡ Hızlı Başlangıç (3 adım)</p>
+    <p style="font-size:13px;color:#78350f;margin:0;line-height:1.7">
+      1. Üstteki <strong>Panele Git</strong> ile dashboard'ı aç<br>
+      2. <strong>API Dokümanı</strong>'ndan ihtiyacın olan captcha tipini bul (hCaptcha, Turnstile, reCAPTCHA, ...)<br>
+      3. cURL veya Python örneğini kopyala, API key'ini koy, dene
+    </p>
+  </div>
+
+  <p style="font-size:14px;color:#374151;line-height:1.6;margin:24px 0 8px"><strong>Deneme süresi ne yapar?</strong></p>
+  <ul style="font-size:13px;color:#6b7280;line-height:1.8;margin:0 0 24px;padding-left:20px">
+    <li>3 gün boyunca tüm 24 captcha tipini test edebilirsin</li>
+    <li>Günde 1.000 çözüm hakkın var (Pro plan = 10.000/gün)</li>
+    <li>Süre bitince API otomatik durur — verilerin saklanır, devam etmek için plan satın al</li>
+  </ul>
+
+  <div style="text-align:center;margin:24px 0">
+    <a href="https://erpide.com/urunler/captchaerpide" style="display:inline-block;color:#3b82f6;text-decoration:none;font-size:13px;font-weight:600">Süresi bitmeden plan satın al →</a>
+  </div>
+
+  <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:32px 0 0">
+    Soru/öneri için <a href="mailto:destek@erpide.com" style="color:#3b82f6;text-decoration:none">destek@erpide.com</a>.
+  </p>
+  ${emailSignature}
+</td></tr>
+<tr><td>${emailFooter}</td></tr>
+</table></body></html>`;
+
+  const result = await resend.emails.send({
+    from: FROM,
+    to,
+    bcc: INTERNAL_BCC,
+    subject: `🎉 ${productName} denemen başladı — ${trialDays} gün`,
+    html,
+  });
+  return result;
+}
+
+
 export async function sendExpiringSoonEmail(opts: {
   to: string;
   buyerName: string;
