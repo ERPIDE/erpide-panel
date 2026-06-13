@@ -140,6 +140,11 @@ export default function VapiWidget() {
               ))
             )}
           </div>
+          {/* KVKK bilgilendirme — her görüşme öncesi gözüksün */}
+          <div className="px-3 py-2 border-t border-white/5 text-[10px] text-gray-500 leading-relaxed">
+            🤖 Eylül bir <strong>AI asistandır</strong>. Görüşme KVKK gereği kayıt altına alınır.{" "}
+            <a href="/sozlesmeler/cagri-kayit" target="_blank" rel="noopener" className="text-purple-300 hover:underline">Aydınlatma metni →</a>
+          </div>
           {status === "active" && (
             <button
               onClick={stopCall}
