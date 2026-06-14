@@ -579,6 +579,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "footer.cat_ai": "AI Credits",
     "footer.cat_enterprise": "Enterprise ERP",
 
+    // Homepage Services section
+    "services.demo_quote": "Demo + Get Quote",
+    "services.monthly": "Monthly",
+    "services.from_price_suffix": " from",
+    "services.consulting_title": "Consulting & Services",
+    "services.consulting_subtitle": "CANIAS, 1C and custom software projects — request a quote.",
+
     // Mobile store / app card
     "mobile.app_heading": "Mobile App",
     "mobile.app_only_desc": "Only downloadable through App Store and Google Play. No desktop installation.",
@@ -1168,6 +1175,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "footer.cat_ai": "AI Kontör",
     "footer.cat_enterprise": "Kurumsal ERP",
 
+    // Anasayfa Hizmetler bölümü
+    "services.demo_quote": "Demo + Teklif Al",
+    "services.monthly": "Aylık",
+    "services.from_price_suffix": "'dan",
+    "services.consulting_title": "Danışmanlık ve Hizmetler",
+    "services.consulting_subtitle": "CANIAS, 1C ve özel yazılım projeleri — teklif isteyin.",
+
     // Mobil mağaza / app kartı
     "mobile.app_heading": "Mobil Uygulama",
     "mobile.app_only_desc": "Sadece App Store ve Google Play üzerinden indirilir. Masaüstüne kurulum yok.",
@@ -1755,6 +1769,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "footer.cat_ai": "AI-кредиты",
     "footer.cat_enterprise": "Корпоративная ERP",
 
+    // Главная — раздел Услуг
+    "services.demo_quote": "Демо + Запросить цену",
+    "services.monthly": "Ежемесячно",
+    "services.from_price_suffix": " от",
+    "services.consulting_title": "Консалтинг и услуги",
+    "services.consulting_subtitle": "CANIAS, 1C и индивидуальные программные проекты — запросите цену.",
+
     // Мобильное приложение / карточка магазина
     "mobile.app_heading": "Мобильное приложение",
     "mobile.app_only_desc": "Загружается только через App Store и Google Play. Установка на десктоп невозможна.",
@@ -2341,6 +2362,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     "footer.cat_mobile": "Мобильді қосымшалар",
     "footer.cat_ai": "AI несиелері",
     "footer.cat_enterprise": "Корпоративтік ERP",
+
+    // Басты бет — Қызметтер бөлімі
+    "services.demo_quote": "Демо + Баға сұрау",
+    "services.monthly": "Ай сайын",
+    "services.from_price_suffix": " бастап",
+    "services.consulting_title": "Кеңес беру және қызметтер",
+    "services.consulting_subtitle": "CANIAS, 1C және арнайы бағдарламалық жобалар — баға сұраңыз.",
 
     // Мобильді қосымша / дүкен карточкасы
     "mobile.app_heading": "Мобильді қосымша",

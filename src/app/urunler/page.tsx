@@ -6,6 +6,7 @@ import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone, Apple,
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PRODUCTS, CATEGORIES, getProductText, type ProductCategory, type Product } from "@/lib/products";
+import { MarketScopeBadge } from "@/components/ProductBadges";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
 
@@ -137,32 +138,6 @@ export default function UrunlerPage() {
   );
 }
 
-function MarketScopeBadge({
-  scope, t,
-}: {
-  scope: "TR" | "GLOBAL";
-  t: (key: string) => string;
-}) {
-  if (scope === "TR") {
-    return (
-      <span
-        className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-500/15 text-red-300 border border-red-500/30 inline-flex items-center gap-1"
-        title={t("products.tr_scope_tooltip")}
-      >
-        🇹🇷 {t("products.tr_scope_badge")}
-      </span>
-    );
-  }
-  return (
-    <span
-      className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1"
-      title={t("products.global_scope_tooltip")}
-    >
-      🌍 {t("products.global_scope_badge")}
-    </span>
-  );
-}
-
 function FilterChip({
   active, onClick, Icon, label,
 }: {
@@ -219,7 +194,7 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
                             {t("products.beta_badge")}
                           </span>
                         )}
-                        <MarketScopeBadge scope={product.marketScope} t={t} />
+                        <MarketScopeBadge scope={product.marketScope} />
                       </div>
                       <p className="text-blue-400 text-sm mb-2">{getProductText(product, locale, "tagline")}</p>
                       <p className="text-gray-400 text-sm max-w-3xl leading-relaxed">{getProductText(product, locale, "description")}</p>

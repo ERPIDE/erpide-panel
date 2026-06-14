@@ -3,11 +3,19 @@ import { motion } from "framer-motion";
 import { Settings, Database, Code2, Rocket, Headset, GraduationCap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
-import { PRODUCTS } from "@/lib/products";
+import { PRODUCTS, getProductText } from "@/lib/products";
 import { priceFor, formatPrice } from "@/lib/currency";
+import { MarketScopeBadge, BetaBadge } from "@/components/ProductBadges";
 
+/**
+ * Anasayfanın "Ürünlerimiz" + "Hizmetlerimiz" bölümü.
+ *
+ * Ürün kartları PRODUCTS (tek katalog) + getProductText (locale-aware) ile —
+ * yani products.ts'a yapılan TÜM çeviri/içerik değişikliği burada da
+ * otomatik yansır. /urunler liste sayfasıyla aynı kaynak.
+ */
 export default function Services() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const services = [
     { icon: Settings, titleKey: "svc.canias.title", descKey: "svc.canias.desc" },
@@ -43,26 +51,31 @@ export default function Services() {
                 whileHover={{ y: -5 }}
                 className="p-8 rounded-2xl bg-[#111118] border border-blue-500/30 hover:border-blue-400/60 transition group relative"
               >
-                {p.comingSoon && (
-                  <span className="absolute top-6 right-6 text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
-                    BETA
-                  </span>
-                )}
+                <div className="absolute top-6 right-6 flex items-center gap-1.5">
+                  {p.comingSoon && <BetaBadge />}
+                </div>
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-5`}>
                   <Icon size={28} className="text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">{p.name}</h3>
-                <p className="text-blue-400 text-sm mb-2">{p.tagline}</p>
-                <p className="text-gray-400 text-sm leading-relaxed mb-5">{p.description}</p>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <h3 className="text-2xl font-bold text-white">{getProductText(p, locale, "name")}</h3>
+                  <MarketScopeBadge scope={p.marketScope} />
+                </div>
+                <p className="text-blue-400 text-sm mb-2">{getProductText(p, locale, "tagline")}</p>
+                <p className="text-gray-400 text-sm leading-relaxed mb-5">{getProductText(p, locale, "description")}</p>
                 <div className="flex items-baseline gap-2 mb-5">
                   {p.contactOnly || !p.skus[0] ? (
-                    <span className="text-sm font-semibold text-blue-400">Demo + Teklif Al</span>
+                    <span className="text-sm font-semibold text-blue-400">{t("services.demo_quote")}</span>
                   ) : (
                     <>
-                      <span className="text-xs text-gray-500">Aylık</span>
+                      <span className="text-xs text-gray-500">{t("services.monthly")}</span>
                       {(() => {
                         const { price, currency } = priceFor(p.skus[0], "USD");
-                        return <span className="text-xl font-bold text-white">{formatPrice(price, currency, { short: true })}&apos;dan</span>;
+                        return (
+                          <span className="text-xl font-bold text-white">
+                            {formatPrice(price, currency, { short: true })}{t("services.from_price_suffix")}
+                          </span>
+                        );
                       })()}
                     </>
                   )}
@@ -80,9 +93,9 @@ export default function Services() {
 
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">
-            <span className="gradient-text">Danışmanlık ve Hizmetler</span>
+            <span className="gradient-text">{t("services.consulting_title")}</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">CANIAS, 1C ve özel yazılım projeleri — teklif isteyin.</p>
+          <p className="text-gray-400 max-w-2xl mx-auto">{t("services.consulting_subtitle")}</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
