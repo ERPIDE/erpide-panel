@@ -1,14 +1,69 @@
-import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, type LucideIcon } from "lucide-react";
+import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, Database, MessageCircle, type LucideIcon } from "lucide-react";
 
 export type ProductId =
   | "finanserpide"
   | "captchaerpide"
   | "ai-kontor"
   | "pocketerpide"
+  | "lingoapp"
   | "1c-erp"
-  | "1c-drive";
+  | "1c-drive"
+  | "canias";
 export type BillingCycle = "monthly" | "yearly";
 export type Currency = "TRY" | "USD";
+
+/**
+ * Urun kategorisi — site genelinde (urunler sayfasi, navbar dropdown, footer)
+ * tutarli gruplandirma icin. Tek kaynak burasi; degisiklik yaparsan
+ * `CATEGORIES` sabit listesini de guncelle.
+ *
+ *   "web"                  → Tarayicidan erisilen SaaS (FinansERPIDE, CaptchaERPIDE)
+ *   "mobile"               → Mobil mağaza uygulamalari (PocketERPIDE, LingoApp)
+ *   "desktop-enterprise"   → Distributoru oldugumuz kurumsal cozumler
+ *                            (1C:Drive, 1C:ERP, CANIAS — bayilik, proje bazli kurulum)
+ *   "ai-credits"           → Diger urunlerin AI'sini besleyen kontor paketleri
+ */
+export type ProductCategory = "web" | "mobile" | "desktop-enterprise" | "ai-credits";
+
+export const CATEGORIES: {
+  id: ProductCategory;
+  /** Türkçe etiket — UI'da gösterilir */
+  label: string;
+  /** İngilizce etiket — locale="en" iken */
+  labelEn: string;
+  /** Kısa açıklama (kategori başlığı altında) */
+  subtitle: string;
+  subtitleEn: string;
+}[] = [
+  {
+    id: "web",
+    label: "Web Uygulamaları",
+    labelEn: "Web Apps",
+    subtitle: "Tarayıcıdan eriş, abonelikle çalışan SaaS ürünlerimiz",
+    subtitleEn: "Browser-based SaaS — subscribe and use instantly",
+  },
+  {
+    id: "mobile",
+    label: "Mobil Uygulamalar",
+    labelEn: "Mobile Apps",
+    subtitle: "App Store ve Google Play'den indirilen, telefonda kullanılan uygulamalarımız",
+    subtitleEn: "Download from App Store & Google Play",
+  },
+  {
+    id: "ai-credits",
+    label: "AI Kontör",
+    labelEn: "AI Credits",
+    subtitle: "Uygulamalarımızın AI asistanları için ek mesaj paketi",
+    subtitleEn: "Top-up credits for the AI assistants in our apps",
+  },
+  {
+    id: "desktop-enterprise",
+    label: "Kurumsal ERP (Distribütör)",
+    labelEn: "Enterprise ERP (Distributor)",
+    subtitle: "Distribütörü olduğumuz, proje bazlı kurulan kurumsal çözümler",
+    subtitleEn: "Enterprise platforms we distribute — project-based onboarding",
+  },
+];
 
 /**
  * SKU.kind — sepetin "Plan Konfigüratörü" UI'ında SKU'ları nasıl gruplayacağı:
@@ -58,6 +113,8 @@ export interface Product {
   icon: LucideIcon;
   color: string;
   domain: string;
+  /** Hangi kategoride listelenir (site genelinde). */
+  category: ProductCategory;
   comingSoon?: boolean;
   /** When true, no public price tiers — buyer talks to sales (AI call center
    *  + WhatsApp). Skus can stay empty. */
@@ -71,6 +128,21 @@ export interface Product {
   /** Optional official product page (external — e.g. 1ci.com). Shown as
    *  "Resmi Üretici Sayfası" button alongside demoUrl. */
   officialUrl?: string;
+
+  // ----- Mobil mağaza alanları (sadece category="mobile") -----
+  /** Apple App Store link (canlı satışta veya TestFlight) */
+  iosAppStoreUrl?: string;
+  /** Google Play Store link */
+  androidPlayStoreUrl?: string;
+  /** Chrome Web Store (uzantı/eklenti) */
+  chromeWebStoreUrl?: string;
+  /** TestFlight public link — mağazada henüz değilse */
+  testFlightUrl?: string;
+  /** Doğrudan APK indirme linki (Play Store dışı dağıtım, geçici) */
+  apkDirectUrl?: string;
+  /** Mobil uygulamalar için: masaüstünden indirme DEVRE DIŞI (QR kod göster). */
+  mobileOnlyDownload?: boolean;
+
   skus: SKU[];
 }
 
@@ -86,6 +158,7 @@ export const PRODUCTS: Product[] = [
     icon: Briefcase,
     color: "from-orange-500 to-pink-600",
     domain: "finans.erpide.com",
+    category: "web",
     comingSoon: true,
     skus: [
       {
@@ -216,6 +289,7 @@ export const PRODUCTS: Product[] = [
     icon: Shield,
     color: "from-green-600 to-teal-600",
     domain: "captcha.erpide.com",
+    category: "web",
     skus: [
       {
         id: "captchaerpide-starter-monthly",
@@ -285,6 +359,7 @@ export const PRODUCTS: Product[] = [
     icon: Sparkles,
     color: "from-amber-500 to-orange-600",
     domain: "finans.erpide.com",
+    category: "ai-credits",
     // Her AI mesaji Claude API'de gercek dolar yakar; ucretsiz deneme verirsek
     // 3 gunde binlerce mesaj atilip bizi zarara sokabilirler. Sadece aktif
     // FinansERPIDE plani olan musteriler sepete ekleyebilir (aiKontorBlocked).
@@ -376,7 +451,12 @@ export const PRODUCTS: Product[] = [
     icon: Wallet,
     color: "from-pink-500 to-rose-600",
     domain: "pocket.erpide.com",
+    category: "mobile",
     comingSoon: true,
+    // Mobil store linkleri henuz canlida degil — hazirlaninca buraya yazilacak.
+    // iosAppStoreUrl: "https://apps.apple.com/app/pocketerpide/idXXXXXXXXXX",
+    // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.erpide.pocketerpide",
+    mobileOnlyDownload: true,
     skus: [
       {
         id: "pocketerpide-personal-monthly",
@@ -413,6 +493,7 @@ export const PRODUCTS: Product[] = [
     icon: Boxes,
     color: "from-indigo-600 to-blue-700",
     domain: "1c-erp.erpide.com",
+    category: "desktop-enterprise",
     contactOnly: true,
     demoUrl: "https://app902777.1capp.net/ERPWEDemo/en_US/",
     officialUrl: "https://www.1ci.com/applications/1c-erp/",
@@ -429,10 +510,49 @@ export const PRODUCTS: Product[] = [
     icon: Truck,
     color: "from-cyan-600 to-teal-600",
     domain: "1c-drive.erpide.com",
+    category: "desktop-enterprise",
     contactOnly: true,
     // Önceki demoUrl (app.1c-demo.de) cevap vermiyor — 1ci.com sayfasını yönlendir.
     demoUrl: "https://drive-lite.1ci.com/",
     officialUrl: "https://www.1ci.com/applications/1c-drive/",
+    skus: [],
+  },
+  {
+    id: "canias",
+    name: "CANIAS ERP",
+    tagline: "Türkiye'nin En Köklü Endüstriyel ERP'lerinden Biri",
+    description:
+      "CANIAS ERP; orta-büyük ölçekli üretim ve dağıtım şirketleri için tüm operasyonel süreçleri (MRP, üretim, satınalma, depo, satış, finans, IK) tek platformda yöneten Türk üretimi kurumsal ERP. ERPIDE; bayilik, danışmanlık, kurulum, özelleştirme ve canlı destek hizmetleri sunar.",
+    longDescription:
+      "CANIAS; 25+ yıllık Türk ERP markası IAS'in geliştirdiği endüstriyel ERP. Kendi düşük-kod platformu (TROIA) sayesinde yoğun özelleştirme yapan üretim firmalarının ilk tercihi. Ana modüller: Malzeme/Stok, Üretim Planlama (MRP/MRP II), Üretim Yürütme, Satınalma, Satış, Depo, Finans, Maliyet, IK/Bordro, Kalite. Çok şirketli, çok dilli, çok para birimli. Kurulum tipik 6-18 ay proje süresi alır. ERPIDE; lisanslama, gap-analiz, TROIA özelleştirme, BPM iş akışları (örn. satınalma onayı), Logo/diğer sistem entegrasyonu, canlı destek paketleri sunar.",
+    icon: Database,
+    color: "from-slate-600 to-zinc-700",
+    domain: "canias.erpide.com",
+    category: "desktop-enterprise",
+    contactOnly: true,
+    officialUrl: "https://www.caniaserp.com/",
+    skus: [],
+  },
+  {
+    id: "lingoapp",
+    name: "LingoApp",
+    tagline: "Çift Dilli Çeviri-Chat — Sen TR Yaz, O RU Görsün",
+    description:
+      "WhatsApp tarzı sohbet uygulaması, ama her kullanıcı kendi dilinde yazıp kendi dilinde okur. Mesajlar anlık çevrilir. Sesli arama içinde de canlı altyazı. 60+ dil destekli, uçtan uca şifreli, KVKK/GDPR uyumlu.",
+    longDescription:
+      "LingoApp; iki kişinin her birinin kendi dilinde yazıp kendi dilinde okuduğu, çevirinin tamamen otomatik yapıldığı modern sohbet uygulaması. Sen Türkçe yazarsın, karşıdaki Rusça görür; o Rusça yazar, sen Türkçe görürsün. Telefon numarası veya gizli kod ile sohbet. Mesajlar uçtan uca şifreli (ECDH/Curve25519); sunucu sadece şifreli veriye bakar. Sesli/görüntülü arama içinde de canlı çeviri altyazı çıkar. 60+ dil destekli. Mağazadan indir, App Store/Google Play üzerinden ücreti öde — web/masaüstüne kurulum yok.",
+    icon: MessageCircle,
+    color: "from-blue-600 to-sky-500",
+    domain: "lingoapp.erpide.com",
+    category: "mobile",
+    comingSoon: true,
+    // iOS TestFlight beta review aşamasında (2026-06-13 itibarıyla pending). Onaylanınca
+    // public link aktif; o zamana kadar internal-only. Henüz App Store CANLI satışta değil.
+    testFlightUrl: "https://testflight.apple.com/join/3S1JyZuU",
+    // Android: APK preview build var ama Play Store yayını ERPIDE A.Ş. organizasyon hesabına
+    // geçiş sonrasına bırakıldı. Yayınlanınca buraya store link gelir.
+    // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.erpide.lingoapp",
+    mobileOnlyDownload: true,
     skus: [],
   },
 ];
@@ -451,4 +571,9 @@ export function getSku(id: string): SKU | undefined {
 
 export function getProductOfSku(skuId: string): Product | undefined {
   return PRODUCTS.find((p) => p.skus.some((s) => s.id === skuId));
+}
+
+/** Verilen kategoriye ait urunleri PRODUCTS listesindeki orijinal sirayla doner. */
+export function getProductsByCategory(cat: ProductCategory): Product[] {
+  return PRODUCTS.filter((p) => p.category === cat);
 }

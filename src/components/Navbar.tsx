@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, Shield, ShoppingBag } from "lucide-react";
+import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, Shield, ShoppingBag, MessageCircle } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 import { useCart } from "./CartProvider";
@@ -123,9 +123,9 @@ export default function Navbar() {
                 <span className="hidden xl:inline text-xs">Uygulamalar</span>
               </button>
               {appsOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[280px] z-50">
-                  <div className="px-4 py-3 border-b border-white/5">
-                    <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Uygulamalarım</p>
+                <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[300px] z-50">
+                  <div className="px-4 py-2.5 border-b border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Web Uygulamaları</p>
                   </div>
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-blue-400" />}
@@ -149,6 +149,9 @@ export default function Navbar() {
                     trialEligible={!trialedProducts.includes("captchaerpide")}
                     onClose={() => setAppsOpen(false)}
                   />
+                  <div className="px-4 py-2.5 border-y border-white/5 mt-1">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Mobil Uygulamalar</p>
+                  </div>
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-pink-400" />}
                     name="PocketERPIDE"
@@ -156,6 +159,14 @@ export default function Navbar() {
                     state={appStates.pocketerpide}
                     appUrl="/pocket"
                     buyUrl="/urunler/pocketerpide"
+                    onClose={() => setAppsOpen(false)}
+                  />
+                  <AppLauncherItem
+                    icon={<MessageCircle size={18} className="text-sky-400" />}
+                    name="LingoApp"
+                    desc="Çeviri-chat: kendi dilinde yaz/oku"
+                    state="none"
+                    buyUrl="/urunler/lingoapp"
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="border-t border-white/5">
@@ -312,7 +323,10 @@ function AppLauncherItem({
   name: string;
   desc: string;
   state: "active" | "expired" | "none";
-  appUrl: string;
+  /** Aktif/expired durumlarda gidilecek uygulama URL'i. State="none" iken
+   *  zorunlu değil (kullanılmaz — kullanıcı buyUrl'e gider). Mobil mağaza
+   *  ürünleri için boş bırakılabilir. */
+  appUrl?: string;
   buyUrl: string;
   onClose: () => void;
   /** Bu ürün için trial başlatılabilecek SKU id'si. Yoksa trial CTA gösterilmez. */
@@ -332,7 +346,7 @@ function AppLauncherItem({
       : "bg-amber-500/15 text-amber-300 border-amber-500/30";
     return (
       <a
-        href={appUrl}
+        href={appUrl || buyUrl}
         target="_blank"
         rel="noopener noreferrer"
         onClick={onClose}

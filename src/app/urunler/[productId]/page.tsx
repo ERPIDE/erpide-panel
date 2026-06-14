@@ -11,6 +11,7 @@ import { useCart } from "@/components/CartProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
 import FinansERPIDEConfigurator from "@/components/FinansERPIDEConfigurator";
+import MobileAppStoreCard from "@/components/MobileAppStoreCard";
 import { useTranslation } from "@/lib/i18n";
 
 // 1C ürünleri için lokalize özellik listeleri. Top-level sabit — render
@@ -211,6 +212,45 @@ function Inner({ productId }: { productId: string }) {
   }
 
   const Icon = product.icon;
+
+  // Mobil ürün + SKU yok ise (örn. LingoApp) → "mağazadan indir" view'i,
+  // SKU paneli yerine MobileAppStoreCard. comingSoon olsa bile bu view aktif.
+  if (product.category === "mobile" && product.skus.length === 0) {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-24 pb-20 px-6 min-h-screen">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/urunler" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6">
+              <ArrowLeft size={14} /> {featureLocale === "tr" ? "Ürünlere dön" : featureLocale === "ru" ? "К продуктам" : featureLocale === "kk" ? "Өнімдерге оралу" : "Back to products"}
+            </Link>
+            <div className="mb-8">
+              <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r ${product.color} text-white text-sm mb-4`}>
+                <Icon size={18} />
+                <span>{product.name}</span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{product.tagline}</h1>
+              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{product.description}</p>
+            </div>
+
+            <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+              <div>
+                {product.longDescription && (
+                  <section className="mb-8 p-6 rounded-2xl bg-[#111118] border border-white/5">
+                    <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{product.longDescription}</p>
+                  </section>
+                )}
+              </div>
+              <aside className="lg:sticky lg:top-24 h-fit">
+                <MobileAppStoreCard product={product} />
+              </aside>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   // 1C ürünleri (1c-erp, 1c-drive) için contactOnly view — Plan/SKU/Sepete Ekle akışı YOK.
   // Sadece tanıtım + özellikler + demo + iletişim CTA. Diğer ürünler (skus dolu) standart akıştan geçer.
@@ -721,7 +761,14 @@ function Inner({ productId }: { productId: string }) {
               </ul>
             </motion.div>
 
-            <motion.aside initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:sticky lg:top-24 h-fit">
+            <motion.aside initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:sticky lg:top-24 h-fit space-y-4">
+              {/* Mobil ürünlerde sticky aside'in üstüne mağaza indirme kartı:
+                  satin alma flow'u Apple/Google ödemesine yonlendirir, panel
+                  sepetinden satilmaz. SKU paneli yine asagida feature listesi
+                  icin durabilir, ama CTA mağazadir. */}
+              {product.category === "mobile" && (
+                <MobileAppStoreCard product={product} />
+              )}
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Seçtiğin plan</p>
                 <h3 className="text-xl font-bold text-white mb-1">{product.name} {currentSku.name}</h3>

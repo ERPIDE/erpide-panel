@@ -1,22 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone, Apple, Smartphone, LayoutGrid } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PRODUCTS } from "@/lib/products";
+import { PRODUCTS, CATEGORIES, type ProductCategory, type Product } from "@/lib/products";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
 
+type FilterTab = "all" | ProductCategory;
+
+const CATEGORY_ICON: Record<ProductCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+  web: Sparkles,
+  mobile: Smartphone,
+  "desktop-enterprise": Apple,
+  "ai-credits": Sparkles,
+};
+
 export default function UrunlerPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [trialedProducts, setTrialedProducts] = useState<Set<string>>(new Set());
   const [activeSkuByProduct, setActiveSkuByProduct] = useState<Record<string, string>>({});
   const [lastSkuByProduct, setLastSkuByProduct] = useState<Record<string, string>>({});
   const [appStates, setAppStates] = useState<Record<string, "active" | "expired" | "none">>({});
+  const [filter, setFilter] = useState<FilterTab>("all");
 
   useEffect(() => {
+    // URL'de ?kategori=mobile gibi parametre varsa onu aç (Navbar dropdown'dan
+    // gelinince doğrudan ilgili kategoriye scroll edilir hissi)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get("kategori") as ProductCategory | null;
+      if (cat && CATEGORIES.some((c) => c.id === cat)) setFilter(cat);
+    }
     fetch("/api/shop/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
@@ -28,6 +45,17 @@ export default function UrunlerPage() {
       .catch(() => {});
   }, []);
 
+  // Kategoriye göre gruplandirilmis urunler (filter="all" iken hepsi)
+  const visibleCategories = useMemo(() => {
+    return CATEGORIES
+      .map((cat) => ({
+        cat,
+        products: PRODUCTS.filter((p) => p.category === cat.id),
+      }))
+      .filter((g) => g.products.length > 0)
+      .filter((g) => filter === "all" || g.cat.id === filter);
+  }, [filter]);
+
   return (
     <>
       <Navbar />
@@ -36,7 +64,7 @@ export default function UrunlerPage() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
+            className="text-center mb-10"
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
               <span className="gradient-text">{t("products.title")}</span>
@@ -46,11 +74,105 @@ export default function UrunlerPage() {
             </p>
           </motion.div>
 
-          <div className="space-y-16">
-            {PRODUCTS.map((product) => {
-              const Icon = product.icon;
-              const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
+          {/* Kategori filtre sekmesi */}
+          <div className="flex items-center justify-center gap-2 flex-wrap mb-12">
+            <FilterChip
+              active={filter === "all"}
+              onClick={() => setFilter("all")}
+              Icon={LayoutGrid}
+              label={locale === "en" ? "All" : locale === "ru" ? "Все" : locale === "kk" ? "Барлығы" : "Tümü"}
+            />
+            {CATEGORIES.filter((c) => PRODUCTS.some((p) => p.category === c.id)).map((c) => {
+              const Icon = CATEGORY_ICON[c.id];
               return (
+                <FilterChip
+                  key={c.id}
+                  active={filter === c.id}
+                  onClick={() => setFilter(c.id)}
+                  Icon={Icon}
+                  label={locale === "en" ? c.labelEn : c.label}
+                />
+              );
+            })}
+          </div>
+
+          <div className="space-y-20">
+            {visibleCategories.map(({ cat, products }) => (
+              <section key={cat.id} id={`kategori-${cat.id}`} className="scroll-mt-24">
+                <header className="mb-8 border-l-4 border-blue-500/40 pl-4">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">
+                    {locale === "en" ? cat.labelEn : cat.label}
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {locale === "en" ? cat.subtitleEn : cat.subtitle}
+                  </p>
+                </header>
+
+                <div className="space-y-14">
+                  {products.map((product) => {
+                    const Icon = product.icon;
+                    const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
+                    return (
+                      <ProductBlock
+                        key={product.id}
+                        product={product}
+                        Icon={Icon}
+                        visibleSkus={visibleSkus}
+                        trialedProducts={trialedProducts}
+                        activeSkuByProduct={activeSkuByProduct}
+                        lastSkuByProduct={lastSkuByProduct}
+                        appStates={appStates}
+                        t={t}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+function FilterChip({
+  active, onClick, Icon, label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
+        active
+          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/20"
+          : "border border-white/10 text-gray-300 hover:bg-white/5 hover:border-white/30"
+      }`}
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  );
+}
+
+type ProductBlockProps = {
+  product: Product;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  visibleSkus: Product["skus"];
+  trialedProducts: Set<string>;
+  activeSkuByProduct: Record<string, string>;
+  lastSkuByProduct: Record<string, string>;
+  appStates: Record<string, "active" | "expired" | "none">;
+  t: (key: string) => string;
+};
+
+function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
+  return (
                 <motion.section
                   key={product.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -201,13 +323,6 @@ export default function UrunlerPage() {
                   </div>
                   )}
                 </motion.section>
-              );
-            })}
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </>
   );
 }
 
