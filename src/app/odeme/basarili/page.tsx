@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { CheckCircle2, Mail, ArrowRight, ExternalLink } from "lucide-react";
+import { CheckCircle2, Mail, ArrowRight, ExternalLink, Sparkles, MessageSquare, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { findOrderById } from "@/lib/auth/user-store";
-import { getProductOfSku } from "@/lib/products";
+import { findOrderById, listOrdersByUserId } from "@/lib/auth/user-store";
+import { getProductOfSku, getSku } from "@/lib/products";
 import { getServerTranslations } from "@/lib/i18n-server";
 
 interface Props { searchParams: Promise<{ order?: string }> }
@@ -12,6 +12,27 @@ interface Props { searchParams: Promise<{ order?: string }> }
 async function Inner({ orderId }: { orderId?: string }) {
   const order = orderId ? await findOrderById(orderId) : null;
   const { t, dateLocale } = await getServerTranslations();
+
+  // Order'da AI Kontor paketi var mi + kullaninin aktif FinansERPIDE plani
+  // var mi? (Kontor tek basina ise yaramaz — Eylul'e gitmesi gerek)
+  const aiKontorItems = order ? order.items.filter((it) => it.productId === "ai-kontor") : [];
+  const otherItems = order ? order.items.filter((it) => it.productId !== "ai-kontor") : [];
+  const aiKontorTotal = aiKontorItems.reduce((s, it) => {
+    const sku = getSku(it.skuId);
+    return s + (sku?.creditsGranted ?? 0);
+  }, 0);
+
+  let hasActiveFinansERPIDE = false;
+  if (order && aiKontorItems.length > 0) {
+    const userOrders = await listOrdersByUserId(order.userId);
+    const now = Date.now();
+    hasActiveFinansERPIDE = userOrders.some(
+      (o) =>
+        o.status === "PAID" &&
+        o.items.some((i) => i.productId === "finanserpide") &&
+        (!o.subscriptionExpiresAt || new Date(o.subscriptionExpiresAt).getTime() > now)
+    );
+  }
 
   return (
     <main className="pt-32 pb-20 px-6 min-h-screen">
@@ -28,9 +49,54 @@ async function Inner({ orderId }: { orderId?: string }) {
           {t("payment.success_keys_sent")}
         </p>
 
-        {order && (
+        {/* AI Kontor banner — sadece order'da AI Kontor varsa */}
+        {aiKontorItems.length > 0 && (
+          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 via-[#111118] to-orange-500/10 border border-amber-500/30 text-left">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white flex-shrink-0">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h2 className="font-bold text-white text-lg">
+                  {aiKontorTotal.toLocaleString(dateLocale)} kontör hesabına işlendi
+                </h2>
+                <p className="text-sm text-gray-400 mt-0.5">
+                  Eylül (FinansERPIDE AI asistanı) artık bu kontörden harcayabilir.
+                </p>
+              </div>
+            </div>
+            {hasActiveFinansERPIDE ? (
+              <Link
+                href="https://finans.erpide.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition"
+              >
+                <MessageSquare size={16} /> Eylül ile Sohbete Dön <ExternalLink size={13} />
+              </Link>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/25 text-xs text-red-200 flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-red-300 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-red-100">Aktif FinansERPIDE planın yok.</strong> Kontörler hesabında bekliyor — Eylül&apos;ü kullanabilmen için önce bir FinansERPIDE planına ihtiyaç var. Kontörler kaybolmaz, plan alır almaz hazır.
+                  </div>
+                </div>
+                <Link
+                  href="/urunler/finanserpide"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition"
+                >
+                  FinansERPIDE Planı Al <ArrowRight size={16} />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Diger urunlerin license/credential listesi — AI Kontor zaten yukarida */}
+        {order && otherItems.length > 0 && (
           <div className="space-y-3 text-left mb-8">
-            {order.items.map((item, i) => {
+            {otherItems.map((item, i) => {
               const product = getProductOfSku(item.skuId);
               return (
                 <div key={i} className="p-5 rounded-2xl bg-[#111118] border border-blue-500/30">

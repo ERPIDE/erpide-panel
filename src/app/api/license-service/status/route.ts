@@ -70,6 +70,11 @@ interface ProductState {
   expiresAt: string | null;
   billingCycle: "monthly" | "yearly" | null;
   lastOrderId: string | null;
+  /** AI Kontör için: bugüne kadar satın alınan tüm aktif paketlerin TOPLAM kontörü */
+  creditsTotal?: number;
+  /** AI Kontör için: bugüne kadar tüketilmiş toplam kontör */
+  creditsConsumed?: number;
+  /** AI Kontör için: granted - consumed (UI bunu gösterir) */
   creditsRemaining?: number;
 }
 
@@ -196,14 +201,19 @@ export async function GET(req: Request) {
           s.modules = Array.from(mods);
         }
 
-        // AI Kontör için kalan kredi topla (basit toplam — gerçek sayım finanserpide tarafında)
+        // AI Kontör için: bu order'da satin alinan paketleri topla, sonra bu
+        // order'in kendi tuketim sayacini (creditsConsumed) cikar. Tum aktif
+        // order'lar toplanir; sonuc UI'ye gauge cubugu icin uygun.
         if (pid === "ai-kontor") {
-          let credits = s.creditsRemaining || 0;
+          let grantedThisOrder = 0;
           for (const it of items) {
             const sku = getSku(it.skuId);
-            if (sku?.creditsGranted) credits += sku.creditsGranted;
+            if (sku?.creditsGranted) grantedThisOrder += sku.creditsGranted;
           }
-          s.creditsRemaining = credits;
+          const consumedThisOrder = o.creditsConsumed ?? 0;
+          s.creditsTotal = (s.creditsTotal || 0) + grantedThisOrder;
+          s.creditsConsumed = (s.creditsConsumed || 0) + consumedThisOrder;
+          s.creditsRemaining = Math.max(0, (s.creditsTotal || 0) - (s.creditsConsumed || 0));
         }
       } else {
         // Expired — sadece status'u expired yap (önceki active'i ezme)

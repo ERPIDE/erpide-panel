@@ -62,6 +62,10 @@ export interface Product {
   /** When true, no public price tiers — buyer talks to sales (AI call center
    *  + WhatsApp). Skus can stay empty. */
   contactOnly?: boolean;
+  /** When true, "3 Gün Ücretsiz Dene" CTA is hidden and the trial start API
+   *  rejects with 403. Use for products where free usage would burn real cost
+   *  (e.g. AI credit packs hitting Claude API). */
+  noTrial?: boolean;
   /** Optional live demo URL. Shown as a "Demoyu İncele" button on the product card. */
   demoUrl?: string;
   /** Optional official product page (external — e.g. 1ci.com). Shown as
@@ -281,6 +285,10 @@ export const PRODUCTS: Product[] = [
     icon: Sparkles,
     color: "from-amber-500 to-orange-600",
     domain: "finans.erpide.com",
+    // Her AI mesaji Claude API'de gercek dolar yakar; ucretsiz deneme verirsek
+    // 3 gunde binlerce mesaj atilip bizi zarara sokabilirler. Sadece aktif
+    // FinansERPIDE plani olan musteriler sepete ekleyebilir (aiKontorBlocked).
+    noTrial: true,
     skus: [
       {
         id: "ai-kontor-500",

@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { Copy, ExternalLink, Clock, ShoppingCart, BookOpen, Key, Globe, Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { listOrdersByUserId, hasUsedTrialForSku } from "@/lib/auth/user-store";
-import { getProductOfSku } from "@/lib/products";
+import { getProductOfSku, getSku } from "@/lib/products";
 import QuickStartTabs from "@/components/account/QuickStartTabs";
 import AutoRenewToggle from "@/components/account/AutoRenewToggle";
 import CancelSubscriptionButton from "@/components/account/CancelSubscriptionButton";
 import QuickTrialCard from "@/components/account/QuickTrialCard";
+import AiKontorOverview from "@/components/account/AiKontorOverview";
 import { getServerTranslations } from "@/lib/i18n-server";
 
 // "Henüz lisansın yok" durumunda gösterilecek hızlı trial seçenekleri.
@@ -108,11 +109,39 @@ export default async function LisanslarimPage() {
   const { t, dateLocale } = await getServerTranslations();
   const orders = await listOrdersByUserId(session.userId!);
   const licenses: LicenseRow[] = [];
+  // AI Kontör paketleri "lisans" değil "bakiye"; sayfa basinda tek ozet kartta
+  // toplanir (AiKontorOverview), asagidaki lisans listesinde tekrar gosterilmez.
+  const aiKontorOrders: Array<{
+    orderId: string;
+    createdAt: string;
+    skuId: string;
+    skuName: string;
+    granted: number;
+    consumed: number;
+    expiresAt: string | null;
+  }> = [];
   const now = Date.now();
   for (const o of orders) {
     if (o.status === "PAID") {
       const expired = !!o.subscriptionExpiresAt && new Date(o.subscriptionExpiresAt).getTime() < now;
       for (const item of o.items) {
+        // AI Kontor paketleri overview kartina yaz, lisans listesinde gosterme.
+        if (item.productId === "ai-kontor") {
+          const sku = getSku(item.skuId);
+          aiKontorOrders.push({
+            orderId: o.id,
+            createdAt: o.createdAt,
+            skuId: item.skuId,
+            skuName: item.skuName,
+            granted: sku?.creditsGranted ?? 0,
+            // Order seviyesinde tek consumed sayaci — birden fazla item olabilir
+            // ama panelde uygulamada hep tek paket aliniyor; cogul olursa hepsi
+            // bu tek sayaci paylasir, ozet kartin toplami yine dogru.
+            consumed: o.creditsConsumed ?? 0,
+            expiresAt: o.subscriptionExpiresAt ?? null,
+          });
+          continue;
+        }
         licenses.push({
           orderId: o.id,
           productId: item.productId,
@@ -154,12 +183,30 @@ export default async function LisanslarimPage() {
     }
   }
 
+  // Aktif FinansERPIDE plani var mi? (Eylul AI butonunu acmak icin gerekli)
+  const hasActiveFinansERPIDE = licenses.some(
+    (l) => l.productId === "finanserpide" && l.kind === "paid-active"
+  );
+
   return (
     <>
       <h1 className="text-3xl font-bold mb-2"><span className="gradient-text">{t("sidebar.licenses")}</span></h1>
       <p className="text-gray-400 text-sm mb-8">{t("license.subtitle")}</p>
 
-      {licenses.length === 0 ? (
+      {aiKontorOrders.length > 0 && (
+        <div className="mb-6">
+          <AiKontorOverview
+            orders={aiKontorOrders}
+            hasActiveFinansERPIDE={hasActiveFinansERPIDE}
+            dateLocale={dateLocale}
+          />
+        </div>
+      )}
+
+      {licenses.length === 0 && aiKontorOrders.length === 0 ? (
+        <EmptyLicenses session={session} t={t} />
+      ) : licenses.length === 0 ? (
+        // Sadece AI Kontor var, baska lisans yok — yine ek dene CTA goster
         <EmptyLicenses session={session} t={t} />
       ) : (
         <div className="space-y-4">

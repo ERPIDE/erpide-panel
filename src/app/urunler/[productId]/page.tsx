@@ -758,7 +758,9 @@ function Inner({ productId }: { productId: string }) {
                   const hasAnyActivePlanForProduct = meReady && !!activeSkuOfThisProduct;
                   const isExpiredProduct = productAppState === "expired";
                   const isExpiredSelected = isExpiredProduct && lastSkuOfThisProduct === currentSku.id;
-                  const showTrial = meReady && !hasTrialedThisProduct && !hasAnyActivePlanForProduct && !isExpiredProduct;
+                  // noTrial urunlerde (AI Kontor) trial butonu HIC gosterilmez —
+                  // her mesaj gercek Claude $ yakar, ucretsiz deneme zarar yazar.
+                  const showTrial = meReady && !product.noTrial && !hasTrialedThisProduct && !hasAnyActivePlanForProduct && !isExpiredProduct;
 
                   const ctaLabel = isCurrentPlan
                     ? "Bu Plan Aktif"

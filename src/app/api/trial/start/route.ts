@@ -44,6 +44,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 });
   }
 
+  // noTrial: AI Kontör gibi her kullanımı gerçek $ yakan ürünlere trial
+  // verilmez. Kullanici UI'yi by-pass edip direkt POST atarsa burada kesilir.
+  if (product.noTrial) {
+    return NextResponse.json(
+      { error: "Bu ürün için ücretsiz deneme sunulmuyor. Lütfen bir paket satın alın." },
+      { status: 403 }
+    );
+  }
+
   // forceFresh: double-click veya stale-cache yarışı sonucu iki trial
   // oluşmasını engelle. Blob'tan kesin son state'i oku.
   const already = await hasUsedTrialForSku(session.userId, skuId, true);
