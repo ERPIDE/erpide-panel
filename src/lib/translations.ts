@@ -560,6 +560,44 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Clients
     "clients.title": "Our Clients",
     "clients.subtitle": "Companies that trust us for their digital transformation.",
+
+    // Market scope badges (TR-localized vs GLOBAL products)
+    "products.tr_scope_badge": "TR localized",
+    "products.tr_scope_tooltip": "Built for Türkiye's tax system (VAT, MUHSGK, e-Invoice, brüt-net payroll).",
+    "products.global_scope_badge": "Global",
+    "products.global_scope_tooltip": "Works worldwide — no country-specific localization.",
+
+    // Navbar
+    "nav.cat_web": "Web Apps",
+    "nav.cat_mobile": "Mobile Apps",
+    "nav.all_apps": "All apps",
+    "nav.my_apps": "My Apps",
+
+    // Mobile store / app card
+    "mobile.app_heading": "Mobile App",
+    "mobile.app_only_desc": "Only downloadable through App Store and Google Play. No desktop installation.",
+    "mobile.app_default_desc": "Download from App Store and Google Play, get started immediately.",
+    "mobile.stores_default_desc": "Download from stores, get started immediately.",
+    "mobile.details_and_links": "Details & download links →",
+    "mobile.coming_soon_title": "Coming soon to stores",
+    "mobile.coming_soon_desc": "{name} is currently in testing — it will be live on the App Store and Google Play after review.",
+    "mobile.coming_soon_long": "The app is currently in testing; this card activates after App Store and Google Play approval. {contact_link} if you want to be notified.",
+    "mobile.coming_soon_contact_link": "Use the contact form",
+    "mobile.download_from_store": "Download from store",
+    "mobile.btn_appstore": "Download on App Store",
+    "mobile.btn_appstore_sub": "iPhone & iPad",
+    "mobile.btn_googleplay": "Get it on Google Play",
+    "mobile.btn_googleplay_sub": "Android devices",
+    "mobile.btn_testflight": "Try with TestFlight (Beta)",
+    "mobile.btn_testflight_sub": "iOS — pending Apple review",
+    "mobile.btn_chrome": "Add from Chrome Web Store",
+    "mobile.btn_chrome_sub": "Browser extension",
+    "mobile.qr_alt": "{name} download QR code",
+    "mobile.qr_scan_strong": "Scan the QR code with your phone",
+    "mobile.qr_scan_desc": " to open the store.",
+    "mobile.qr_desktop_blocked": "This app cannot be installed on desktop.",
+    "mobile.desktop_disabled_note": "desktop download disabled",
+    "mobile.billing_note": "Billing and subscription happen via the store (Apple / Google / Chrome). Not charged from erpide.com cart.",
   },
 
   // ===================== TURKISH =====================
@@ -1105,6 +1143,44 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     "clients.title": "Müşterilerimiz",
     "clients.subtitle": "Dijital dönüşüm yolculuğunda bize güvenen şirketler.",
+
+    // Pazar kapsamı rozetleri (TR-lokalize vs GLOBAL ürünler)
+    "products.tr_scope_badge": "TR'ye Özel",
+    "products.tr_scope_tooltip": "Türkiye vergi sistemine özel yapıldı (KDV, MUHSGK, e-Fatura, brüt-net bordro).",
+    "products.global_scope_badge": "Global",
+    "products.global_scope_tooltip": "Dünya çapında çalışır — ülkeye özel lokalizasyon gerektirmez.",
+
+    // Navbar
+    "nav.cat_web": "Web Uygulamaları",
+    "nav.cat_mobile": "Mobil Uygulamalar",
+    "nav.all_apps": "Tüm uygulamalar",
+    "nav.my_apps": "Uygulamalarım",
+
+    // Mobil mağaza / app kartı
+    "mobile.app_heading": "Mobil Uygulama",
+    "mobile.app_only_desc": "Sadece App Store ve Google Play üzerinden indirilir. Masaüstüne kurulum yok.",
+    "mobile.app_default_desc": "App Store ve Google Play'den indir, hemen kullanmaya başla.",
+    "mobile.stores_default_desc": "Mağazalardan indir, hemen kullanmaya başla.",
+    "mobile.details_and_links": "Detayları ve indirme linkleri →",
+    "mobile.coming_soon_title": "Yakında Mağazada",
+    "mobile.coming_soon_desc": "{name} şu an test sürümünde — App Store ve Google Play onayı sonrası mağazada satışa çıkacak.",
+    "mobile.coming_soon_long": "Uygulama şu an test sürümünde; App Store ve Google Play onayı sonrası bu kart aktive olacak. Haberim olsun istersen {contact_link} bildirebilirsin.",
+    "mobile.coming_soon_contact_link": "iletişim formundan",
+    "mobile.download_from_store": "Mağazadan İndir",
+    "mobile.btn_appstore": "App Store'dan İndir",
+    "mobile.btn_appstore_sub": "iPhone & iPad",
+    "mobile.btn_googleplay": "Google Play'den İndir",
+    "mobile.btn_googleplay_sub": "Android cihazlar",
+    "mobile.btn_testflight": "TestFlight ile Dene (Beta)",
+    "mobile.btn_testflight_sub": "iOS — Apple onayı bekleniyor",
+    "mobile.btn_chrome": "Chrome Mağazasından Ekle",
+    "mobile.btn_chrome_sub": "Web uzantısı",
+    "mobile.qr_alt": "{name} indirme QR kodu",
+    "mobile.qr_scan_strong": "Telefonundan QR kodu tara",
+    "mobile.qr_scan_desc": ", mağazaya yönlendirilirsin.",
+    "mobile.qr_desktop_blocked": "Bu uygulamayı masaüstüne kuramazsın.",
+    "mobile.desktop_disabled_note": "masaüstünden indirme kapalı",
+    "mobile.billing_note": "Ücretlendirme ve abonelik mağaza üzerinden yapılır (Apple / Google / Chrome ödeme akışı). erpide.com sepetinden alınmaz.",
   },
 
   // ===================== RUSSIAN =====================
@@ -1648,6 +1724,44 @@ export const translations: Record<Locale, Record<string, string>> = {
     "payment.bank_transfer_note": "Итоговая сумма в TRY на следующем шаге.",
     "payment.epin_note": "Вы будете перенаправлены на страницу кода активации.",
     "payment.billing_badge": "ПЛАТЁЖНЫЙ",
+
+    // Бейджи рыночного охвата (TR-локализованные vs GLOBAL)
+    "products.tr_scope_badge": "Локализован для Турции",
+    "products.tr_scope_tooltip": "Создан для налоговой системы Турции (НДС, MUHSGK, e-Invoice, расчёт брутто-нетто).",
+    "products.global_scope_badge": "Глобально",
+    "products.global_scope_tooltip": "Работает по всему миру — без локализации под конкретную страну.",
+
+    // Навбар
+    "nav.cat_web": "Веб-приложения",
+    "nav.cat_mobile": "Мобильные приложения",
+    "nav.all_apps": "Все приложения",
+    "nav.my_apps": "Мои приложения",
+
+    // Мобильное приложение / карточка магазина
+    "mobile.app_heading": "Мобильное приложение",
+    "mobile.app_only_desc": "Загружается только через App Store и Google Play. Установка на десктоп невозможна.",
+    "mobile.app_default_desc": "Скачайте из App Store и Google Play, начните пользоваться сразу.",
+    "mobile.stores_default_desc": "Скачайте из магазинов, начните пользоваться сразу.",
+    "mobile.details_and_links": "Подробности и ссылки на скачивание →",
+    "mobile.coming_soon_title": "Скоро в магазинах",
+    "mobile.coming_soon_desc": "{name} сейчас в тестировании — выйдет в App Store и Google Play после проверки.",
+    "mobile.coming_soon_long": "Приложение сейчас в тестировании; эта карточка станет активной после одобрения в App Store и Google Play. {contact_link} если хотите получить уведомление.",
+    "mobile.coming_soon_contact_link": "Используйте форму обратной связи",
+    "mobile.download_from_store": "Скачать из магазина",
+    "mobile.btn_appstore": "Скачать в App Store",
+    "mobile.btn_appstore_sub": "iPhone & iPad",
+    "mobile.btn_googleplay": "Доступно в Google Play",
+    "mobile.btn_googleplay_sub": "Устройства Android",
+    "mobile.btn_testflight": "Попробовать через TestFlight (Бета)",
+    "mobile.btn_testflight_sub": "iOS — ждёт проверки Apple",
+    "mobile.btn_chrome": "Добавить из Chrome Web Store",
+    "mobile.btn_chrome_sub": "Расширение для браузера",
+    "mobile.qr_alt": "QR-код для скачивания {name}",
+    "mobile.qr_scan_strong": "Отсканируйте QR-код телефоном",
+    "mobile.qr_scan_desc": ", откроется магазин.",
+    "mobile.qr_desktop_blocked": "Это приложение нельзя установить на десктоп.",
+    "mobile.desktop_disabled_note": "загрузка с десктопа отключена",
+    "mobile.billing_note": "Оплата и подписка проходят через магазин (Apple / Google / Chrome). Корзина erpide.com не списывает.",
   },
 
   // ===================== KAZAKH =====================
@@ -2191,5 +2305,43 @@ export const translations: Record<Locale, Record<string, string>> = {
     "payment.bank_transfer_note": "Қорытынды TRY сомасы келесі қадамда.",
     "payment.epin_note": "Активтендіру кодының бетіне бағытталасыз.",
     "payment.billing_badge": "ТӨЛЕМ",
+
+    // Нарық қамту бейджтері (TR-локализацияланған vs GLOBAL)
+    "products.tr_scope_badge": "Түркия үшін локализацияланған",
+    "products.tr_scope_tooltip": "Түркияның салық жүйесіне арналған (ҚҚС, MUHSGK, e-Invoice, брутто-нетто еңбекақы).",
+    "products.global_scope_badge": "Жаһандық",
+    "products.global_scope_tooltip": "Дүние жүзінде жұмыс істейді — ел-нақты локализация қажет емес.",
+
+    // Навбар
+    "nav.cat_web": "Веб-қосымшалар",
+    "nav.cat_mobile": "Мобильді қосымшалар",
+    "nav.all_apps": "Барлық қосымшалар",
+    "nav.my_apps": "Менің қосымшаларым",
+
+    // Мобильді қосымша / дүкен карточкасы
+    "mobile.app_heading": "Мобильді қосымша",
+    "mobile.app_only_desc": "Тек App Store және Google Play арқылы жүктеледі. Жұмыс үстеліне орнатылмайды.",
+    "mobile.app_default_desc": "App Store және Google Play дүкендерінен жүктеңіз, бірден қолдана бастаңыз.",
+    "mobile.stores_default_desc": "Дүкендерден жүктеңіз, бірден қолдана бастаңыз.",
+    "mobile.details_and_links": "Толық мәлімет және жүктеу сілтемелері →",
+    "mobile.coming_soon_title": "Жақында дүкендерде",
+    "mobile.coming_soon_desc": "{name} қазір сынақ нұсқасында — App Store және Google Play бекіткеннен кейін дүкендерде шығады.",
+    "mobile.coming_soon_long": "Қосымша қазір сынақта; бұл карта App Store және Google Play бекіткеннен кейін белсенді болады. Хабарлама алғыңыз келсе {contact_link}.",
+    "mobile.coming_soon_contact_link": "байланыс формасын пайдаланыңыз",
+    "mobile.download_from_store": "Дүкеннен жүктеу",
+    "mobile.btn_appstore": "App Store-дан жүктеу",
+    "mobile.btn_appstore_sub": "iPhone & iPad",
+    "mobile.btn_googleplay": "Google Play-ден жүктеу",
+    "mobile.btn_googleplay_sub": "Android құрылғылары",
+    "mobile.btn_testflight": "TestFlight арқылы байқау (Бета)",
+    "mobile.btn_testflight_sub": "iOS — Apple шолуын күтуде",
+    "mobile.btn_chrome": "Chrome Web Store-дан қосу",
+    "mobile.btn_chrome_sub": "Браузер кеңейтуі",
+    "mobile.qr_alt": "{name} жүктеу QR коды",
+    "mobile.qr_scan_strong": "Телефоныңызбен QR кодты сканерлеңіз",
+    "mobile.qr_scan_desc": ", дүкенге жөнелтілесіз.",
+    "mobile.qr_desktop_blocked": "Бұл қосымшаны жұмыс үстеліне орната алмайсыз.",
+    "mobile.desktop_disabled_note": "жұмыс үстелінен жүктеу өшірілген",
+    "mobile.billing_note": "Төлем және жазылым дүкен арқылы жүзеге асырылады (Apple / Google / Chrome). erpide.com себетінен есептелмейді.",
   },
 };

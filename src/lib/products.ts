@@ -1,4 +1,17 @@
 import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, Database, MessageCircle, type LucideIcon } from "lucide-react";
+import type { Locale } from "./translations";
+
+/**
+ * Ürünün pazar kapsamı — UI'da rozet olarak gösterilir.
+ *
+ *   "TR"     → Türkiye vergi sistemine ve mevzuatına özel
+ *              (KDV, e-Fatura, MUHSGK, brüt-net hesabı, vs.)
+ *              Şu an: FinansERPIDE, PocketERPIDE
+ *   "GLOBAL" → Dünya çapında kullanılır, lokalizasyon-bağımsız.
+ *              Şu an: CaptchaERPIDE, LingoApp, AI Kontör,
+ *                     1C:ERP, 1C:Drive, CANIAS
+ */
+export type MarketScope = "TR" | "GLOBAL";
 
 export type ProductId =
   | "finanserpide"
@@ -27,41 +40,70 @@ export type ProductCategory = "web" | "mobile" | "desktop-enterprise" | "ai-cred
 
 export const CATEGORIES: {
   id: ProductCategory;
-  /** Türkçe etiket — UI'da gösterilir */
-  label: string;
-  /** İngilizce etiket — locale="en" iken */
-  labelEn: string;
-  /** Kısa açıklama (kategori başlığı altında) */
-  subtitle: string;
-  subtitleEn: string;
+  /** Locale → ekranda gösterilecek başlık */
+  label: Record<Locale, string>;
+  /** Locale → kategori başlığının altındaki kısa açıklama */
+  subtitle: Record<Locale, string>;
 }[] = [
   {
     id: "web",
-    label: "Web Uygulamaları",
-    labelEn: "Web Apps",
-    subtitle: "Tarayıcıdan eriş, abonelikle çalışan SaaS ürünlerimiz",
-    subtitleEn: "Browser-based SaaS — subscribe and use instantly",
+    label: {
+      tr: "Web Uygulamaları",
+      en: "Web Apps",
+      ru: "Веб-приложения",
+      kk: "Веб-қосымшалар",
+    },
+    subtitle: {
+      tr: "Tarayıcıdan eriş, abonelikle çalışan SaaS ürünlerimiz",
+      en: "Browser-based SaaS — subscribe and use instantly",
+      ru: "Браузерные SaaS-продукты — подпишись и используй сразу",
+      kk: "Браузерден қол жетімді, жазылым моделімен жұмыс істейтін SaaS өнімдеріміз",
+    },
   },
   {
     id: "mobile",
-    label: "Mobil Uygulamalar",
-    labelEn: "Mobile Apps",
-    subtitle: "App Store ve Google Play'den indirilen, telefonda kullanılan uygulamalarımız",
-    subtitleEn: "Download from App Store & Google Play",
+    label: {
+      tr: "Mobil Uygulamalar",
+      en: "Mobile Apps",
+      ru: "Мобильные приложения",
+      kk: "Мобильді қосымшалар",
+    },
+    subtitle: {
+      tr: "App Store ve Google Play'den indirilen, telefonda kullanılan uygulamalarımız",
+      en: "Download from App Store & Google Play",
+      ru: "Скачивайте из App Store и Google Play",
+      kk: "App Store және Google Play дүкендерінен жүктеңіз",
+    },
   },
   {
     id: "ai-credits",
-    label: "AI Kontör",
-    labelEn: "AI Credits",
-    subtitle: "Uygulamalarımızın AI asistanları için ek mesaj paketi",
-    subtitleEn: "Top-up credits for the AI assistants in our apps",
+    label: {
+      tr: "AI Kontör",
+      en: "AI Credits",
+      ru: "AI-кредиты",
+      kk: "AI несиелері",
+    },
+    subtitle: {
+      tr: "Uygulamalarımızın AI asistanları için ek mesaj paketi",
+      en: "Top-up credits for the AI assistants in our apps",
+      ru: "Пакеты сообщений для AI-ассистентов в наших приложениях",
+      kk: "Қосымшаларымыздағы AI көмекшілеріне арналған хабарлама пакеттері",
+    },
   },
   {
     id: "desktop-enterprise",
-    label: "Kurumsal ERP (Distribütör)",
-    labelEn: "Enterprise ERP (Distributor)",
-    subtitle: "Distribütörü olduğumuz, proje bazlı kurulan kurumsal çözümler",
-    subtitleEn: "Enterprise platforms we distribute — project-based onboarding",
+    label: {
+      tr: "Kurumsal ERP (Distribütör)",
+      en: "Enterprise ERP (Distributor)",
+      ru: "Корпоративные ERP (Дистрибьютор)",
+      kk: "Корпоративтік ERP (Дистрибьютор)",
+    },
+    subtitle: {
+      tr: "Distribütörü olduğumuz, proje bazlı kurulan kurumsal çözümler",
+      en: "Enterprise platforms we distribute — project-based onboarding",
+      ru: "Корпоративные платформы, которые мы распространяем — внедрение проектами",
+      kk: "Біз дистрибьюторы болатын, жоба негізінде ендірілетін корпоративтік шешімдер",
+    },
   },
 ];
 
@@ -104,12 +146,28 @@ export interface SKU {
   creditsGranted?: number;
 }
 
+/** Per-locale ürün metni overrides. Eksik alanlar default (üst seviyedeki TR)
+ *  değere düşer. en/ru/kk en azından name+tagline+description doldurulmalı —
+ *  longDescription opsiyonel, eksikse description gösterilir. */
+export interface ProductI18n {
+  name?: string;
+  tagline?: string;
+  description?: string;
+  longDescription?: string;
+}
+
 export interface Product {
   id: ProductId;
+  /** Default (TR) ad. EN/RU/KK için `i18n[locale].name` set edilir. */
   name: string;
   tagline: string;
   description: string;
   longDescription: string;
+  /** Locale-bazlı çeviri override'ları. Default `name`/`tagline`/`description`/
+   *  `longDescription` zaten TR; i18n yalnız diğer dilleri ezer. */
+  i18n?: Partial<Record<Locale, ProductI18n>>;
+  /** Ürünün pazar kapsamı — UI'da TR/GLOBAL rozeti olarak gösterilir. */
+  marketScope: MarketScope;
   icon: LucideIcon;
   color: string;
   domain: string;
@@ -159,6 +217,24 @@ export const PRODUCTS: Product[] = [
     color: "from-orange-500 to-pink-600",
     domain: "finans.erpide.com",
     category: "web",
+    marketScope: "TR",
+    i18n: {
+      en: {
+        name: "FinansERPIDE",
+        tagline: "AI-Powered Multi-Company ERP SaaS (Türkiye-localized)",
+        description: "Multi-company AI-powered ERP for Turkish businesses. e-Invoice, bank reconciliation, VAT/tax calculation, AR/AP — all in one panel. Operate your company by chatting with AI. Built for Turkish tax law (VAT, MUHSGK, e-İrsaliye, brüt-net payroll).",
+      },
+      ru: {
+        name: "FinansERPIDE",
+        tagline: "ERP SaaS с AI для нескольких компаний (локализован для Турции)",
+        description: "Многокомпанийный ERP с AI для турецкого бизнеса. Электронные счета-фактуры, банковская сверка, расчёт НДС и налогов, учёт контрагентов — всё в одной панели. Соответствует турецкому налоговому законодательству.",
+      },
+      kk: {
+        name: "FinansERPIDE",
+        tagline: "AI-көмекшісі бар көпкомпаниялы ERP SaaS (Түркия үшін локализацияланған)",
+        description: "Түрік бизнесіне арналған, AI көмекшісі бар көпкомпаниялы ERP. e-Фактура, банк салыстырмасы, ҚҚС/салық есептеу, контрагенттер — барлығы бір панельде. Түрік салық заңнамасына сәйкес.",
+      },
+    },
     comingSoon: true,
     skus: [
       {
@@ -290,6 +366,24 @@ export const PRODUCTS: Product[] = [
     color: "from-green-600 to-teal-600",
     domain: "captcha.erpide.com",
     category: "web",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "CaptchaERPIDE",
+        tagline: "Solve 18+ Captcha Types Through a Single API",
+        description: "reCAPTCHA v2/v3/Enterprise, hCaptcha, Cloudflare Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest, slider/puzzle/text — all through one REST API. 28ms avg, 90%+ accuracy, BYOK supported.",
+      },
+      ru: {
+        name: "CaptchaERPIDE",
+        tagline: "Решайте 18+ типов капчи через один API",
+        description: "reCAPTCHA v2/v3/Enterprise, hCaptcha, Cloudflare Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest, slider/puzzle/text — все через единый REST API. 28мс в среднем, 90%+ точность, поддержка BYOK.",
+      },
+      kk: {
+        name: "CaptchaERPIDE",
+        tagline: "18+ капча түрін бір API арқылы шешіңіз",
+        description: "reCAPTCHA v2/v3/Enterprise, hCaptcha, Cloudflare Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest, слайдер/пазл/мәтін — барлығы бір REST API арқылы. Орташа 28мс, 90%+ дәлдік, BYOK қолдауы.",
+      },
+    },
     skus: [
       {
         id: "captchaerpide-starter-monthly",
@@ -360,6 +454,24 @@ export const PRODUCTS: Product[] = [
     color: "from-amber-500 to-orange-600",
     domain: "finans.erpide.com",
     category: "ai-credits",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "AI Assistant Credits",
+        tagline: "Top-up message pack for FinansERPIDE's AI assistant",
+        description: "When your plan's AI message quota runs out, buy a credit pack to keep going. One-time purchase — credits roll over month-to-month until consumed.",
+      },
+      ru: {
+        name: "AI-кредиты ассистента",
+        tagline: "Дополнительный пакет сообщений для AI-ассистента FinansERPIDE",
+        description: "Когда ваш месячный лимит AI-сообщений заканчивается, купите пакет кредитов и продолжайте без перебоев. Разовая покупка — кредиты переходят на следующий месяц.",
+      },
+      kk: {
+        name: "AI көмекшісі несиелері",
+        tagline: "FinansERPIDE AI көмекшісіне арналған қосымша хабарлама пакеті",
+        description: "Жоспардағы AI хабарлама лимиті бітсе, несие пакетін сатып алыңыз. Бір реттік сатып алу — несиелер келесі айға ауысады.",
+      },
+    },
     // Her AI mesaji Claude API'de gercek dolar yakar; ucretsiz deneme verirsek
     // 3 gunde binlerce mesaj atilip bizi zarara sokabilirler. Sadece aktif
     // FinansERPIDE plani olan musteriler sepete ekleyebilir (aiKontorBlocked).
@@ -452,6 +564,24 @@ export const PRODUCTS: Product[] = [
     color: "from-pink-500 to-rose-600",
     domain: "pocket.erpide.com",
     category: "mobile",
+    marketScope: "TR",
+    i18n: {
+      en: {
+        name: "PocketERPIDE",
+        tagline: "AI-Powered Personal Wallet & Budget (Türkiye-localized)",
+        description: "Define your salary, snap a photo of your bills — AI categorizes and saves them. For employees, engineers, doctors — anyone tracking personal income/expenses. No ERP complexity, just a clean wallet. Built for Turkish tax brackets (brüt-net) and TR-specific expense categories.",
+      },
+      ru: {
+        name: "PocketERPIDE",
+        tagline: "Личный кошелёк и бюджет с AI (локализован для Турции)",
+        description: "Введите зарплату, сфотографируйте счета — AI распознает и сохранит. Для сотрудников, инженеров, врачей — всех, кто ведёт личные доходы/расходы. Без сложности ERP. Соответствует турецким налоговым ставкам.",
+      },
+      kk: {
+        name: "PocketERPIDE",
+        tagline: "AI-көмекшісі бар жеке әмиян мен бюджет (Түркия үшін локализацияланған)",
+        description: "Жалақыңызды енгізіңіз, шот-фактураның фотосын түсіріңіз — AI оларды санаттарға бөліп сақтайды. Қызметкерлерге, инженерлерге, дәрігерлерге — жеке кірісі/шығысын бақылайтын барлық адамға.",
+      },
+    },
     comingSoon: true,
     // PocketERPIDE sadece mobil mağaza üzerinden satılır — fiyatlandırma
     // App Store / Google Play in-app purchase ile yapılır. Site sepetinden
@@ -475,6 +605,24 @@ export const PRODUCTS: Product[] = [
     color: "from-indigo-600 to-blue-700",
     domain: "1c-erp.erpide.com",
     category: "desktop-enterprise",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "1C:ERP",
+        tagline: "Flexible Enterprise ERP for Manufacturing — MRP, Supply, Finance",
+        description: "1C:ERP supports both discrete and continuous manufacturing for medium-to-large producers. As ERPIDE we provide licensing, deployment, localization, training and support in Türkiye.",
+      },
+      ru: {
+        name: "1C:ERP",
+        tagline: "Гибкая корпоративная ERP для производства — MRP, снабжение, финансы",
+        description: "1C:ERP поддерживает дискретное и непрерывное производство для средних и крупных предприятий. ERPIDE — официальный партнёр в Турции: лицензирование, внедрение, локализация, обучение и поддержка.",
+      },
+      kk: {
+        name: "1C:ERP",
+        tagline: "Өндіріске арналған икемді корпоративтік ERP — MRP, жабдықтау, қаржы",
+        description: "1C:ERP орта және ірі өндіріс компанияларына арналған дискретті және үздіксіз өндіріс типтерін қолдайды. ERPIDE Түркияда лицензиялау, ендіру, локализация, оқыту және қолдау ұсынады.",
+      },
+    },
     contactOnly: true,
     demoUrl: "https://app902777.1capp.net/ERPWEDemo/en_US/",
     officialUrl: "https://www.1ci.com/applications/1c-erp/",
@@ -492,6 +640,24 @@ export const PRODUCTS: Product[] = [
     color: "from-cyan-600 to-teal-600",
     domain: "1c-drive.erpide.com",
     category: "desktop-enterprise",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "1C:Drive",
+        tagline: "Full-Stack ERP for SMBs — Manufacturing, Inventory, CRM, Mobile",
+        description: "1C:Drive is a complete ERP for small and mid-sized businesses. MRP-driven production, multi-level BOM, real-time order tracking, mobile app. Get up and running fast with ERPIDE's deployment + support packages.",
+      },
+      ru: {
+        name: "1C:Drive",
+        tagline: "Полнофункциональная ERP для МСБ — Производство, Склад, CRM, Мобильное",
+        description: "1C:Drive — полная ERP для малого и среднего бизнеса. Производство на основе MRP, многоуровневые спецификации, отслеживание заказов в реальном времени, мобильное приложение. ERPIDE — внедрение и поддержка.",
+      },
+      kk: {
+        name: "1C:Drive",
+        tagline: "ШОБ үшін толық қызметті ERP — Өндіріс, Қойма, CRM, Мобильді",
+        description: "1C:Drive — шағын және орта бизнеске арналған толық ERP. MRP негізіндегі өндіріс, көп деңгейлі BOM, тапсырыстарды нақты уақытта бақылау, мобильді қосымша. ERPIDE — ендіру және қолдау.",
+      },
+    },
     contactOnly: true,
     // Önceki demoUrl (app.1c-demo.de) cevap vermiyor — 1ci.com sayfasını yönlendir.
     demoUrl: "https://drive-lite.1ci.com/",
@@ -510,6 +676,24 @@ export const PRODUCTS: Product[] = [
     color: "from-slate-600 to-zinc-700",
     domain: "canias.erpide.com",
     category: "desktop-enterprise",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "CANIAS ERP",
+        tagline: "One of Türkiye's Most Established Industrial ERPs",
+        description: "CANIAS ERP runs all operational processes (MRP, production, purchasing, warehouse, sales, finance, HR) on one platform for mid-to-large manufacturers and distributors — a Türkiye-made enterprise ERP. ERPIDE provides reselling, consulting, deployment, customization and ongoing support.",
+      },
+      ru: {
+        name: "CANIAS ERP",
+        tagline: "Одна из самых известных индустриальных ERP Турции",
+        description: "CANIAS ERP объединяет все операционные процессы (MRP, производство, закупки, склад, продажи, финансы, HR) на единой платформе для средних и крупных производителей. ERPIDE — продажи, консалтинг, внедрение, кастомизация и поддержка.",
+      },
+      kk: {
+        name: "CANIAS ERP",
+        tagline: "Түркияның ең көрнекті индустриялық ERP-терінің бірі",
+        description: "CANIAS ERP барлық операциялық процестерді (MRP, өндіріс, сатып алу, қойма, сату, қаржы, HR) бір платформада басқарады — орта және ірі өндірушілер үшін. ERPIDE сату, кеңес беру, ендіру, бейімдеу және қолдау ұсынады.",
+      },
+    },
     contactOnly: true,
     officialUrl: "https://www.caniaserp.com/",
     skus: [],
@@ -526,6 +710,24 @@ export const PRODUCTS: Product[] = [
     color: "from-blue-600 to-sky-500",
     domain: "lingoapp.erpide.com",
     category: "mobile",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "LingoApp",
+        tagline: "Bilingual Translation Chat — You Write in EN, They See in ZH",
+        description: "WhatsApp-style messenger where each user writes in their own language and reads in their own language. Messages translate instantly. Live captions in voice calls too. 60+ languages, end-to-end encrypted, GDPR/KVKK compliant. Built for the whole world.",
+      },
+      ru: {
+        name: "LingoApp",
+        tagline: "Двуязычный переводчик-чат — Пишите по-русски, они видят на своём языке",
+        description: "WhatsApp-подобный мессенджер: каждый пишет на своём языке и читает на своём языке. Мгновенный перевод. Живые субтитры в голосовых звонках. 60+ языков, сквозное шифрование, соответствие GDPR/KVKK. Создан для всего мира.",
+      },
+      kk: {
+        name: "LingoApp",
+        tagline: "Қос тілді аударма-чат — Сіз қазақша жазасыз, олар өз тілінде көреді",
+        description: "WhatsApp стиліндегі мессенджер: әр пайдаланушы өз тілінде жазып, өз тілінде оқиды. Хабарламалар лезде аударылады. Дауыстық қоңырауларда тірі субтитрлер. 60+ тіл, ұштан-ұшқа шифрлеу, GDPR/KVKK сәйкестігі. Бүкіл әлемге арналған.",
+      },
+    },
     comingSoon: true,
     // iOS TestFlight beta review aşamasında (2026-06-13 itibarıyla pending). Onaylanınca
     // public link aktif; o zamana kadar internal-only. Henüz App Store CANLI satışta değil.
@@ -537,6 +739,20 @@ export const PRODUCTS: Product[] = [
     skus: [],
   },
 ];
+
+/** Locale-aware ürün metin getter. Locale çevirisi yoksa default (TR) döner. */
+export function getProductText(
+  product: Product,
+  locale: Locale,
+  field: keyof ProductI18n,
+): string {
+  const i18n = product.i18n?.[locale];
+  const v = i18n?.[field];
+  if (v) return v;
+  // longDescription locale'de yoksa default longDescription, o da yoksa description
+  if (field === "longDescription") return product.longDescription || product.description;
+  return product[field] || product.name;
+}
 
 export function getProduct(id: string): Product | undefined {
   return PRODUCTS.find((p) => p.id === id);

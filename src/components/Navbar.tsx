@@ -117,7 +117,7 @@ export default function Navbar() {
               <button
                 onClick={() => { setAppsOpen(!appsOpen); setAccountOpen(false); }}
                 className="flex items-center gap-1.5 text-sm px-2.5 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition"
-                title="Tüm uygulamalar"
+                title={t("nav.all_apps")}
               >
                 <LayoutGrid size={15} />
                 <span className="hidden xl:inline text-xs">Uygulamalar</span>
@@ -125,7 +125,7 @@ export default function Navbar() {
               {appsOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[300px] z-50">
                   <div className="px-4 py-2.5 border-b border-white/5">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Web Uygulamaları</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{t("nav.cat_web")}</p>
                   </div>
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-blue-400" />}
@@ -150,7 +150,7 @@ export default function Navbar() {
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="px-4 py-2.5 border-y border-white/5 mt-1">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Mobil Uygulamalar</p>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">{t("nav.cat_mobile")}</p>
                   </div>
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-pink-400" />}
@@ -253,7 +253,7 @@ export default function Navbar() {
               </Link>
               {user && (
                 <div className="pt-3 border-t border-white/5">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Uygulamalarım</p>
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-2">{t("nav.my_apps")}</p>
                   <a
                     href={apps.finanserpide ? "https://finans.erpide.com/giris" : "/urunler/finanserpide"}
                     target={apps.finanserpide ? "_blank" : undefined}

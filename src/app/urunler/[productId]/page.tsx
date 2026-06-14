@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon, ExternalLink, Mail } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getProduct } from "@/lib/products";
+import { getProduct, getProductText } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -227,17 +227,17 @@ function Inner({ productId }: { productId: string }) {
             <div className="mb-8">
               <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r ${product.color} text-white text-sm mb-4`}>
                 <Icon size={18} />
-                <span>{product.name}</span>
+                <span>{getProductText(product, locale, "name")}</span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{product.tagline}</h1>
-              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{product.description}</p>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{getProductText(product, locale, "tagline")}</h1>
+              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{getProductText(product, locale, "description")}</p>
             </div>
 
             <div className="grid lg:grid-cols-[1fr_360px] gap-8">
               <div>
                 {product.longDescription && (
                   <section className="mb-8 p-6 rounded-2xl bg-[#111118] border border-white/5">
-                    <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{product.longDescription}</p>
+                    <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{getProductText(product, locale, "longDescription")}</p>
                   </section>
                 )}
               </div>
@@ -267,10 +267,10 @@ function Inner({ productId }: { productId: string }) {
             <div className="mb-8">
               <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r ${product.color} text-white text-sm mb-4`}>
                 <Icon size={18} />
-                <span>{product.name}</span>
+                <span>{getProductText(product, locale, "name")}</span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{product.tagline}</h1>
-              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{product.description}</p>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">{getProductText(product, locale, "tagline")}</h1>
+              <p className="text-base md:text-lg text-gray-400 leading-relaxed max-w-3xl">{getProductText(product, locale, "description")}</p>
             </div>
 
             {(product.id === "1c-erp" || product.id === "1c-drive") && (
@@ -292,7 +292,7 @@ function Inner({ productId }: { productId: string }) {
 
             {product.longDescription && (
               <section className="mb-10 p-6 rounded-2xl bg-[#111118] border border-white/5">
-                <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{product.longDescription}</p>
+                <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{getProductText(product, locale, "longDescription")}</p>
               </section>
             )}
 
@@ -418,16 +418,16 @@ function Inner({ productId }: { productId: string }) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white">{product.name}</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white">{getProductText(product, locale, "name")}</h1>
                     {product.comingSoon && (
                       <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">BETA</span>
                     )}
                   </div>
-                  <p className="text-blue-400">{product.tagline}</p>
+                  <p className="text-blue-400">{getProductText(product, locale, "tagline")}</p>
                 </div>
               </div>
 
-              <p className="text-gray-300 leading-relaxed mb-6">{product.longDescription}</p>
+              <p className="text-gray-300 leading-relaxed mb-6">{getProductText(product, locale, "longDescription")}</p>
 
               <div className="flex flex-wrap gap-3 mb-8">
                 <Link
@@ -697,7 +697,7 @@ function Inner({ productId }: { productId: string }) {
                       <Play size={26} className="text-gray-400 ml-1" />
                     </div>
                     <p className="text-sm font-semibold text-white mb-1">Tanıtım videosu yakında</p>
-                    <p className="text-xs text-gray-500 max-w-xs">{product.name} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
+                    <p className="text-xs text-gray-500 max-w-xs">{getProductText(product, locale, "name")} özelliklerini gösteren detaylı tanıtım videosu eklenecek.</p>
                   </div>
                 </section>
               )}
@@ -771,7 +771,7 @@ function Inner({ productId }: { productId: string }) {
               )}
               <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Seçtiğin plan</p>
-                <h3 className="text-xl font-bold text-white mb-1">{product.name} {currentSku.name}</h3>
+                <h3 className="text-xl font-bold text-white mb-1">{getProductText(product, locale, "name")} {currentSku.name}</h3>
                 <p className="text-sm text-gray-400 mb-5">{currentSku.description}</p>
                 <div className="flex items-baseline gap-2 mb-6">
                   {(() => {

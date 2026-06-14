@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone, Apple, Smartphone, LayoutGrid } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PRODUCTS, CATEGORIES, type ProductCategory, type Product } from "@/lib/products";
+import { PRODUCTS, CATEGORIES, getProductText, type ProductCategory, type Product } from "@/lib/products";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
 
@@ -90,7 +90,7 @@ export default function UrunlerPage() {
                   active={filter === c.id}
                   onClick={() => setFilter(c.id)}
                   Icon={Icon}
-                  label={locale === "en" ? c.labelEn : c.label}
+                  label={c.label[locale]}
                 />
               );
             })}
@@ -101,10 +101,10 @@ export default function UrunlerPage() {
               <section key={cat.id} id={`kategori-${cat.id}`} className="scroll-mt-24">
                 <header className="mb-8 border-l-4 border-blue-500/40 pl-4">
                   <h2 className="text-2xl md:text-3xl font-bold text-white">
-                    {locale === "en" ? cat.labelEn : cat.label}
+                    {cat.label[locale]}
                   </h2>
                   <p className="text-sm text-gray-400 mt-1">
-                    {locale === "en" ? cat.subtitleEn : cat.subtitle}
+                    {cat.subtitle[locale]}
                   </p>
                 </header>
 
@@ -134,6 +134,32 @@ export default function UrunlerPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+function MarketScopeBadge({
+  scope, t,
+}: {
+  scope: "TR" | "GLOBAL";
+  t: (key: string) => string;
+}) {
+  if (scope === "TR") {
+    return (
+      <span
+        className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-500/15 text-red-300 border border-red-500/30 inline-flex items-center gap-1"
+        title={t("products.tr_scope_tooltip")}
+      >
+        🇹🇷 {t("products.tr_scope_badge")}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1"
+      title={t("products.global_scope_tooltip")}
+    >
+      🌍 {t("products.global_scope_badge")}
+    </span>
   );
 }
 
@@ -172,6 +198,7 @@ type ProductBlockProps = {
 };
 
 function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
+  const { locale } = useTranslation();
   return (
                 <motion.section
                   key={product.id}
@@ -185,16 +212,17 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
                       <Icon size={28} className="text-white" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h2 className="text-2xl md:text-3xl font-bold text-white">{product.name}</h2>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h2 className="text-2xl md:text-3xl font-bold text-white">{getProductText(product, locale, "name")}</h2>
                         {product.comingSoon && (
                           <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30">
                             {t("products.beta_badge")}
                           </span>
                         )}
+                        <MarketScopeBadge scope={product.marketScope} t={t} />
                       </div>
-                      <p className="text-blue-400 text-sm mb-2">{product.tagline}</p>
-                      <p className="text-gray-400 text-sm max-w-3xl leading-relaxed">{product.description}</p>
+                      <p className="text-blue-400 text-sm mb-2">{getProductText(product, locale, "tagline")}</p>
+                      <p className="text-gray-400 text-sm max-w-3xl leading-relaxed">{getProductText(product, locale, "description")}</p>
                       <Link
                         href={`/urunler/${product.id}`}
                         className="inline-flex items-center gap-1.5 mt-3 text-sm text-blue-400 hover:text-blue-300 transition"
@@ -333,11 +361,13 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
 
 
 function MobileStoreCTA({ product }: { product: Product }) {
+  const { t, locale } = useTranslation();
   const hasIos = !!product.iosAppStoreUrl;
   const hasAndroid = !!product.androidPlayStoreUrl;
   const hasTestFlight = !!product.testFlightUrl;
   const hasChrome = !!product.chromeWebStoreUrl;
   const noStoreYet = !hasIos && !hasAndroid && !hasTestFlight && !hasChrome;
+  const productName = getProductText(product, locale, "name");
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -347,13 +377,13 @@ function MobileStoreCTA({ product }: { product: Product }) {
         className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 via-[#111118] to-sky-500/5 border border-blue-500/20 hover:border-blue-500/40 transition group"
       >
         <Smartphone size={22} className="text-blue-400 mb-3" />
-        <h3 className="font-bold text-white mb-1">Mobil Uygulama</h3>
+        <h3 className="font-bold text-white mb-1">{t("mobile.app_heading")}</h3>
         <p className="text-xs text-gray-400 mb-3 leading-relaxed">
           {product.mobileOnlyDownload
-            ? "Sadece App Store ve Google Play üzerinden indirilir. Masaüstüne kurulum yok."
-            : "App Store ve Google Play'den indir, hemen kullanmaya başla."}
+            ? t("mobile.app_only_desc")
+            : t("mobile.app_default_desc")}
         </p>
-        <span className="text-xs text-blue-400 group-hover:underline">Detayları ve indirme linkleri →</span>
+        <span className="text-xs text-blue-400 group-hover:underline">{t("mobile.details_and_links")}</span>
       </Link>
 
       {/* Sağ: mağaza özet */}
@@ -361,15 +391,15 @@ function MobileStoreCTA({ product }: { product: Product }) {
         {noStoreYet ? (
           <>
             <Apple size={22} className="text-purple-300 mb-3" />
-            <h3 className="font-bold text-white mb-1">Yakında Mağazada</h3>
+            <h3 className="font-bold text-white mb-1">{t("mobile.coming_soon_title")}</h3>
             <p className="text-xs text-gray-400 leading-relaxed">
-              {product.name} şu an test sürümünde — App Store ve Google Play onayı sonrası mağazada satışa çıkacak.
+              {t("mobile.coming_soon_desc").replace("{name}", productName)}
             </p>
           </>
         ) : (
           <>
             <Apple size={22} className="text-gray-300 mb-3" />
-            <h3 className="font-bold text-white mb-2">Mağazadan İndir</h3>
+            <h3 className="font-bold text-white mb-2">{t("mobile.download_from_store")}</h3>
             <div className="space-y-2">
               {hasIos && (
                 <a href={product.iosAppStoreUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-300 hover:underline">
