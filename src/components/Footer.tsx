@@ -42,10 +42,10 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <h4 className="font-semibold text-white mb-4 text-sm">{t("footer.products")}</h4>
             <div className="flex flex-col gap-2">
-              <Link href="/urunler?kategori=web" className="text-sm text-gray-400 hover:text-blue-400 transition">Web Uygulamaları</Link>
-              <Link href="/urunler?kategori=mobile" className="text-sm text-gray-400 hover:text-blue-400 transition">Mobil Uygulamalar</Link>
-              <Link href="/urunler?kategori=ai-credits" className="text-sm text-gray-400 hover:text-blue-400 transition">AI Kontör</Link>
-              <Link href="/urunler?kategori=desktop-enterprise" className="text-sm text-gray-400 hover:text-blue-400 transition">Kurumsal ERP</Link>
+              <Link href="/urunler?kategori=web" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_web")}</Link>
+              <Link href="/urunler?kategori=mobile" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_mobile")}</Link>
+              <Link href="/urunler?kategori=ai-credits" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_ai")}</Link>
+              <Link href="/urunler?kategori=desktop-enterprise" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_enterprise")}</Link>
               <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">{t("footer.all_products")}</Link>
               <Link href="/sepet" className="text-sm text-gray-400 hover:text-white transition">{t("footer.my_cart")}</Link>
             </div>

@@ -573,6 +573,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.all_apps": "All apps",
     "nav.my_apps": "My Apps",
 
+    // Footer category links
+    "footer.cat_web": "Web Apps",
+    "footer.cat_mobile": "Mobile Apps",
+    "footer.cat_ai": "AI Credits",
+    "footer.cat_enterprise": "Enterprise ERP",
+
     // Mobile store / app card
     "mobile.app_heading": "Mobile App",
     "mobile.app_only_desc": "Only downloadable through App Store and Google Play. No desktop installation.",
@@ -1156,6 +1162,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.all_apps": "Tüm uygulamalar",
     "nav.my_apps": "Uygulamalarım",
 
+    // Footer kategori linkleri
+    "footer.cat_web": "Web Uygulamaları",
+    "footer.cat_mobile": "Mobil Uygulamalar",
+    "footer.cat_ai": "AI Kontör",
+    "footer.cat_enterprise": "Kurumsal ERP",
+
     // Mobil mağaza / app kartı
     "mobile.app_heading": "Mobil Uygulama",
     "mobile.app_only_desc": "Sadece App Store ve Google Play üzerinden indirilir. Masaüstüne kurulum yok.",
@@ -1737,6 +1749,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.all_apps": "Все приложения",
     "nav.my_apps": "Мои приложения",
 
+    // Категории в футере
+    "footer.cat_web": "Веб-приложения",
+    "footer.cat_mobile": "Мобильные приложения",
+    "footer.cat_ai": "AI-кредиты",
+    "footer.cat_enterprise": "Корпоративная ERP",
+
     // Мобильное приложение / карточка магазина
     "mobile.app_heading": "Мобильное приложение",
     "mobile.app_only_desc": "Загружается только через App Store и Google Play. Установка на десктоп невозможна.",
@@ -2317,6 +2335,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.cat_mobile": "Мобильді қосымшалар",
     "nav.all_apps": "Барлық қосымшалар",
     "nav.my_apps": "Менің қосымшаларым",
+
+    // Футер санаттары
+    "footer.cat_web": "Веб-қосымшалар",
+    "footer.cat_mobile": "Мобильді қосымшалар",
+    "footer.cat_ai": "AI несиелері",
+    "footer.cat_enterprise": "Корпоративтік ERP",
 
     // Мобильді қосымша / дүкен карточкасы
     "mobile.app_heading": "Мобильді қосымша",
