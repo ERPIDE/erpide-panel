@@ -30,12 +30,12 @@ export default function Footer() {
           </div>
 
           <div className="lg:col-span-2">
-            <h4 className="font-semibold text-white mb-4 text-sm">Kurumsal</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm">{t("footer.corporate")}</h4>
             <div className="flex flex-col gap-2">
-              <Link href="/hakkimizda" className="text-sm text-gray-400 hover:text-white transition">Hakkımızda</Link>
-              <Link href="/iletisim" className="text-sm text-gray-400 hover:text-white transition">İletişim</Link>
-              <Link href="/kunye" className="text-sm text-gray-400 hover:text-white transition">Künye</Link>
-              <Link href="/hizmetler" className="text-sm text-gray-400 hover:text-white transition">Hizmetlerimiz</Link>
+              <Link href="/hakkimizda" className="text-sm text-gray-400 hover:text-white transition">{t("nav.about")}</Link>
+              <Link href="/iletisim" className="text-sm text-gray-400 hover:text-white transition">{t("nav.contact")}</Link>
+              <Link href="/kunye" className="text-sm text-gray-400 hover:text-white transition">{t("footer.imprint")}</Link>
+              <Link href="/hizmetler" className="text-sm text-gray-400 hover:text-white transition">{t("nav.services")}</Link>
             </div>
           </div>
 
@@ -52,18 +52,18 @@ export default function Footer() {
           </div>
 
           <div className="lg:col-span-2">
-            <h4 className="font-semibold text-white mb-4 text-sm">Destek</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm">{t("footer.support")}</h4>
             <div className="flex flex-col gap-2">
-              <Link href="/docs" className="text-sm text-gray-400 hover:text-white transition">Dökümantasyon</Link>
-              <Link href="/giris" className="text-sm text-gray-400 hover:text-white transition">Giriş Yap</Link>
-              <Link href="/uye-ol" className="text-sm text-gray-400 hover:text-white transition">Üye Ol</Link>
-              <Link href="/hesabim" className="text-sm text-gray-400 hover:text-white transition">Hesabım</Link>
-              <a href={`mailto:${COMPANY.email}?subject=Destek%20Talebi`} className="text-sm text-gray-400 hover:text-white transition">Yardım</a>
+              <Link href="/docs" className="text-sm text-gray-400 hover:text-white transition">{t("footer.docs")}</Link>
+              <Link href="/giris" className="text-sm text-gray-400 hover:text-white transition">{t("nav.login")}</Link>
+              <Link href="/uye-ol" className="text-sm text-gray-400 hover:text-white transition">{t("nav.signup")}</Link>
+              <Link href="/hesabim" className="text-sm text-gray-400 hover:text-white transition">{t("nav.account")}</Link>
+              <a href={`mailto:${COMPANY.email}?subject=${encodeURIComponent(t("footer.help_subject"))}`} className="text-sm text-gray-400 hover:text-white transition">{t("footer.help")}</a>
             </div>
           </div>
 
           <div className="lg:col-span-2">
-            <h4 className="font-semibold text-white mb-4 text-sm">Yasal</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm">{t("footer.legal")}</h4>
             <div className="flex flex-col gap-2">
               {LEGAL_LINKS.map((l) => (
                 <Link key={l.href} href={l.href} className="text-sm text-gray-400 hover:text-white transition">
@@ -74,11 +74,35 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Şirket resmi bilgileri — KEP/MERSİS şeffaflığı için footer'da */}
+        <div className="border-t border-white/5 mt-12 pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px] text-gray-500">
+          <div>
+            <div className="text-gray-600 mb-1">{t("footer.legal_company")}</div>
+            <div className="text-gray-400">{COMPANY.name}</div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">{t("footer.tax_no")}</div>
+            <div className="text-gray-400 font-mono">{COMPANY.taxNumber}</div>
+            <div className="text-gray-500 text-[10px] mt-0.5">{COMPANY.taxOffice} VD.</div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">{t("footer.mersis_no")}</div>
+            <div className="text-gray-400 font-mono">{COMPANY.mersisNumber}</div>
+          </div>
+          <div>
+            <div className="text-gray-600 mb-1">{t("footer.address")}</div>
+            <div className="text-gray-400 text-[11px] leading-relaxed">
+              {COMPANY.address.street}<br/>
+              {COMPANY.address.district} / {COMPANY.address.city}
+            </div>
+          </div>
+        </div>
+
         <div className="border-t border-white/5 mt-12 pt-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Shield size={14} className="text-green-500" />
-              <span>iyzico güvenli ödeme altyapısı ile çalışır</span>
+              <span>{t("footer.iyzico_note")}</span>
               <span className="text-gray-700 mx-1">•</span>
               <Lock size={12} className="text-gray-500" />
               <span>256-bit SSL</span>
@@ -97,12 +121,12 @@ export default function Footer() {
 
         <div className="border-t border-white/5 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-600">
-            &copy; {new Date().getFullYear()} {COMPANY.shortName}. Tüm hakları saklıdır.
+            &copy; {new Date().getFullYear()} {COMPANY.shortName}. {t("footer.rights_reserved")}
           </p>
           <div className="flex items-center gap-3 text-[11px] text-gray-600">
-            <Link href="/panel" className="hover:text-gray-300 transition">Müşteri Paneli</Link>
+            <Link href="/panel" className="hover:text-gray-300 transition">{t("nav.customer_panel")}</Link>
             <span className="text-gray-700">·</span>
-            <Link href="/admin" className="hover:text-gray-300 transition">Yönetim</Link>
+            <Link href="/admin" className="hover:text-gray-300 transition">{t("nav.admin")}</Link>
           </div>
         </div>
       </div>

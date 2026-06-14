@@ -1,5 +1,7 @@
+"use client";
 import Link from "next/link";
 import { Sparkles, MessageSquare, ExternalLink, ShoppingCart, Info, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 type AiKontorOrder = {
   orderId: string;
@@ -28,6 +30,7 @@ export default function AiKontorOverview({
   hasActiveFinansERPIDE: boolean;
   dateLocale: string;
 }) {
+  const { t } = useTranslation();
   // Aktif paketleri (suresi gecmemis) ve gecmis paketleri ayir
   const now = Date.now();
   const active = orders.filter(
@@ -50,15 +53,15 @@ export default function AiKontorOverview({
           </div>
           <div>
             <h2 className="font-bold text-white text-lg flex items-center gap-2">
-              AI Asistan Kontör Bakiyesi
+              {t("ai_kontor.heading")}
               {isLow && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
-                  <AlertTriangle size={10} /> Az Kaldı
+                  <AlertTriangle size={10} /> {t("ai_kontor.low_badge")}
                 </span>
               )}
             </h2>
             <p className="text-xs text-gray-400">
-              Eylül (FinansERPIDE AI asistanı) için kalan mesaj kontörü
+              {t("ai_kontor.subtitle")}
             </p>
           </div>
         </div>
@@ -67,7 +70,7 @@ export default function AiKontorOverview({
             {totalRemaining.toLocaleString(dateLocale)}
             <span className="text-base text-gray-400 font-normal ml-1">/ {totalGranted.toLocaleString(dateLocale)}</span>
           </div>
-          <p className="text-xs text-gray-500">mesaj kontörü</p>
+          <p className="text-xs text-gray-500">{t("ai_kontor.unit")}</p>
         </div>
       </div>
 
@@ -75,9 +78,9 @@ export default function AiKontorOverview({
       <div className="mb-5">
         <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
           <span className="inline-flex items-center gap-1">
-            <MessageSquare size={11} /> {totalConsumed.toLocaleString(dateLocale)} kullanıldı
+            <MessageSquare size={11} /> {totalConsumed.toLocaleString(dateLocale)} {t("ai_kontor.used")}
           </span>
-          <span>{pctUsed}% tüketildi</span>
+          <span>{pctUsed}% {t("ai_kontor.consumed")}</span>
         </div>
         <div className="h-2 rounded-full bg-white/5 overflow-hidden">
           <div
@@ -94,7 +97,7 @@ export default function AiKontorOverview({
       {/* Paket listesi (kucuk) */}
       {active.length > 1 && (
         <div className="mb-5 space-y-1">
-          <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-2">Aktif paketler ({active.length})</p>
+          <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-2">{t("ai_kontor.active_packs")} ({active.length})</p>
           {active.map((o) => {
             const remaining = Math.max(0, o.granted - o.consumed);
             return (
@@ -115,14 +118,14 @@ export default function AiKontorOverview({
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/25 text-xs text-red-200 flex items-start gap-2">
             <AlertTriangle size={14} className="text-red-300 flex-shrink-0 mt-0.5" />
             <div>
-              <strong className="text-red-100">Aktif FinansERPIDE planın yok</strong> — kontör paketlerin Eylül&apos;ü kullanabilmen için bir FinansERPIDE planına ihtiyaç var. Aldığın kontörler firma havuzunda bekliyor.
+              <strong className="text-red-100">{t("ai_kontor.no_plan_title")}</strong> — {t("ai_kontor.no_plan_desc")}
             </div>
           </div>
           <Link
             href="/urunler/finanserpide"
             className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition"
           >
-            <ShoppingCart size={16} /> FinansERPIDE Planı Al
+            <ShoppingCart size={16} /> {t("ai_kontor.buy_finanserpide")}
           </Link>
         </div>
       ) : (
@@ -133,13 +136,13 @@ export default function AiKontorOverview({
             rel="noopener noreferrer"
             className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold hover:opacity-90 transition min-w-[220px]"
           >
-            <MessageSquare size={16} /> Eylül ile Konuş <ExternalLink size={13} />
+            <MessageSquare size={16} /> {t("ai_kontor.talk_to_eylul")} <ExternalLink size={13} />
           </Link>
           <Link
             href="/urunler/ai-kontor"
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-amber-500/30 text-amber-200 hover:bg-amber-500/10 transition"
           >
-            <ShoppingCart size={14} /> Daha Fazla Kontör Al
+            <ShoppingCart size={14} /> {t("ai_kontor.buy_more")}
           </Link>
         </div>
       )}
@@ -147,10 +150,7 @@ export default function AiKontorOverview({
       {/* Bilgilendirme */}
       <div className="mt-4 pt-4 border-t border-white/5 text-[11px] text-gray-500 flex items-start gap-2">
         <Info size={11} className="flex-shrink-0 mt-0.5" />
-        <span>
-          Her mesaj 1 kontör harcar. Eylül&apos;e fatura okuturken, hesap sorduğunda, rapor istediğinde otomatik düşer.
-          Aylık plan limitinin <strong>üstüne</strong> eklenir — plan limitin önce harcanır, dolarsa kontör paketinden devam eder.
-        </span>
+        <span>{t("ai_kontor.info_note")}</span>
       </div>
     </div>
   );

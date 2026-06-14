@@ -120,7 +120,7 @@ export default function Navbar() {
                 title={t("nav.all_apps")}
               >
                 <LayoutGrid size={15} />
-                <span className="hidden xl:inline text-xs">Uygulamalar</span>
+                <span className="hidden xl:inline text-xs">{t("nav.apps")}</span>
               </button>
               {appsOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-[#111118] border border-white/10 rounded-xl shadow-xl overflow-hidden min-w-[300px] z-50">
@@ -130,7 +130,7 @@ export default function Navbar() {
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-blue-400" />}
                     name="FinansERPIDE"
-                    desc="Multi-tenant ERP / muhasebe"
+                    desc={t("nav.app_desc_fin")}
                     state={appStates.finanserpide}
                     appUrl="https://finans.erpide.com/giris"
                     buyUrl="/urunler/finanserpide"
@@ -141,7 +141,7 @@ export default function Navbar() {
                   <AppLauncherItem
                     icon={<Shield size={18} className="text-emerald-400" />}
                     name="CaptchaERPIDE"
-                    desc="AI captcha çözücü API"
+                    desc={t("nav.app_desc_captcha")}
                     state={appStates.captchaerpide}
                     appUrl="https://captcha.erpide.com/dashboard"
                     buyUrl="/urunler/captchaerpide"
@@ -155,7 +155,7 @@ export default function Navbar() {
                   <AppLauncherItem
                     icon={<Wallet size={18} className="text-pink-400" />}
                     name="PocketERPIDE"
-                    desc="Bireysel cüzdan + AI fatura takibi"
+                    desc={t("nav.app_desc_pocket")}
                     state={appStates.pocketerpide}
                     appUrl="/pocket"
                     buyUrl="/urunler/pocketerpide"
@@ -163,8 +163,8 @@ export default function Navbar() {
                   />
                   <AppLauncherItem
                     icon={<MessageCircle size={18} className="text-sky-400" />}
-                    name="LingoApp"
-                    desc="Çeviri-chat: kendi dilinde yaz/oku"
+                    name="WITMA"
+                    desc={t("nav.app_desc_witma")}
                     state="none"
                     buyUrl="/urunler/lingoapp"
                     onClose={() => setAppsOpen(false)}

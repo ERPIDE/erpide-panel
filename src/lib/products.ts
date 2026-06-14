@@ -221,11 +221,11 @@ export const PRODUCTS: Product[] = [
   {
     id: "finanserpide",
     name: "FinansERPIDE",
-    tagline: "AI Destekli Çok Şirketli ERP SaaS",
+    tagline: "AI Destekli Çok Şirketli ERP SaaS — Self-Service Banka & e-Fatura Entegrasyonu",
     description:
-      "Çok şirketli, AI destekli ERP SaaS. e-Fatura, banka mutabakatı, vergi hesabı, cari takibi — hepsi tek panelde. Şirketinizi AI ile sohbet ederek yönetin.",
+      "Çok şirketli, AI destekli ERP SaaS. 15+ Türk bankası + 13 e-fatura entegratörünü kendi panelinden bağla; banka hareketleri saatlik otomatik düşsün, gelen faturalar AI ile sınıflandırılıp muhasebe fişine geçsin. Şirketini AI ile sohbet ederek yönet.",
     longDescription:
-      "FinansERPIDE; KOBİ ve A.Ş.'lerin tüm finans/muhasebe süreçlerini AI ile yöneten yeni nesil ERP. Her şirket için izole veritabanı (multi-tenant), QNB eFinans entegrasyonu, otomatik banka mutabakatı, KDV ve geçici vergi tutar hesabı, cari takibi, personel/SGK. Fatura fotoğrafını WhatsApp'tan at, AI okuyup sisteme kaydetsin. \"Bu ay zarar mı kar mı?\" diye sor, anında raporla cevaplasın.",
+      "FinansERPIDE; KOBİ ve A.Ş.'lerin tüm finans/muhasebe süreçlerini AI ile yöneten yeni nesil ERP. Her şirket için izole veritabanı (multi-tenant), AES-256-GCM ile şifrelenmiş credential saklama. \"Integration Hub\": QNB Finansbank, Garanti BBVA, İş Bankası, Akbank, Yapı Kredi, DenizBank, TEB, HSBC, ING, Ziraat, VakıfBank, Halkbank, Şekerbank, Kuveyt Türk, Albaraka — self-service API key gir, hesap hareketleri saatlik cron ile otomatik aksın. E-fatura tarafında QNB eSolutions, Mikro, Logo, Veriban, Foriba, Uyumsoft, TÜRKKEP, Türk Telekom, DigitalPlanet — gelen fatura inbox'u poll'lensin, AI %90+ confidence ile auto-post yapsın (muhasebe fişi tek tıkla onay). KDV ve geçici vergi tutar hesabı, cari mutabakat, personel/SGK. Fatura fotoğrafını WhatsApp'tan at, AI okuyup sisteme kaydetsin. \"Bu ay zarar mı kar mı?\" diye sor, anında raporla cevaplasın.",
     icon: Briefcase,
     color: "from-orange-500 to-pink-600",
     domain: "finans.erpide.com",
@@ -234,18 +234,18 @@ export const PRODUCTS: Product[] = [
     i18n: {
       en: {
         name: "FinansERPIDE",
-        tagline: "AI-Powered Multi-Company ERP SaaS (Türkiye-localized)",
-        description: "Multi-company AI-powered ERP for Turkish businesses. e-Invoice, bank reconciliation, VAT/tax calculation, AR/AP — all in one panel. Operate your company by chatting with AI. Built for Turkish tax law (VAT, MUHSGK, e-İrsaliye, brüt-net payroll).",
+        tagline: "AI-Powered Multi-Company ERP SaaS — Self-Service Bank & e-Invoice Integrations",
+        description: "Multi-company AI-powered ERP for Turkish businesses. Connect 15+ Turkish banks + 13 e-invoice integrators self-service from your own panel; bank transactions sync hourly, incoming invoices are AI-classified and auto-posted to journal entries. Operate your company by chatting with AI. Built for Turkish tax law (VAT, MUHSGK, e-İrsaliye, brüt-net payroll).",
       },
       ru: {
         name: "FinansERPIDE",
-        tagline: "ERP SaaS с AI для нескольких компаний (локализован для Турции)",
-        description: "Многокомпанийный ERP с AI для турецкого бизнеса. Электронные счета-фактуры, банковская сверка, расчёт НДС и налогов, учёт контрагентов — всё в одной панели. Соответствует турецкому налоговому законодательству.",
+        tagline: "ERP SaaS с AI для нескольких компаний — самостоятельные интеграции банков и э-фактуры",
+        description: "Многокомпанийный ERP с AI для турецкого бизнеса. Подключите 15+ турецких банков и 13 операторов э-фактуры самостоятельно из своей панели; банковские операции синхронизируются ежечасно, входящие счета классифицируются AI и автоматически проводятся в журнале. Соответствует турецкому налоговому законодательству.",
       },
       kk: {
         name: "FinansERPIDE",
-        tagline: "AI-көмекшісі бар көпкомпаниялы ERP SaaS (Түркия үшін локализацияланған)",
-        description: "Түрік бизнесіне арналған, AI көмекшісі бар көпкомпаниялы ERP. e-Фактура, банк салыстырмасы, ҚҚС/салық есептеу, контрагенттер — барлығы бір панельде. Түрік салық заңнамасына сәйкес.",
+        tagline: "AI-көмекшісі бар көпкомпаниялы ERP SaaS — Өздігінен банк және e-фактура интеграциялары",
+        description: "Түрік бизнесіне арналған, AI көмекшісі бар көпкомпаниялы ERP. 15+ түрік банкі мен 13 е-фактура операторын өз панеліңізден өздігінен қосыңыз; банк операциялары сағат сайын синхрондалады, кіріс фактуралар AI-мен жіктеліп, бухгалтерлік жазбаларға автоматты түрде енгізіледі. Түрік салық заңнамасына сәйкес.",
       },
     },
     comingSoon: true,
