@@ -453,34 +453,15 @@ export const PRODUCTS: Product[] = [
     domain: "pocket.erpide.com",
     category: "mobile",
     comingSoon: true,
-    // Mobil store linkleri henuz canlida degil — hazirlaninca buraya yazilacak.
+    // PocketERPIDE sadece mobil mağaza üzerinden satılır — fiyatlandırma
+    // App Store / Google Play in-app purchase ile yapılır. Site sepetinden
+    // alınmaz, panelden lisans verilmez. SKU listesi BİLEREK boş; bu sayede
+    // /urunler/[productId] sayfası MobileAppStoreCard view'ına düşer.
+    // Mağaza linkleri eklendiğinde aşağıya doldurulacak.
     // iosAppStoreUrl: "https://apps.apple.com/app/pocketerpide/idXXXXXXXXXX",
     // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.erpide.pocketerpide",
     mobileOnlyDownload: true,
-    skus: [
-      {
-        id: "pocketerpide-personal-monthly",
-        productId: "pocketerpide",
-        name: "Personal",
-        description: "Bireysel kullanıcılar için tek paket — sınırsız özellik",
-        price: 3,
-        currency: "TRY",
-        prices: { USD: 3 },
-        cycle: "monthly",
-        kind: "standalone",
-        features: [
-          "Brüt/Net maaş tanımı (TR vergi diliminden net hesabı)",
-          "Periyodik gelir (maaş, kira, ek iş)",
-          "AI ile fatura kayıt (yaz / söyle / fotoğraf at)",
-          "Kategori bazlı harcama analizi",
-          "Aylık özet + kalan bütçe",
-          "Hedef bütçe (örn 'ayda 5000 TL biriktir')",
-          "Vergi iadesi hesabı (yıl sonu)",
-          "Mobil + web — her yerden eriş",
-        ],
-        highlight: true,
-      },
-    ],
+    skus: [],
   },
   {
     id: "1c-erp",

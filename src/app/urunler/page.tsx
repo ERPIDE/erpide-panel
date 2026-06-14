@@ -206,6 +206,11 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
 
                   {product.contactOnly ? (
                     <ContactCTA product={product} />
+                  ) : product.category === "mobile" ? (
+                    // Mobil ürünler (PocketERPIDE, LingoApp): satış mağazadan
+                    // yapılır → liste sayfasında SKU yerine "Mağazadan İndir"
+                    // mini CTA. Detay sayfasında MobileAppStoreCard tam akış.
+                    <MobileStoreCTA product={product} />
                   ) : (
                   <div className="grid md:grid-cols-3 gap-4">
                     {visibleSkus.map((sku, i) => {
@@ -280,7 +285,7 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
 
                             return (
                               <>
-                                {!hasTrialed && !hasActiveOnProduct && (
+                                {!hasTrialed && !hasActiveOnProduct && !product.noTrial && (
                                   <Link
                                     href={`/urunler/${product.id}?sku=${sku.id}&trial=1`}
                                     className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90 transition"
@@ -326,6 +331,73 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
   );
 }
 
+
+function MobileStoreCTA({ product }: { product: Product }) {
+  const hasIos = !!product.iosAppStoreUrl;
+  const hasAndroid = !!product.androidPlayStoreUrl;
+  const hasTestFlight = !!product.testFlightUrl;
+  const hasChrome = !!product.chromeWebStoreUrl;
+  const noStoreYet = !hasIos && !hasAndroid && !hasTestFlight && !hasChrome;
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {/* Sol: bilgilendirme + detay incele */}
+      <Link
+        href={`/urunler/${product.id}`}
+        className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 via-[#111118] to-sky-500/5 border border-blue-500/20 hover:border-blue-500/40 transition group"
+      >
+        <Smartphone size={22} className="text-blue-400 mb-3" />
+        <h3 className="font-bold text-white mb-1">Mobil Uygulama</h3>
+        <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+          {product.mobileOnlyDownload
+            ? "Sadece App Store ve Google Play üzerinden indirilir. Masaüstüne kurulum yok."
+            : "App Store ve Google Play'den indir, hemen kullanmaya başla."}
+        </p>
+        <span className="text-xs text-blue-400 group-hover:underline">Detayları ve indirme linkleri →</span>
+      </Link>
+
+      {/* Sağ: mağaza özet */}
+      <div className="p-6 rounded-2xl bg-[#111118] border border-white/5">
+        {noStoreYet ? (
+          <>
+            <Apple size={22} className="text-purple-300 mb-3" />
+            <h3 className="font-bold text-white mb-1">Yakında Mağazada</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              {product.name} şu an test sürümünde — App Store ve Google Play onayı sonrası mağazada satışa çıkacak.
+            </p>
+          </>
+        ) : (
+          <>
+            <Apple size={22} className="text-gray-300 mb-3" />
+            <h3 className="font-bold text-white mb-2">Mağazadan İndir</h3>
+            <div className="space-y-2">
+              {hasIos && (
+                <a href={product.iosAppStoreUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-300 hover:underline">
+                  <Apple size={14} /> App Store <ExternalLink size={10} />
+                </a>
+              )}
+              {hasAndroid && (
+                <a href={product.androidPlayStoreUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-emerald-300 hover:underline">
+                  <Smartphone size={14} /> Google Play <ExternalLink size={10} />
+                </a>
+              )}
+              {hasTestFlight && !hasIos && (
+                <a href={product.testFlightUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-300 hover:underline">
+                  <Apple size={14} /> TestFlight (Beta) <ExternalLink size={10} />
+                </a>
+              )}
+              {hasChrome && (
+                <a href={product.chromeWebStoreUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-300 hover:underline">
+                  Chrome Web Store <ExternalLink size={10} />
+                </a>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?: string } }) {
   const { t } = useTranslation();
