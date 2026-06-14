@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PRODUCTS, CATEGORIES, getProductText, type ProductCategory, type Product } from "@/lib/products";
 import { MarketScopeBadge } from "@/components/ProductBadges";
+import { ProductLogo } from "@/components/ProductLogo";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
 
@@ -111,13 +112,11 @@ export default function UrunlerPage() {
 
                 <div className="space-y-14">
                   {products.map((product) => {
-                    const Icon = product.icon;
                     const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
                     return (
                       <ProductBlock
                         key={product.id}
                         product={product}
-                        Icon={Icon}
                         visibleSkus={visibleSkus}
                         trialedProducts={trialedProducts}
                         activeSkuByProduct={activeSkuByProduct}
@@ -163,7 +162,6 @@ function FilterChip({
 
 type ProductBlockProps = {
   product: Product;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
   visibleSkus: Product["skus"];
   trialedProducts: Set<string>;
   activeSkuByProduct: Record<string, string>;
@@ -172,7 +170,7 @@ type ProductBlockProps = {
   t: (key: string) => string;
 };
 
-function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
+function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
   const { locale } = useTranslation();
   return (
                 <motion.section
@@ -183,9 +181,7 @@ function ProductBlock({ product, Icon, visibleSkus, trialedProducts, activeSkuBy
                   className="space-y-8"
                 >
                   <div className="flex items-start gap-6">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${product.color} flex items-center justify-center flex-shrink-0`}>
-                      <Icon size={28} className="text-white" />
-                    </div>
+                    <ProductLogo product={product} size={64} className="flex-shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h2 className="text-2xl md:text-3xl font-bold text-white">{getProductText(product, locale, "name")}</h2>

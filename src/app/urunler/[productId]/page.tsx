@@ -12,6 +12,7 @@ import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
 import FinansERPIDEConfigurator from "@/components/FinansERPIDEConfigurator";
 import MobileAppStoreCard from "@/components/MobileAppStoreCard";
+import { ProductLogo } from "@/components/ProductLogo";
 import { useTranslation } from "@/lib/i18n";
 
 // 1C ürünleri için lokalize özellik listeleri. Top-level sabit — render
@@ -413,9 +414,7 @@ function Inner({ productId }: { productId: string }) {
           <div className="grid lg:grid-cols-[1fr_400px] gap-10">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-start gap-5 mb-6">
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${product.color} flex items-center justify-center flex-shrink-0`}>
-                  <Icon size={36} className="text-white" />
-                </div>
+                <ProductLogo product={product} size={80} className="flex-shrink-0" />
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h1 className="text-3xl md:text-4xl font-bold text-white">{getProductText(product, locale, "name")}</h1>

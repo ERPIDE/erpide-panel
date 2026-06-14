@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 import { PRODUCTS, getProductText } from "@/lib/products";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { MarketScopeBadge, BetaBadge } from "@/components/ProductBadges";
+import { ProductLogo } from "@/components/ProductLogo";
 
 /**
  * Anasayfanın "Ürünlerimiz" + "Hizmetlerimiz" bölümü.
@@ -40,7 +41,6 @@ export default function Services() {
 
         <div className="grid md:grid-cols-2 gap-6 mb-20">
           {PRODUCTS.filter((p) => p.id !== "ai-kontor").map((p, i) => {
-            const Icon = p.icon;
             return (
               <motion.div
                 key={p.id}
@@ -54,9 +54,7 @@ export default function Services() {
                 <div className="absolute top-6 right-6 flex items-center gap-1.5">
                   {p.comingSoon && <BetaBadge />}
                 </div>
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-5`}>
-                  <Icon size={28} className="text-white" />
-                </div>
+                <ProductLogo product={p} size={56} className="mb-5" />
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <h3 className="text-2xl font-bold text-white">{getProductText(p, locale, "name")}</h3>
                   <MarketScopeBadge scope={p.marketScope} />

@@ -169,6 +169,14 @@ export interface Product {
   /** Ürünün pazar kapsamı — UI'da TR/GLOBAL rozeti olarak gösterilir. */
   marketScope: MarketScope;
   icon: LucideIcon;
+  /** Ürünün orjinal logosu (vendor/marka logosu). Varsa render katmanı
+   *  (Services anasayfa, /urunler liste, /urunler/[id] detay, Navbar dropdown)
+   *  Lucide ikon yerine bu görseli gösterir. Yoksa fallback `icon` Lucide
+   *  bileşeni `color` gradient'ın üstünde çizilir. Beyaz/şeffaf zeminli
+   *  logolar dark UI'da yine okunabilir kalsın diye render component'i
+   *  arka plana beyaz padding uygular.
+   *  Dosyalar: `public/products/<id>/...`. Örn. `/products/canias/logo.jpg`. */
+  logoImage?: string;
   color: string;
   domain: string;
   /** Hangi kategoride listelenir (site genelinde). */
@@ -561,6 +569,7 @@ export const PRODUCTS: Product[] = [
     longDescription:
       "PocketERPIDE; bireysel kullanıcılar için yapılmış, AI asistanlı kişisel finans takip uygulamasıdır. Maaşını (brüt veya net) bir kez tanımla, sistem her ay otomatik gelir olarak kaydetsin. Fatura geldikçe AI'a fotoğraf at veya yazılı olarak söyle — kategorize edilip cüzdanına işlensin. Aylık özet, kategori bazlı harcama analizi, hedef bütçe takibi, vergi iadesi hesaplama. Şirket muhasebesi karmaşıklığı yok; herkesin kullanabildiği sade bir kişisel bütçe uygulaması.",
     icon: Wallet,
+    logoImage: "/products/pocketerpide/icon.png",
     color: "from-pink-500 to-rose-600",
     domain: "pocket.erpide.com",
     category: "mobile",
@@ -602,6 +611,7 @@ export const PRODUCTS: Product[] = [
     longDescription:
       "1C:ERP; binlerce kullanıcılı orta-büyük üretim firmalarında make-to-order, make-to-stock, kesikli ve sürekli tüm üretim stratejilerini destekler. Çekirdek modüller: Planlama (MPS), Üretim, Satınalma, Depo, Tahsilat/Tediye ve Maliyet Hesaplama. KPI dashboard'ları ve veriye dayalı karar için görsel analitik. 1C:Enterprise platformu üstünde tek bir entegre çözüm — birbiriyle 'konuşmayan' ayrı uygulamalar değil. ERPIDE; lisanslama, TR/KZ yerelleştirme, kurulum, eğitim, özelleştirme ve canlı destek paketleri sunar.",
     icon: Boxes,
+    logoImage: "/products/1c/logo.webp",
     color: "from-indigo-600 to-blue-700",
     domain: "1c-erp.erpide.com",
     category: "desktop-enterprise",
@@ -637,6 +647,7 @@ export const PRODUCTS: Product[] = [
     longDescription:
       "1C:Drive; satıştan satınalmaya, üretimden stoğa kadar tüm operasyonu gerçek zamanlı izlemenizi sağlar. Çok seviyeli BOM ile reçete + iş merkezi yüklemesi + tedarik planlama tek ekranda. Sipariş/finans/stok/maliyet raporları esnek ve özelleştirilebilir. Mobil app ile sahada da erişim. 1C:Drive Lite ise tamamen bulut tabanlı, 700.000+ firmanın güvendiği teknolojiyle ön-muhasebe için ideal. Lisans ve kurulum maliyetleri KOBİ bütçesine uygun, şirketinizle birlikte büyür. ERPIDE; demo kurulum, veri taşıma, eğitim ve aylık destek paketleri sunar.",
     icon: Truck,
+    logoImage: "/products/1c/logo.webp",
     color: "from-cyan-600 to-teal-600",
     domain: "1c-drive.erpide.com",
     category: "desktop-enterprise",
@@ -673,6 +684,7 @@ export const PRODUCTS: Product[] = [
     longDescription:
       "CANIAS; 25+ yıllık Türk ERP markası IAS'in geliştirdiği endüstriyel ERP. Kendi düşük-kod platformu (TROIA) sayesinde yoğun özelleştirme yapan üretim firmalarının ilk tercihi. Ana modüller: Malzeme/Stok, Üretim Planlama (MRP/MRP II), Üretim Yürütme, Satınalma, Satış, Depo, Finans, Maliyet, IK/Bordro, Kalite. Çok şirketli, çok dilli, çok para birimli. Kurulum tipik 6-18 ay proje süresi alır. ERPIDE; lisanslama, gap-analiz, TROIA özelleştirme, BPM iş akışları (örn. satınalma onayı), Logo/diğer sistem entegrasyonu, canlı destek paketleri sunar.",
     icon: Database,
+    logoImage: "/products/canias/logo.jpg",
     color: "from-slate-600 to-zinc-700",
     domain: "canias.erpide.com",
     category: "desktop-enterprise",
@@ -707,6 +719,7 @@ export const PRODUCTS: Product[] = [
     longDescription:
       "LingoApp; iki kişinin her birinin kendi dilinde yazıp kendi dilinde okuduğu, çevirinin tamamen otomatik yapıldığı modern sohbet uygulaması. Sen Türkçe yazarsın, karşıdaki Rusça görür; o Rusça yazar, sen Türkçe görürsün. Telefon numarası veya gizli kod ile sohbet. Mesajlar uçtan uca şifreli (ECDH/Curve25519); sunucu sadece şifreli veriye bakar. Sesli/görüntülü arama içinde de canlı çeviri altyazı çıkar. 60+ dil destekli. Mağazadan indir, App Store/Google Play üzerinden ücreti öde — web/masaüstüne kurulum yok.",
     icon: MessageCircle,
+    logoImage: "/products/lingoapp/icon.png",
     color: "from-blue-600 to-sky-500",
     domain: "lingoapp.erpide.com",
     category: "mobile",
