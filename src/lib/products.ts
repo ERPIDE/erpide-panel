@@ -843,7 +843,9 @@ export const PRODUCTS: Product[] = [
     icon: MessageCircle,
     logoImage: "/products/witma/icon.png",
     color: "from-purple-500 via-pink-500 to-cyan-400",
-    domain: "witma.app",
+    // Şimdilik Vercel preview — witma.app domain DNS yönlendirmesi yapılınca
+    // burayı "witma.app"a çevir.
+    domain: "witma-site.vercel.app",
     category: "mobile",
     marketScope: "GLOBAL",
     i18n: {
