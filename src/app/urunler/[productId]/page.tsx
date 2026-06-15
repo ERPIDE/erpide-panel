@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon, ExternalLink, Mail } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getProduct, getProductText } from "@/lib/products";
+import { getProduct, getProductText, getSkuText } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -726,7 +726,7 @@ function Inner({ productId }: { productId: string }) {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="font-semibold text-white">{sku.name}</h3>
+                          <h3 className="font-semibold text-white">{getSkuText(sku, locale, "name")}</h3>
                           {isCurrentPlan && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">MEVCUT PLANINIZ</span>
                           )}
@@ -737,7 +737,7 @@ function Inner({ productId }: { productId: string }) {
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">POPÜLER</span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-400">{sku.description}</p>
+                        <p className="text-sm text-gray-400">{getSkuText(sku, locale, "description")}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-white">{formatPrice(price, skuCcy, { short: true })}</p>

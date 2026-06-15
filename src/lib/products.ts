@@ -144,6 +144,10 @@ export interface SKU {
   grantsModules?: string[];
   /** kind="credit" SKU'sunun aldığı kontör/mesaj adedi (örn. 500, 1000, 2000, 10000). */
   creditsGranted?: number;
+  /** Locale overrides. Default `name`/`description`/`features` TR; i18n yalnız
+   *  diğer dilleri ezer. AI Kontör + CaptchaERPIDE gibi global ürünlerin
+   *  SKU'larında dolu, FinansERPIDE/TR-only ürünlerde opsiyonel. */
+  i18n?: Partial<Record<Locale, { name?: string; description?: string; features?: string[] }>>;
 }
 
 /** Per-locale ürün metni overrides. Eksik alanlar default (üst seviyedeki TR)
@@ -415,6 +419,20 @@ export const PRODUCTS: Product[] = [
           "REST API + 30ms ortalama süre",
           "Gerçek zamanlı dashboard + e-mail destek",
         ],
+        i18n: {
+          en: {
+            description: "For bot developers",
+            features: ["1,000 solves per day", "18 captcha types — image + token based", "Native solvers (slider/puzzle/text/icon)", "BYOK support — your own 2Captcha/CapMonster key", "REST API + 30ms avg response", "Real-time dashboard + email support"],
+          },
+          ru: {
+            description: "Для разработчиков ботов",
+            features: ["1 000 решений в день", "18 типов капчи — image + токен", "Нативные решатели (slider/puzzle/text/icon)", "BYOK — ваш собственный 2Captcha/CapMonster ключ", "REST API + среднее 30 мс", "Дашборд в реальном времени + email поддержка"],
+          },
+          kk: {
+            description: "Бот әзірлеушілерге арналған",
+            features: ["Күніне 1 000 шешім", "18 капча түрі — image + токен негізді", "Жергілікті шешушілер (slider/puzzle/text/icon)", "BYOK — өз 2Captcha/CapMonster кілтіңіз", "REST API + орташа 30 мс", "Нақты уақыттағы дашборд + email қолдау"],
+          },
+        },
       },
       {
         id: "captchaerpide-pro-monthly",
@@ -434,6 +452,20 @@ export const PRODUCTS: Product[] = [
           "Öncelikli destek",
         ],
         highlight: true,
+        i18n: {
+          en: {
+            description: "Professional usage",
+            features: ["10,000 solves per day", "All 18 captcha types (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Priority processing (15ms)", "Webhook callbacks + retry queue", "Multi-tenant license management", "Priority support"],
+          },
+          ru: {
+            description: "Профессиональное использование",
+            features: ["10 000 решений в день", "Все 18 типов капчи (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Приоритетная обработка (15 мс)", "Webhook-уведомления + очередь повторов", "Управление лицензиями для нескольких клиентов", "Приоритетная поддержка"],
+          },
+          kk: {
+            description: "Кәсіби пайдалану",
+            features: ["Күніне 10 000 шешім", "Барлық 18 капча түрі (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Басымдықпен өңдеу (15 мс)", "Webhook хабарламалары + қайталау кезегі", "Көп-арендатор лицензия басқару", "Басымдықты қолдау"],
+          },
+        },
       },
       {
         id: "captchaerpide-enterprise-monthly",
@@ -452,6 +484,20 @@ export const PRODUCTS: Product[] = [
           "Public accuracy + p95 latency dashboard",
           "Telefon destek + onboarding",
         ],
+        i18n: {
+          en: {
+            description: "High volume + SLA",
+            features: ["Unlimited solves", "All types + custom captcha definitions", "Dedicated worker pool + 10ms target latency", "99.5% uptime SLA guarantee", "Public accuracy + p95 latency dashboard", "Phone support + onboarding"],
+          },
+          ru: {
+            description: "Большие объёмы + SLA",
+            features: ["Безлимитные решения", "Все типы + кастомные определения капчи", "Выделенный пул воркеров + цель 10 мс", "Гарантия SLA 99.5% uptime", "Публичный дашборд точности + p95 latency", "Телефонная поддержка + онбординг"],
+          },
+          kk: {
+            description: "Үлкен көлем + SLA",
+            features: ["Шексіз шешім", "Барлық түрлер + арнайы капча анықтамасы", "Бөлінген worker пулы + 10 мс мақсат", "99.5% uptime SLA кепілдігі", "Ашық дәлдік + p95 latency дашборд", "Телефонмен қолдау + онбординг"],
+          },
+        },
       },
     ],
   },
@@ -507,6 +553,23 @@ export const PRODUCTS: Product[] = [
           "Plan limitinden ayrıdır — devreder",
           "Mesaj başı $0.010",
         ],
+        i18n: {
+          en: {
+            name: "500 Credits",
+            description: "Small top-up — short bursts of heavy use",
+            features: ["500 AI message credits", "Added to company pool instantly", "Separate from plan quota — rolls over", "$0.010 per message"],
+          },
+          ru: {
+            name: "500 кредитов",
+            description: "Небольшое пополнение — короткие пики использования",
+            features: ["500 AI-кредитов сообщений", "Сразу добавляются в пул компании", "Отдельно от квоты плана — переносятся", "$0.010 за сообщение"],
+          },
+          kk: {
+            name: "500 несие",
+            description: "Шағын толықтыру — қысқа мерзімді белсенді пайдалану",
+            features: ["500 AI хабарлама несиесі", "Компания пулына бірден қосылады", "Жоспар квотасынан бөлек — ауысады", "$0.010 хабарлама"],
+          },
+        },
       },
       {
         id: "ai-kontor-1000",
@@ -525,6 +588,23 @@ export const PRODUCTS: Product[] = [
           "Firma havuzuna anında tanımlanır",
           "Plan limitinden ayrıdır — devreder",
         ],
+        i18n: {
+          en: {
+            name: "1,000 Credits",
+            description: "For standard usage",
+            features: ["1,000 AI message credits", "$0.010 per message (same rate)", "Added to company pool instantly", "Separate from plan quota — rolls over"],
+          },
+          ru: {
+            name: "1 000 кредитов",
+            description: "Для стандартного использования",
+            features: ["1 000 AI-кредитов сообщений", "$0.010 за сообщение (тот же тариф)", "Сразу добавляются в пул компании", "Отдельно от квоты плана — переносятся"],
+          },
+          kk: {
+            name: "1 000 несие",
+            description: "Стандартты пайдалану үшін",
+            features: ["1 000 AI хабарлама несиесі", "$0.010 хабарлама (бірдей тариф)", "Компания пулына бірден қосылады", "Жоспар квотасынан бөлек — ауысады"],
+          },
+        },
       },
       {
         id: "ai-kontor-2000",
@@ -544,6 +624,23 @@ export const PRODUCTS: Product[] = [
           "Plan limitinden ayrıdır — devreder",
         ],
         highlight: true,
+        i18n: {
+          en: {
+            name: "2,000 Credits",
+            description: "Monthly reserve — medium intensity",
+            features: ["2,000 AI message credits", "$0.010 per message", "Ideal for bulk invoice processing", "Separate from plan quota — rolls over"],
+          },
+          ru: {
+            name: "2 000 кредитов",
+            description: "Месячный резерв — средняя интенсивность",
+            features: ["2 000 AI-кредитов сообщений", "$0.010 за сообщение", "Идеально для массовой обработки счетов", "Отдельно от квоты плана — переносятся"],
+          },
+          kk: {
+            name: "2 000 несие",
+            description: "Айлық қор — орташа қарқындылық",
+            features: ["2 000 AI хабарлама несиесі", "$0.010 хабарлама", "Жаппай фактура өңдеуге ыңғайлы", "Жоспар квотасынан бөлек — ауысады"],
+          },
+        },
       },
       {
         id: "ai-kontor-10000",
@@ -562,6 +659,23 @@ export const PRODUCTS: Product[] = [
           "Toplu işleme için en uygun",
           "Plan limitinden ayrıdır — devreder",
         ],
+        i18n: {
+          en: {
+            name: "10,000 Credits",
+            description: "Heavy usage — large team",
+            features: ["10,000 AI message credits", "20% discounted pack ($0.008 per message)", "Best fit for bulk processing", "Separate from plan quota — rolls over"],
+          },
+          ru: {
+            name: "10 000 кредитов",
+            description: "Интенсивное использование — большая команда",
+            features: ["10 000 AI-кредитов сообщений", "Пакет со скидкой 20% ($0.008 за сообщение)", "Оптимально для массовой обработки", "Отдельно от квоты плана — переносятся"],
+          },
+          kk: {
+            name: "10 000 несие",
+            description: "Қарқынды пайдалану — үлкен команда",
+            features: ["10 000 AI хабарлама несиесі", "20% жеңілдікті пакет ($0.008 хабарлама)", "Жаппай өңдеуге ең қолайлы", "Жоспар квотасынан бөлек — ауысады"],
+          },
+        },
       },
     ],
   },
@@ -773,6 +887,23 @@ export function getProductText(
   // longDescription locale'de yoksa default longDescription, o da yoksa description
   if (field === "longDescription") return product.longDescription || product.description;
   return product[field] || product.name;
+}
+
+/** SKU.name veya SKU.description için locale-aware getter. Çevirisi yoksa
+ *  default (TR) değere düşer. */
+export function getSkuText(sku: SKU, locale: Locale, field: "name" | "description"): string {
+  const i18n = sku.i18n?.[locale];
+  const v = i18n?.[field];
+  if (v) return v;
+  return sku[field];
+}
+
+/** SKU.features için locale-aware getter (array). Çevirisi yoksa default
+ *  (TR) array döner. */
+export function getSkuFeatures(sku: SKU, locale: Locale): string[] {
+  const i18n = sku.i18n?.[locale];
+  if (i18n?.features && i18n.features.length > 0) return i18n.features;
+  return sku.features;
 }
 
 export function getProduct(id: string): Product | undefined {

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone, Apple, Smartphone, LayoutGrid } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PRODUCTS, CATEGORIES, getProductText, type ProductCategory, type Product } from "@/lib/products";
+import { PRODUCTS, CATEGORIES, getProductText, getSkuText, getSkuFeatures, type ProductCategory, type Product } from "@/lib/products";
 import { MarketScopeBadge } from "@/components/ProductBadges";
 import { ProductLogo } from "@/components/ProductLogo";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -242,8 +242,8 @@ function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduc
                             {t("products.popular_badge")}
                           </div>
                         ) : null}
-                        <h3 className="text-xl font-bold text-white mb-1">{sku.name}</h3>
-                        <p className="text-xs text-gray-400 mb-4">{sku.description}</p>
+                        <h3 className="text-xl font-bold text-white mb-1">{getSkuText(sku, locale, "name")}</h3>
+                        <p className="text-xs text-gray-400 mb-4">{getSkuText(sku, locale, "description")}</p>
                         <div className="mb-4">
                           <span className="text-3xl font-bold text-white">{formatPrice(price, currency, { short: true })}</span>
                           <span className="text-gray-400 ml-1 text-sm">{t("products.per_month")}</span>
@@ -308,19 +308,24 @@ function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduc
                             );
                           })()}
                         </div>
-                        <ul className="space-y-1.5">
-                          {sku.features.slice(0, 5).map((f, j) => (
-                            <li key={j} className="flex items-start gap-1.5 text-xs text-gray-300">
-                              <Check size={12} className="text-green-400 mt-0.5 flex-shrink-0" />
-                              <span>{f}</span>
-                            </li>
-                          ))}
-                          {sku.features.length > 5 && (
-                            <li className="text-xs text-gray-600 pl-4">
-                              {t("products.more_features").replace("{count}", String(sku.features.length - 5))}
-                            </li>
-                          )}
-                        </ul>
+                        {(() => {
+                          const features = getSkuFeatures(sku, locale);
+                          return (
+                            <ul className="space-y-1.5">
+                              {features.slice(0, 5).map((f, j) => (
+                                <li key={j} className="flex items-start gap-1.5 text-xs text-gray-300">
+                                  <Check size={12} className="text-green-400 mt-0.5 flex-shrink-0" />
+                                  <span>{f}</span>
+                                </li>
+                              ))}
+                              {features.length > 5 && (
+                                <li className="text-xs text-gray-600 pl-4">
+                                  {t("products.more_features").replace("{count}", String(features.length - 5))}
+                                </li>
+                              )}
+                            </ul>
+                          );
+                        })()}
                       </motion.div>
                       );
                     })}
