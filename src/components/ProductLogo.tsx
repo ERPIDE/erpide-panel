@@ -6,14 +6,18 @@ import type { Product } from "@/lib/products";
 /**
  * Ürünün vizel kimliğini render eden tek bileşen — sitede ürün ikonu/logosu
  * gösteren her yer bunu kullanır (Services anasayfa, /urunler liste, /urunler/[id]
- * detay, ileride Navbar dropdown). Tek kaynak prensibi:
- *  - product.logoImage varsa → orjinal vendor/marka logosu, transparent zeminde
- *    direkt render edilir (dark UI'a uyum). İstisna: `logoBackground: "white"`
- *    set edilmişse (siyah yazılı logolar için, ör. CANIAS) beyaz kart içinde
- *    gösterilir, yoksa yazı görünmez.
- *  - yoksa → Lucide ikon, product.color gradient'ın üstünde
+ * detay, ileride Navbar dropdown).
  *
- * Boyutu `size` ile belirlersin; iç Lucide ikon `~%50` oranında çizilir.
+ * Tek kaynak / uniform brand-icon davranış:
+ *  - product.logoImage varsa → beyaz rounded card içinde orjinal logo
+ *    (Apple Human Interface app-icon estetiği; tüm logolar aynı görsel ölçüde
+ *    durur ve dark UI'da okunabilir). Card overflow-hidden — kenar
+ *    PNG'lerindeki grunge/transparent border'ları clip eder.
+ *  - product.logoBackground === "transparent" → istisna olarak beyaz
+ *    background'u kaldırır (default white). İleride neon/cyan logoları için.
+ *  - logoImage yok → Lucide ikon, product.color gradient'ın üstünde.
+ *
+ * Boyutu `size` ile belirlersin; Lucide ikon `~%50`, image içi padding `%6`.
  */
 export function ProductLogo({
   product,
@@ -28,28 +32,12 @@ export function ProductLogo({
   const iconSize = Math.round(size * 0.5);
 
   if (product.logoImage) {
-    // Default transparent — koyu tema üstünde logonun kendi rengi/zemini durur.
-    // Siyah yazılı (CANIAS gibi) logolar için override: "white" → beyaz kart.
-    if (product.logoBackground === "white") {
-      return (
-        <div
-          className={`relative bg-white flex items-center justify-center overflow-hidden ring-1 ring-white/10 ${className}`}
-          style={{ width: size, height: size, borderRadius: radius }}
-        >
-          <Image
-            src={product.logoImage}
-            alt={`${product.name} logo`}
-            width={size}
-            height={size}
-            className="object-contain"
-            style={{ padding: Math.round(size * 0.1) }}
-          />
-        </div>
-      );
-    }
+    const isTransparent = product.logoBackground === "transparent";
     return (
       <div
-        className={`relative flex items-center justify-center overflow-hidden ${className}`}
+        className={`relative flex items-center justify-center overflow-hidden ${
+          isTransparent ? "" : "bg-white ring-1 ring-white/10"
+        } ${className}`}
         style={{ width: size, height: size, borderRadius: radius }}
       >
         <Image
@@ -58,6 +46,7 @@ export function ProductLogo({
           width={size}
           height={size}
           className="object-contain"
+          style={{ padding: isTransparent ? 0 : Math.round(size * 0.06) }}
         />
       </div>
     );

@@ -181,10 +181,11 @@ export interface Product {
    *  arka plana beyaz padding uygular.
    *  Dosyalar: `public/products/<id>/...`. Örn. `/products/canias/logo.jpg`. */
   logoImage?: string;
-  /** Logo'nun arka plan davranışı. Default: transparent (logo doğrudan dark
-   *  UI üstünde — kendi rengi/zemini varsa görünür). Siyah yazılı, beyaz
-   *  zeminli orjinal logolar (örn. CANIAS) için "white" set edilir ki yazı
-   *  okunabilir kalsın. */
+  /** Logo'nun arka plan davranışı. Default: "white" — Apple Human Interface
+   *  app-icon estetiği; tüm logolar tutarlı görünür, kenarlardaki grunge/
+   *  transparent border'lar overflow-hidden ile clip edilir. İstisnai
+   *  durumlarda (örn. zaten gradient zeminli neon logo, beyaz card içinde
+   *  garip duracak) "transparent" set edilebilir. */
   logoBackground?: "transparent" | "white";
   color: string;
   domain: string;
@@ -804,9 +805,6 @@ export const PRODUCTS: Product[] = [
       "CANIAS; 25+ yıllık Türk ERP markası IAS'in geliştirdiği endüstriyel ERP. Kendi düşük-kod platformu (TROIA) sayesinde yoğun özelleştirme yapan üretim firmalarının ilk tercihi. Ana modüller: Malzeme/Stok, Üretim Planlama (MRP/MRP II), Üretim Yürütme, Satınalma, Satış, Depo, Finans, Maliyet, IK/Bordro, Kalite. Çok şirketli, çok dilli, çok para birimli. Kurulum tipik 6-18 ay proje süresi alır. ERPIDE; lisanslama, gap-analiz, TROIA özelleştirme, BPM iş akışları (örn. satınalma onayı), Logo/diğer sistem entegrasyonu, canlı destek paketleri sunar.",
     icon: Database,
     logoImage: "/products/canias/logo.jpg",
-    // Canias logosu siyah yazı + turuncu accent + beyaz zemin — dark UI'da
-    // direkt render edilirse yazı kaybolur, beyaz kart şart.
-    logoBackground: "white",
     color: "from-slate-600 to-zinc-700",
     domain: "canias.erpide.com",
     category: "desktop-enterprise",
