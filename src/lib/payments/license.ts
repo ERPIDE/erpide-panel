@@ -6,7 +6,7 @@ const PREFIX: Record<ProductId, string> = {
   captchaerpide: "CAP",
   "ai-kontor": "AIK",
   pocketerpide: "PKT",
-  lingoapp: "LNG",
+  witma: "WTM",
   // contactOnly distributor products (no automated licensing); placeholders kept
   // so the Record stays exhaustive — keys won't be hit in normal flows.
   "1c-erp": "ERP",

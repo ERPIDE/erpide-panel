@@ -8,7 +8,7 @@ import type { Locale } from "./translations";
  *              (KDV, e-Fatura, MUHSGK, brüt-net hesabı, vs.)
  *              Şu an: FinansERPIDE, PocketERPIDE
  *   "GLOBAL" → Dünya çapında kullanılır, lokalizasyon-bağımsız.
- *              Şu an: CaptchaERPIDE, LingoApp, AI Kontör,
+ *              Şu an: CaptchaERPIDE, WITMA, AI Kontör,
  *                     1C:ERP, 1C:Drive, CANIAS
  */
 export type MarketScope = "TR" | "GLOBAL";
@@ -18,7 +18,7 @@ export type ProductId =
   | "captchaerpide"
   | "ai-kontor"
   | "pocketerpide"
-  | "lingoapp"
+  | "witma"
   | "1c-erp"
   | "1c-drive"
   | "canias";
@@ -31,7 +31,7 @@ export type Currency = "TRY" | "USD";
  * `CATEGORIES` sabit listesini de guncelle.
  *
  *   "web"                  → Tarayicidan erisilen SaaS (FinansERPIDE, CaptchaERPIDE)
- *   "mobile"               → Mobil mağaza uygulamalari (PocketERPIDE, LingoApp)
+ *   "mobile"               → Mobil mağaza uygulamalari (PocketERPIDE, WITMA)
  *   "desktop-enterprise"   → Distributoru oldugumuz kurumsal cozumler
  *                            (1C:Drive, 1C:ERP, CANIAS — bayilik, proje bazli kurulum)
  *   "ai-credits"           → Diger urunlerin AI'sini besleyen kontor paketleri
@@ -833,43 +833,46 @@ export const PRODUCTS: Product[] = [
     skus: [],
   },
   {
-    id: "lingoapp",
-    name: "LingoApp",
-    tagline: "Çift Dilli Çeviri-Chat — Sen TR Yaz, O RU Görsün",
+    // Rebrand 2026-06-15: LingoApp → WITMA. Id de "witma"ya geçti; eski
+    // /urunler/lingoapp URL'leri next.config redirect ile yeni id'ye 308.
+    id: "witma",
+    name: "WITMA",
+    tagline: "Understand Everything — Dil Engelsiz Sohbet, Arama ve Çeviri",
     description:
-      "WhatsApp tarzı sohbet uygulaması, ama her kullanıcı kendi dilinde yazıp kendi dilinde okur. Mesajlar anlık çevrilir. Sesli arama içinde de canlı altyazı. 60+ dil destekli, uçtan uca şifreli, KVKK/GDPR uyumlu.",
+      "Sonsuz iletişim. WITMA; mesajlaşma, sesli/görüntülü arama ve canlı altyazılı çeviriyi tek uygulamada birleştirir. Sen kendi dilinde yaz, karşıdaki kendi dilinde okur — anlık çeviri, uçtan uca şifreli. Tek dünya, sonsuz konuşma.",
     longDescription:
-      "LingoApp; iki kişinin her birinin kendi dilinde yazıp kendi dilinde okuduğu, çevirinin tamamen otomatik yapıldığı modern sohbet uygulaması. Sen Türkçe yazarsın, karşıdaki Rusça görür; o Rusça yazar, sen Türkçe görürsün. Telefon numarası veya gizli kod ile sohbet. Mesajlar uçtan uca şifreli (ECDH/Curve25519); sunucu sadece şifreli veriye bakar. Sesli/görüntülü arama içinde de canlı çeviri altyazı çıkar. 60+ dil destekli. Mağazadan indir, App Store/Google Play üzerinden ücreti öde — web/masaüstüne kurulum yok.",
+      "WITMA; \"Understand Everything\" felsefesiyle tasarlanmış küresel iletişim platformu. İki kişinin her birinin kendi dilinde yazıp kendi dilinde okuduğu, çevirinin tamamen otomatik yapıldığı modern sohbet uygulaması. Sen Türkçe yazarsın, karşıdaki Rusça/Japonca/İngilizce görür; o kendi dilinde yazar, sen Türkçe görürsün. Mesajlar uçtan uca şifreli (ECDH/Curve25519); sunucu sadece şifreli veriye bakar. Sesli ve görüntülü aramada canlı altyazı + dublaj. 60+ dil, KVKK/GDPR uyumlu. iOS App Store ve Google Play'den indir — web/masaüstüne kurulum yok.",
     icon: MessageCircle,
-    logoImage: "/products/lingoapp/icon.png",
-    color: "from-blue-600 to-sky-500",
-    domain: "lingoapp.erpide.com",
+    logoImage: "/products/witma/icon.png",
+    color: "from-purple-500 via-pink-500 to-cyan-400",
+    domain: "witma.app",
     category: "mobile",
     marketScope: "GLOBAL",
     i18n: {
       en: {
-        name: "LingoApp",
-        tagline: "Bilingual Translation Chat — You Write in EN, They See in ZH",
-        description: "WhatsApp-style messenger where each user writes in their own language and reads in their own language. Messages translate instantly. Live captions in voice calls too. 60+ languages, end-to-end encrypted, GDPR/KVKK compliant. Built for the whole world.",
+        name: "WITMA",
+        tagline: "Understand Everything — Messaging, Calls and Live Translation Without Borders",
+        description: "Infinite connection. WITMA combines messaging, voice/video calls and live-captioned translation in a single app. You write in your language, they read in theirs — instant translation, end-to-end encrypted. One world, infinite conversations.",
       },
       ru: {
-        name: "LingoApp",
-        tagline: "Двуязычный переводчик-чат — Пишите по-русски, они видят на своём языке",
-        description: "WhatsApp-подобный мессенджер: каждый пишет на своём языке и читает на своём языке. Мгновенный перевод. Живые субтитры в голосовых звонках. 60+ языков, сквозное шифрование, соответствие GDPR/KVKK. Создан для всего мира.",
+        name: "WITMA",
+        tagline: "Understand Everything — мессенджер, звонки и живой перевод без границ",
+        description: "Бесконечная связь. WITMA объединяет сообщения, голосовые и видеозвонки и живой перевод с субтитрами в одном приложении. Вы пишете на своём языке, собеседник читает на своём — мгновенный перевод, сквозное шифрование. Один мир — бесконечные разговоры.",
       },
       kk: {
-        name: "LingoApp",
-        tagline: "Қос тілді аударма-чат — Сіз қазақша жазасыз, олар өз тілінде көреді",
-        description: "WhatsApp стиліндегі мессенджер: әр пайдаланушы өз тілінде жазып, өз тілінде оқиды. Хабарламалар лезде аударылады. Дауыстық қоңырауларда тірі субтитрлер. 60+ тіл, ұштан-ұшқа шифрлеу, GDPR/KVKK сәйкестігі. Бүкіл әлемге арналған.",
+        name: "WITMA",
+        tagline: "Understand Everything — Тілдік шектеусіз чат, қоңырау және тірі аударма",
+        description: "Шексіз байланыс. WITMA хабарламаларды, дауыстық/бейне қоңырауларды және тірі субтитрлі аударманы бір қосымшада біріктіреді. Сіз өз тіліңізде жазасыз, әріптесіңіз өз тілінде оқиды — лезде аударма, ұштан-ұшқа шифрлеу. Бір әлем, шексіз сөйлесулер.",
       },
     },
     comingSoon: true,
-    // iOS TestFlight beta review aşamasında (2026-06-13 itibarıyla pending). Onaylanınca
-    // public link aktif; o zamana kadar internal-only. Henüz App Store CANLI satışta değil.
+    // iOS TestFlight beta review aşamasında (ASC App ID 6779907292 — LingoApp
+    // adıyla açılmıştı, rebrand sonrası ASC tarafında "WITMA" olarak rename
+    // edildi; Bundle ID ve TestFlight join link KORUNUR).
     testFlightUrl: "https://testflight.apple.com/join/3S1JyZuU",
     // Android: APK preview build var ama Play Store yayını ERPIDE A.Ş. organizasyon hesabına
     // geçiş sonrasına bırakıldı. Yayınlanınca buraya store link gelir.
-    // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.erpide.lingoapp",
+    // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.aelteam.witma",
     mobileOnlyDownload: true,
     skus: [],
   },

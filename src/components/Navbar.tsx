@@ -166,7 +166,7 @@ export default function Navbar() {
                     name="WITMA"
                     desc={t("nav.app_desc_witma")}
                     state="none"
-                    buyUrl="/urunler/lingoapp"
+                    buyUrl="/urunler/witma"
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="border-t border-white/5">
