@@ -16,6 +16,7 @@ import {
 } from "@/lib/news";
 import { useTranslation } from "@/lib/i18n";
 import type { Locale } from "@/lib/translations";
+import { getTodayHolidays, getUpcomingHolidays, type Holiday } from "@/lib/holidays";
 
 type FilterTab = "all" | NewsType;
 
@@ -32,11 +33,11 @@ function formatDate(iso: string, locale: Locale): string {
   return d.toLocaleDateString(DATE_LOCALES[locale], { day: "2-digit", month: "long", year: "numeric" });
 }
 
-const FILTER_LABELS: Record<Locale, { all: string; gundemTitle: string; gundemSubtitle: string; readMore: string; emptyFilter: string }> = {
-  tr: { all: "Tümü", gundemTitle: "Gündem", gundemSubtitle: "ERPIDE'den haberler, yeni ürün lansmanları, şirket güncellemeleri ve özel gün paylaşımları.", readMore: "Devamını oku", emptyFilter: "Bu filtrede henüz post yok." },
-  en: { all: "All", gundemTitle: "News", gundemSubtitle: "News from ERPIDE — product launches, company updates and special day posts.", readMore: "Read more", emptyFilter: "No posts in this filter yet." },
-  ru: { all: "Все", gundemTitle: "Новости", gundemSubtitle: "Новости ERPIDE — запуски продуктов, обновления компании и публикации к особым дням.", readMore: "Читать далее", emptyFilter: "В этом фильтре пока нет публикаций." },
-  kk: { all: "Барлығы", gundemTitle: "Жаңалықтар", gundemSubtitle: "ERPIDE жаңалықтары — өнім шығарылымдары, компания жаңартулары мен ерекше күн жарияланымдары.", readMore: "Толығырақ", emptyFilter: "Бұл сүзгіде әзірге жариялым жоқ." },
+const FILTER_LABELS: Record<Locale, { all: string; gundemTitle: string; gundemSubtitle: string; readMore: string; emptyFilter: string; todayBadge: string; upcomingBadge: string }> = {
+  tr: { all: "Tümü", gundemTitle: "Gündem", gundemSubtitle: "ERPIDE'den haberler, yeni ürün lansmanları, şirket güncellemeleri ve özel gün paylaşımları.", readMore: "Devamını oku", emptyFilter: "Bu filtrede henüz post yok.", todayBadge: "BUGÜN", upcomingBadge: "YAKLAŞAN" },
+  en: { all: "All", gundemTitle: "News", gundemSubtitle: "News from ERPIDE — product launches, company updates and special day posts.", readMore: "Read more", emptyFilter: "No posts in this filter yet.", todayBadge: "TODAY", upcomingBadge: "UPCOMING" },
+  ru: { all: "Все", gundemTitle: "Новости", gundemSubtitle: "Новости ERPIDE — запуски продуктов, обновления компании и публикации к особым дням.", readMore: "Читать далее", emptyFilter: "В этом фильтре пока нет публикаций.", todayBadge: "СЕГОДНЯ", upcomingBadge: "СКОРО" },
+  kk: { all: "Барлығы", gundemTitle: "Жаңалықтар", gundemSubtitle: "ERPIDE жаңалықтары — өнім шығарылымдары, компания жаңартулары мен ерекше күн жарияланымдары.", readMore: "Толығырақ", emptyFilter: "Бұл сүзгіде әзірге жариялым жоқ.", todayBadge: "БҮГІН", upcomingBadge: "ЖАҚЫНДА" },
 };
 
 export default function GundemPage() {
@@ -47,6 +48,15 @@ export default function GundemPage() {
     const all = getNewsSorted();
     return filter === "all" ? all : all.filter((p) => p.type === filter);
   }, [filter]);
+  // Bugün veya yaklaşan 7 gün içindeki tatil(ler) — banner için.
+  // Client-side hesaplama, server time'a güvenmek yerine kullanıcının
+  // browser saatine göre gösterir (iyi enough for banner).
+  const todayHolidays = useMemo(() => getTodayHolidays(), []);
+  const upcomingHolidays = useMemo(() => {
+    const upcoming = getUpcomingHolidays(7);
+    const todaySlugs = new Set(todayHolidays.map((h) => h.slug));
+    return upcoming.filter((u) => !todaySlugs.has(u.holiday.slug)).slice(0, 2);
+  }, [todayHolidays]);
 
   return (
     <>
@@ -66,6 +76,34 @@ export default function GundemPage() {
               {labels.gundemSubtitle}
             </p>
           </motion.div>
+
+          {/* Bugün özel gün varsa öne çıkar */}
+          {todayHolidays.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-8"
+            >
+              {todayHolidays.map((h) => (
+                <HolidayBanner key={h.slug} holiday={h} locale={locale} badge={labels.todayBadge} dateLabel={null} />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Yaklaşan tatiller */}
+          {upcomingHolidays.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="mb-12 grid md:grid-cols-2 gap-3"
+            >
+              {upcomingHolidays.map((u) => (
+                <HolidayBanner key={u.holiday.slug + u.date} holiday={u.holiday} locale={locale} badge={labels.upcomingBadge} dateLabel={formatDate(u.date, locale)} />
+              ))}
+            </motion.div>
+          )}
 
           {/* Filter chips */}
           <div className="flex items-center justify-center gap-2 flex-wrap mb-12 sticky top-20 z-10 py-3 -mx-6 px-6 backdrop-blur-lg bg-black/30">
@@ -106,6 +144,26 @@ export default function GundemPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+function HolidayBanner({ holiday, locale, badge, dateLabel }: { holiday: Holiday; locale: Locale; badge: string; dateLabel: string | null }) {
+  const t = holiday.i18n[locale];
+  return (
+    <div className={`relative rounded-2xl overflow-hidden p-5 bg-gradient-to-br ${holiday.gradient} border border-white/10`}>
+      <div className="flex items-start gap-4">
+        <div className="text-5xl">{holiday.decoration}</div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">{badge}</span>
+            {dateLabel && <span className="text-xs text-white/80">{dateLabel}</span>}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/30 text-white">{holiday.country}</span>
+          </div>
+          <h3 className="text-lg font-bold text-white leading-tight">{t.title}</h3>
+          <p className="text-sm text-white/90 mt-1 leading-relaxed">{t.excerpt}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

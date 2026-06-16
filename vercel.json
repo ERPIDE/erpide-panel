@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/pocket-bill-reminder",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/check-holidays",
+      "schedule": "0 7 * * *"
     }
   ]
 }
