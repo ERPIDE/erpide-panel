@@ -115,7 +115,10 @@ export default function GundemDetailPage({ params }: { params: Promise<{ slug: s
                 <Image src={post.image} alt={post.imageAlt} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 900px" unoptimized={post.image.includes("/api/og/")} />
               </div>
             ) : post.image ? (
-              <div className={`relative aspect-[16/9] bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"} flex items-center justify-center`}>
+              <div
+                className={`relative aspect-[16/9] flex items-center justify-center ${post.imageBackground ? "" : `bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"}`}`}
+                style={post.imageBackground ? { background: post.imageBackground } : undefined}
+              >
                 <Image src={post.image} alt={post.imageAlt} width={280} height={280} className="drop-shadow-2xl" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
               </div>
