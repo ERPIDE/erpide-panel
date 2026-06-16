@@ -24,7 +24,7 @@ export function ProductLogo({
   size = 56,
   className = "",
 }: {
-  product: Pick<Product, "name" | "icon" | "color" | "logoImage" | "logoBackground">;
+  product: Pick<Product, "name" | "icon" | "color" | "logoImage" | "logoBackground" | "logoBackgroundColor">;
   size?: number;
   className?: string;
 }) {
@@ -33,12 +33,21 @@ export function ProductLogo({
 
   if (product.logoImage) {
     const isTransparent = product.logoBackground === "transparent";
+    // logoBackgroundColor varsa kart background'u o renge boyanır (örn. 1Ci
+    // logo dosyası 4:3 navy → kart'ı da navy yapınca object-contain'in
+    // bıraktığı üst/alt şeritler kaybolur, logo tam kareye uymuş görünür).
+    const customBg = !isTransparent && product.logoBackgroundColor;
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden ${
-          isTransparent ? "" : "bg-white ring-1 ring-white/10"
+          isTransparent ? "" : customBg ? "ring-1 ring-white/10" : "bg-white ring-1 ring-white/10"
         } ${className}`}
-        style={{ width: size, height: size, borderRadius: radius }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          ...(customBg ? { backgroundColor: product.logoBackgroundColor } : {}),
+        }}
       >
         <Image
           src={product.logoImage}
@@ -46,7 +55,7 @@ export function ProductLogo({
           width={size}
           height={size}
           className="object-contain"
-          style={{ padding: isTransparent ? 0 : Math.round(size * 0.06) }}
+          style={{ padding: isTransparent || customBg ? 0 : Math.round(size * 0.06) }}
         />
       </div>
     );

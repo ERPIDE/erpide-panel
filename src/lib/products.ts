@@ -178,6 +178,13 @@ export interface Product {
    *  durumlarda (örn. zaten gradient zeminli neon logo, beyaz card içinde
    *  garip duracak) "transparent" set edilebilir. */
   logoBackground?: "transparent" | "white";
+  /** Kart background rengini özelleştir. Logo dosyasının kendi arka plan
+   *  rengi ile kartı eşleştirir → kare-olmayan logolarda object-contain'in
+   *  bıraktığı şerit kaybolur (örn. 1Ci 800x600 navy logosu için
+   *  `#091e42`). Set edilirse bg-white'ı override eder, padding 0'a düşer
+   *  (logo dosyasının kendi padding'i zaten yeterli). `logoBackground:
+   *  "transparent"` ile birlikte kullanılmaz (transparent öncelikli). */
+  logoBackgroundColor?: string;
   color: string;
   domain: string;
   /** Hangi kategoride listelenir (site genelinde). */
@@ -736,6 +743,7 @@ export const PRODUCTS: Product[] = [
       "1C:ERP; binlerce kullanıcılı orta-büyük üretim firmalarında make-to-order, make-to-stock, kesikli ve sürekli tüm üretim stratejilerini destekler. Çekirdek modüller: Planlama (MPS), Üretim, Satınalma, Depo, Tahsilat/Tediye ve Maliyet Hesaplama. KPI dashboard'ları ve veriye dayalı karar için görsel analitik. 1C:Enterprise platformu üstünde tek bir entegre çözüm — birbiriyle 'konuşmayan' ayrı uygulamalar değil. ERPIDE; lisanslama, TR/KZ yerelleştirme, kurulum, eğitim, özelleştirme ve canlı destek paketleri sunar.",
     icon: Boxes,
     logoImage: "/products/1c/logo.webp",
+    logoBackgroundColor: "#091e42",
     color: "from-indigo-600 to-blue-700",
     domain: "1c-erp.erpide.com",
     category: "desktop-enterprise",
@@ -772,6 +780,7 @@ export const PRODUCTS: Product[] = [
       "1C:Drive; satıştan satınalmaya, üretimden stoğa kadar tüm operasyonu gerçek zamanlı izlemenizi sağlar. Çok seviyeli BOM ile reçete + iş merkezi yüklemesi + tedarik planlama tek ekranda. Sipariş/finans/stok/maliyet raporları esnek ve özelleştirilebilir. Mobil app ile sahada da erişim. 1C:Drive Lite ise tamamen bulut tabanlı, 700.000+ firmanın güvendiği teknolojiyle ön-muhasebe için ideal. Lisans ve kurulum maliyetleri KOBİ bütçesine uygun, şirketinizle birlikte büyür. ERPIDE; demo kurulum, veri taşıma, eğitim ve aylık destek paketleri sunar.",
     icon: Truck,
     logoImage: "/products/1c/logo.webp",
+    logoBackgroundColor: "#091e42",
     color: "from-cyan-600 to-teal-600",
     domain: "1c-drive.erpide.com",
     category: "desktop-enterprise",
