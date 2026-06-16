@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { PRODUCTS } from "@/lib/products";
+import { getNewsSorted } from "@/lib/news";
 
 // Next.js native sitemap.xml generator. Build sırasında erpide.com/sitemap.xml
 // olarak yayınlanır. Statik public route'lar + dinamik ürün detayları + 4 dil
@@ -26,6 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/hakkimizda", priority: 0.7, changeFrequency: "monthly" },
     { path: "/iletisim", priority: 0.7, changeFrequency: "monthly" },
     { path: "/fiyatlandirma", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/gundem", priority: 0.85, changeFrequency: "daily" },
     { path: "/kunye", priority: 0.3, changeFrequency: "yearly" },
     { path: "/docs", priority: 0.6, changeFrequency: "weekly" },
     { path: "/docs/finanserpide", priority: 0.6, changeFrequency: "weekly" },
@@ -58,5 +60,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     alternates: { languages: localizedAlternates(`/urunler/${p.id}`) },
   }));
 
-  return [...staticEntries, ...productEntries];
+  // Gündem post'ları — her post kendi detay sayfasıyla indexlenir, lastModified
+  // post tarihinden alınır (Google "Article" rich result'ta tarihi gösterir).
+  const newsEntries: MetadataRoute.Sitemap = getNewsSorted().map((post) => ({
+    url: `${SITE_URL}/gundem/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: "monthly",
+    priority: 0.65,
+    alternates: { languages: localizedAlternates(`/gundem/${post.slug}`) },
+  }));
+
+  return [...staticEntries, ...productEntries, ...newsEntries];
 }

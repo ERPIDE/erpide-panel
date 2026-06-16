@@ -50,6 +50,7 @@ export default function Navbar() {
     { href: "/", label: t("nav.home") },
     { href: "/urunler", label: t("nav.products") },
     { href: "/hizmetler", label: t("nav.services") },
+    { href: "/gundem", label: t("nav.gundem") },
     { href: "/hakkimizda", label: t("nav.about") },
     { href: "/iletisim", label: t("nav.contact") },
   ];
