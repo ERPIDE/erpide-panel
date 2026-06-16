@@ -47,12 +47,14 @@ export default function UrunlerPage() {
       .catch(() => {});
   }, []);
 
-  // Kategoriye göre gruplandirilmis urunler (filter="all" iken hepsi)
+  // Kategoriye göre gruplandirilmis urunler (filter="all" iken hepsi).
+  // hiddenFromPublic ürünler (AI Kontör gibi) liste sayfasında gösterilmez —
+  // backend ve mevcut müşteri akışları (hesabim/lisanslarim, callback) etkilenmez.
   const visibleCategories = useMemo(() => {
     return CATEGORIES
       .map((cat) => ({
         cat,
-        products: PRODUCTS.filter((p) => p.category === cat.id),
+        products: PRODUCTS.filter((p) => p.category === cat.id && !p.hiddenFromPublic),
       }))
       .filter((g) => g.products.length > 0)
       .filter((g) => filter === "all" || g.cat.id === filter);
@@ -84,7 +86,7 @@ export default function UrunlerPage() {
               Icon={LayoutGrid}
               label={locale === "en" ? "All" : locale === "ru" ? "Все" : locale === "kk" ? "Барлығы" : "Tümü"}
             />
-            {CATEGORIES.filter((c) => PRODUCTS.some((p) => p.category === c.id)).map((c) => {
+            {CATEGORIES.filter((c) => PRODUCTS.some((p) => p.category === c.id && !p.hiddenFromPublic)).map((c) => {
               const Icon = CATEGORY_ICON[c.id];
               return (
                 <FilterChip

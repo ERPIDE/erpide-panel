@@ -402,7 +402,7 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Hero
     "hero.title": "Your End-to-End Digital Transformation Partner",
-    "hero.subtitle": "8 products across 4 categories: SaaS (FinansERPIDE with 15+ bank integrations & 13 e-invoice integrators, CaptchaERPIDE), Enterprise ERP (CANIAS, 1C:ERP, 1C:Drive), Mobile (PocketERPIDE on iOS+Android, WITMA real-time translation chat), and AI Credits. 15+ years of ERP expertise, fully transparent project delivery, 24/7 AI-powered support.",
+    "hero.subtitle": "7 products across 3 categories: SaaS (FinansERPIDE with 15+ bank integrations & 13 e-invoice integrators, CaptchaERPIDE), Enterprise ERP (CANIAS, 1C:ERP, 1C:Drive), Mobile (PocketERPIDE on iOS+Android, WITMA real-time translation chat). 15+ years of ERP expertise, fully transparent project delivery, 24/7 AI-powered support.",
     "hero.cta1": "Explore Products",
     "hero.cta2": "Contact Us",
     "hero.stat1": "SaaS & Enterprise Solutions",
@@ -1085,7 +1085,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "payment.billing_badge": "FATURA",
 
     "hero.title": "Uçtan Uca Dijital Dönüşüm Partneriniz",
-    "hero.subtitle": "4 kategoride 8 ürün: SaaS (FinansERPIDE — 15+ banka + 13 e-fatura entegratörü, CaptchaERPIDE), Kurumsal ERP (CANIAS, 1C:ERP, 1C:Drive), Mobil (iOS+Android'de PocketERPIDE, gerçek zamanlı çeviri-chat WITMA) ve AI Kontör paketleri. 15+ yıl ERP sektör tecrübesi, tam şeffaf proje yönetimi, 7/24 AI destekli müşteri hizmetleri.",
+    "hero.subtitle": "3 kategoride 7 ürün: SaaS (FinansERPIDE — 15+ banka + 13 e-fatura entegratörü, CaptchaERPIDE), Kurumsal ERP (CANIAS, 1C:ERP, 1C:Drive), Mobil (iOS+Android'de PocketERPIDE, gerçek zamanlı çeviri-chat WITMA). 15+ yıl ERP sektör tecrübesi, tam şeffaf proje yönetimi, 7/24 AI destekli müşteri hizmetleri.",
     "hero.cta1": "Ürünlerimizi İnceleyin",
     "hero.cta2": "Bize Ulaşın",
     "hero.stat1": "SaaS & Kurumsal Çözüm",
@@ -1379,7 +1379,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.admin": "Управление",
 
     "hero.title": "Ваш Партнёр в Цифровой Трансформации",
-    "hero.subtitle": "8 продуктов в 4 категориях: SaaS (FinansERPIDE с интеграциями 15+ банков и 13 операторов э-фактуры, CaptchaERPIDE), Корпоративный ERP (CANIAS, 1C:ERP, 1C:Drive), Мобильные (PocketERPIDE на iOS+Android, чат-переводчик WITMA в реальном времени) и AI-кредиты. 15+ лет опыта в ERP, полная прозрачность проектов, AI-поддержка 24/7.",
+    "hero.subtitle": "7 продуктов в 3 категориях: SaaS (FinansERPIDE с интеграциями 15+ банков и 13 операторов э-фактуры, CaptchaERPIDE), Корпоративный ERP (CANIAS, 1C:ERP, 1C:Drive), Мобильные (PocketERPIDE на iOS+Android, чат-переводчик WITMA в реальном времени). 15+ лет опыта в ERP, полная прозрачность проектов, AI-поддержка 24/7.",
     "hero.cta1": "Наши Продукты",
     "hero.cta2": "Связаться с Нами",
     "hero.stat1": "SaaS и Корпоративных Решений",
@@ -2053,7 +2053,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "nav.admin": "Басқару",
 
     "hero.title": "Цифрлық Трансформация Серіктесіңіз",
-    "hero.subtitle": "4 санатта 8 өнім: SaaS (FinansERPIDE — 15+ банк интеграциясы мен 13 э-фактура операторы, CaptchaERPIDE), Корпоративтік ERP (CANIAS, 1C:ERP, 1C:Drive), Мобильді (iOS+Android-те PocketERPIDE, нақты уақыттағы аударма-чат WITMA) және AI Кредиттері. 15+ жыл ERP саладағы тәжірибе, толық ашық жобалық басқару, AI қолдау 24/7.",
+    "hero.subtitle": "3 санатта 7 өнім: SaaS (FinansERPIDE — 15+ банк интеграциясы мен 13 э-фактура операторы, CaptchaERPIDE), Корпоративтік ERP (CANIAS, 1C:ERP, 1C:Drive), Мобильді (iOS+Android-те PocketERPIDE, нақты уақыттағы аударма-чат WITMA). 15+ жыл ERP саладағы тәжірибе, толық ашық жобалық басқару, AI қолдау 24/7.",
     "hero.cta1": "Өнімдерімізді Қараңыз",
     "hero.cta2": "Бізбен Байланысыңыз",
     "hero.stat1": "SaaS және Корпоративтік Шешім",

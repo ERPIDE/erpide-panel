@@ -40,7 +40,7 @@ export default function Services() {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-20">
-          {PRODUCTS.filter((p) => p.id !== "ai-kontor").map((p, i) => {
+          {PRODUCTS.filter((p) => !p.hiddenFromPublic).map((p, i) => {
             return (
               <motion.div
                 key={p.id}

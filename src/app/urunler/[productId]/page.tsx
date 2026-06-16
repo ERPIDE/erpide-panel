@@ -199,7 +199,10 @@ function Inner({ productId }: { productId: string }) {
   // ai-kontor sadece aktif FinansERPIDE müşterilerine satılır — kontörler firma bazlı havuza yazılır.
   const aiKontorBlocked = product?.id === "ai-kontor" && meReady && !hasActiveFinansERPIDE;
 
-  if (!product) {
+  // hiddenFromPublic ürünler (AI Kontör) public URL ile erişilemez —
+  // bulunamadı sayfası gösterilir. Mevcut müşteriler bakiyelerini
+  // hesabim/lisanslarim üzerinden görmeye devam eder.
+  if (!product || product.hiddenFromPublic) {
     return (
       <>
         <Navbar />

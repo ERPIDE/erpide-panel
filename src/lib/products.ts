@@ -75,21 +75,12 @@ export const CATEGORIES: {
       kk: "App Store және Google Play дүкендерінен жүктеңіз",
     },
   },
-  {
-    id: "ai-credits",
-    label: {
-      tr: "AI Kontör",
-      en: "AI Credits",
-      ru: "AI-кредиты",
-      kk: "AI несиелері",
-    },
-    subtitle: {
-      tr: "Uygulamalarımızın AI asistanları için ek mesaj paketi",
-      en: "Top-up credits for the AI assistants in our apps",
-      ru: "Пакеты сообщений для AI-ассистентов в наших приложениях",
-      kk: "Қосымшаларымыздағы AI көмекшілеріне арналған хабарлама пакеттері",
-    },
-  },
+  // NOT: "ai-credits" kategorisi public CATEGORIES listesinden 2026-06'da
+  // çıkarıldı (iyzico üye işyeri başvurusu — "kredi/jeton/kontör modeli"
+  // satılmaması talebi). Kategori tip tanımında durmaya devam ediyor çünkü
+  // `ai-kontor` ürünü mevcut müşteriler için backend'de hâlâ aktif; sadece
+  // halka açık liste/filtre/navigasyon'dan gizli. Yeniden açılırsa burayı geri
+  // ekle + ai-kontor.hiddenFromPublic'i kaldır.
   {
     id: "desktop-enterprise",
     label: {
@@ -199,6 +190,13 @@ export interface Product {
    *  rejects with 403. Use for products where free usage would burn real cost
    *  (e.g. AI credit packs hitting Claude API). */
   noTrial?: boolean;
+  /** When true, ürün halka açık liste sayfalarında (/urunler, /urunler/[id], Footer
+   *  kategori linkleri, Services anasayfa grid'i) gösterilmez. Backend ve mevcut
+   *  müşteri akışları (hesabim/lisanslarim, ödeme callback, license-service)
+   *  çalışmaya devam eder. iyzico üye işyeri süreci için "AI Kontör" tarzı kredi
+   *  satışını site'den gizlerken mevcut kullanıcı bakiyesini korumak amacıyla
+   *  eklendi (2026-06). */
+  hiddenFromPublic?: boolean;
   /** Optional live demo URL. Shown as a "Demoyu İncele" button on the product card. */
   demoUrl?: string;
   /** Optional official product page (external — e.g. 1ci.com). Shown as
@@ -413,7 +411,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 9.99 },
         cycle: "monthly",
         features: [
-          "Günde 1.000 çözüm",
+          "Aboneliğe dahil: günlük 1.000 çözüm kapasitesi",
           "18 captcha tipi — image + token tabanlı",
           "Native solver'lar (slider/puzzle/text/icon)",
           "BYOK desteği — kendi 2Captcha/CapMonster key'in",
@@ -423,15 +421,15 @@ export const PRODUCTS: Product[] = [
         i18n: {
           en: {
             description: "For bot developers",
-            features: ["1,000 solves per day", "18 captcha types — image + token based", "Native solvers (slider/puzzle/text/icon)", "BYOK support — your own 2Captcha/CapMonster key", "REST API + 30ms avg response", "Real-time dashboard + email support"],
+            features: ["Included in subscription: 1,000 daily solves capacity", "18 captcha types — image + token based", "Native solvers (slider/puzzle/text/icon)", "BYOK support — your own 2Captcha/CapMonster key", "REST API + 30ms avg response", "Real-time dashboard + email support"],
           },
           ru: {
             description: "Для разработчиков ботов",
-            features: ["1 000 решений в день", "18 типов капчи — image + токен", "Нативные решатели (slider/puzzle/text/icon)", "BYOK — ваш собственный 2Captcha/CapMonster ключ", "REST API + среднее 30 мс", "Дашборд в реальном времени + email поддержка"],
+            features: ["В подписку входит: ёмкость 1 000 решений в день", "18 типов капчи — image + токен", "Нативные решатели (slider/puzzle/text/icon)", "BYOK — ваш собственный 2Captcha/CapMonster ключ", "REST API + среднее 30 мс", "Дашборд в реальном времени + email поддержка"],
           },
           kk: {
             description: "Бот әзірлеушілерге арналған",
-            features: ["Күніне 1 000 шешім", "18 капча түрі — image + токен негізді", "Жергілікті шешушілер (slider/puzzle/text/icon)", "BYOK — өз 2Captcha/CapMonster кілтіңіз", "REST API + орташа 30 мс", "Нақты уақыттағы дашборд + email қолдау"],
+            features: ["Жазылымға кіреді: күніне 1 000 шешім сыйымдылығы", "18 капча түрі — image + токен негізді", "Жергілікті шешушілер (slider/puzzle/text/icon)", "BYOK — өз 2Captcha/CapMonster кілтіңіз", "REST API + орташа 30 мс", "Нақты уақыттағы дашборд + email қолдау"],
           },
         },
       },
@@ -445,7 +443,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 29.99 },
         cycle: "monthly",
         features: [
-          "Günde 10.000 çözüm",
+          "Aboneliğe dahil: günlük 10.000 çözüm kapasitesi",
           "Tüm 18 captcha tipi (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)",
           "Öncelikli işleme (15ms)",
           "Webhook bildirimleri + retry kuyruğu",
@@ -456,15 +454,15 @@ export const PRODUCTS: Product[] = [
         i18n: {
           en: {
             description: "Professional usage",
-            features: ["10,000 solves per day", "All 18 captcha types (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Priority processing (15ms)", "Webhook callbacks + retry queue", "Multi-tenant license management", "Priority support"],
+            features: ["Included in subscription: 10,000 daily solves capacity", "All 18 captcha types (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Priority processing (15ms)", "Webhook callbacks + retry queue", "Multi-tenant license management", "Priority support"],
           },
           ru: {
             description: "Профессиональное использование",
-            features: ["10 000 решений в день", "Все 18 типов капчи (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Приоритетная обработка (15 мс)", "Webhook-уведомления + очередь повторов", "Управление лицензиями для нескольких клиентов", "Приоритетная поддержка"],
+            features: ["В подписку входит: ёмкость 10 000 решений в день", "Все 18 типов капчи (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Приоритетная обработка (15 мс)", "Webhook-уведомления + очередь повторов", "Управление лицензиями для нескольких клиентов", "Приоритетная поддержка"],
           },
           kk: {
             description: "Кәсіби пайдалану",
-            features: ["Күніне 10 000 шешім", "Барлық 18 капча түрі (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Басымдықпен өңдеу (15 мс)", "Webhook хабарламалары + қайталау кезегі", "Көп-арендатор лицензия басқару", "Басымдықты қолдау"],
+            features: ["Жазылымға кіреді: күніне 10 000 шешім сыйымдылығы", "Барлық 18 капча түрі (reCAPTCHA v2/v3/Enterprise, hCaptcha, Turnstile, AWS WAF, FunCaptcha, DataDome, GeeTest…)", "Басымдықпен өңдеу (15 мс)", "Webhook хабарламалары + қайталау кезегі", "Көп-арендатор лицензия басқару", "Басымдықты қолдау"],
           },
         },
       },
@@ -478,7 +476,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 89.99 },
         cycle: "monthly",
         features: [
-          "Sınırsız çözüm",
+          "Aboneliğe dahil: sınırsız çözüm kapasitesi",
           "Tüm tipler + custom captcha tanımı",
           "Dedicated worker pool + 10ms hedef süre",
           "%99.5 uptime SLA garantisi",
@@ -488,15 +486,15 @@ export const PRODUCTS: Product[] = [
         i18n: {
           en: {
             description: "High volume + SLA",
-            features: ["Unlimited solves", "All types + custom captcha definitions", "Dedicated worker pool + 10ms target latency", "99.5% uptime SLA guarantee", "Public accuracy + p95 latency dashboard", "Phone support + onboarding"],
+            features: ["Included in subscription: unlimited solves capacity", "All types + custom captcha definitions", "Dedicated worker pool + 10ms target latency", "99.5% uptime SLA guarantee", "Public accuracy + p95 latency dashboard", "Phone support + onboarding"],
           },
           ru: {
             description: "Большие объёмы + SLA",
-            features: ["Безлимитные решения", "Все типы + кастомные определения капчи", "Выделенный пул воркеров + цель 10 мс", "Гарантия SLA 99.5% uptime", "Публичный дашборд точности + p95 latency", "Телефонная поддержка + онбординг"],
+            features: ["В подписку входит: безлимитная ёмкость решений", "Все типы + кастомные определения капчи", "Выделенный пул воркеров + цель 10 мс", "Гарантия SLA 99.5% uptime", "Публичный дашборд точности + p95 latency", "Телефонная поддержка + онбординг"],
           },
           kk: {
             description: "Үлкен көлем + SLA",
-            features: ["Шексіз шешім", "Барлық түрлер + арнайы капча анықтамасы", "Бөлінген worker пулы + 10 мс мақсат", "99.5% uptime SLA кепілдігі", "Ашық дәлдік + p95 latency дашборд", "Телефонмен қолдау + онбординг"],
+            features: ["Жазылымға кіреді: шектеусіз шешім сыйымдылығы", "Барлық түрлер + арнайы капча анықтамасы", "Бөлінген worker пулы + 10 мс мақсат", "99.5% uptime SLA кепілдігі", "Ашық дәлдік + p95 latency дашборд", "Телефонмен қолдау + онбординг"],
           },
         },
       },
@@ -515,6 +513,12 @@ export const PRODUCTS: Product[] = [
     domain: "finans.erpide.com",
     category: "ai-credits",
     marketScope: "GLOBAL",
+    // Public site'ten gizli; sadece mevcut müşteriler hesabim/lisanslarim'dan
+    // kontör bakiyesini görebilir. iyzico üye işyeri başvuru sürecinde
+    // "kredi/jeton/kontör modeli" satılmaması talebi nedeniyle 2026-06'da
+    // public listelerden çekildi. Backend (kontör tüketimi, callback,
+    // license-service) olduğu gibi çalışıyor.
+    hiddenFromPublic: true,
     i18n: {
       en: {
         name: "AI Assistant Credits",
