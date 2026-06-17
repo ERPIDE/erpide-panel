@@ -19,6 +19,7 @@ export type ProductId =
   | "ai-kontor"
   | "pocketerpide"
   | "witma"
+  | "dataengine"
   | "1c-erp"
   | "1c-drive"
   | "canias";
@@ -842,6 +843,43 @@ export const PRODUCTS: Product[] = [
     },
     contactOnly: true,
     officialUrl: "https://www.caniaserp.com/",
+    skus: [],
+  },
+  {
+    id: "dataengine",
+    name: "Data Engine",
+    tagline: "ERP Geçişlerinde Veri Doğrulama Komuta Merkezi",
+    description:
+      "Eski sistemden yeniye veri taşırken kayıp/uyumsuzluğu canlı izle. ERP_TO_ACC, ACC_TO_ERP veya iki yönlü senkron — her belge tipi için kaynak/hedef satır sayısı, fark ve yapışıp kalan kayıtlar tek dashboard'da. Müşterinin kendi server'ına kurulur, finans verisi şirketin sınırından çıkmaz.",
+    longDescription:
+      "Data Engine; 1C, CANIAS, Logo, SAP veya başka bir ERP'den ERP'ye geçiş projelerinde \"go-live öncesi veri doğrulama\" işini saatlerden saniyelere indirir. Kaynak ve hedef veritabanlarına doğrudan bağlanır (SQL/ODBC), her belge tipini (satınalma, satış, fatura, stok hareketi, OS kartı, mizan...) çift taraflı kıyaslar; ERP'de 1.247 satır var, ACC'ye 1.243 düşmüş — fark 4, hangileri? Tek tıkla göster. Stuck/error/done KPI'ları, 7 günlük trend grafiği, modül bazlı yığılma, drill-down belge listesi. Mizan ve hesap bakiyesi karşılaştırması: \"opening + dönem hareketi = closing\" eşitliği bozulan hesapları otomatik flag'ler. Müşterinin kendi Windows Server'ına kurulur, Cloudflare Tunnel üzerinden danışman ekibi nereden olursa olsun bağlanabilir — finansal veri şirket sınırından çıkmaz. ERPIDE; kurulum, kaynak/hedef tablo eşleştirme, kustom belge tipi tanımı, eğitim ve canlı destek sunar.",
+    icon: Database,
+    logoImage: "/products/dataengine/logo.png",
+    logoBackgroundColor: "#000000",
+    color: "from-blue-600 to-purple-600",
+    domain: "dataengine.erpide.com",
+    category: "desktop-enterprise",
+    marketScope: "GLOBAL",
+    i18n: {
+      en: {
+        name: "Data Engine",
+        tagline: "Mission Control for ERP Migration Data Validation",
+        description: "Watch data loss/mismatch live while you move from old to new. ERP_TO_ACC, ACC_TO_ERP or two-way sync — source/target row counts, diffs and stuck records for every document type on one dashboard. Deployed on the customer's own server; financial data never leaves the building.",
+      },
+      ru: {
+        name: "Data Engine",
+        tagline: "Командный центр проверки данных при переходе ERP",
+        description: "Отслеживайте потери и несоответствия данных в реальном времени при переходе со старой системы на новую. ERP_TO_ACC, ACC_TO_ERP или двусторонняя синхронизация — счётчики строк источника/приёмника, разница и застрявшие записи для каждого типа документов на одной панели. Устанавливается на сервер заказчика; финансовые данные не покидают периметр.",
+      },
+      kk: {
+        name: "Data Engine",
+        tagline: "ERP көшу жобаларында деректерді валидациялау командалық орталығы",
+        description: "Ескі жүйеден жаңасына көшу барысында деректер жоғалуын/сәйкессіздігін нақты уақытта бақылаңыз. ERP_TO_ACC, ACC_TO_ERP немесе екі жақты синхрондау — әр құжат түрі үшін көз/мақсат жол саны, айырмашылық пен жабысып қалған жазбалар бір дашбордта. Тапсырыс берушінің өз серверіне орнатылады; қаржы деректері ұйым шегінен шықпайды.",
+      },
+    },
+    contactOnly: true,
+    noTrial: true,
+    demoUrl: "https://dataengine.erpide.com",
     skus: [],
   },
   {

@@ -7,8 +7,10 @@ const PREFIX: Record<ProductId, string> = {
   "ai-kontor": "AIK",
   pocketerpide: "PKT",
   witma: "WTM",
-  // contactOnly distributor products (no automated licensing); placeholders kept
-  // so the Record stays exhaustive — keys won't be hit in normal flows.
+  // contactOnly distributor / on-premise products (no automated licensing);
+  // placeholders kept so the Record stays exhaustive — keys won't be hit in
+  // normal flows.
+  dataengine: "DTE",
   "1c-erp": "ERP",
   "1c-drive": "DRV",
   canias: "CAN",
