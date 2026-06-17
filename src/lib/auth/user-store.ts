@@ -284,8 +284,8 @@ async function saveState(state: State): Promise<void> {
 
 // ---- public API ----
 
-export async function findUserByEmail(email: string): Promise<UserRecord | undefined> {
-  const s = await loadState();
+export async function findUserByEmail(email: string, forceFresh = false): Promise<UserRecord | undefined> {
+  const s = await loadState(forceFresh);
   const lower = email.toLowerCase().trim();
   for (const user of Object.values(s.users)) {
     if (user.email.toLowerCase() === lower) return user;

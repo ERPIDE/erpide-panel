@@ -44,8 +44,12 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/hesabim", req.url));
   }
 
-  // 2) Existing user with same email → auto-link
-  const existingByEmail = await findUserByEmail(info.email);
+  // 2) Existing user with same email → auto-link.
+  // forceFresh=true: Vercel Blob cache (3s TTL) bazen yeni kaydolmuş
+  // kullanıcıyı miss eder ve consent ekranına yönlendirir; bu da
+  // sonradan complete endpoint'inde duplicate hatası doğurur. Burada
+  // tek bir fresh read yaparak o yol kapanır.
+  const existingByEmail = await findUserByEmail(info.email, true);
   if (existingByEmail) {
     await updateUser(existingByEmail.id, {
       oauthProvider: "google",
