@@ -33,9 +33,17 @@ export default function OAuthConsentForm({ email, firstName, lastName, avatarUrl
           marketingConsent: consents.marketing,
         }),
       });
-      const data = await res.json();
+      // Body boş veya HTML gelirse JSON.parse patlamasın diye önce text al,
+      // sonra denemeye çalış. Bunu yapmazsak "Unexpected end of JSON input"
+      // ile karşılaşırız (örn. 500 hatası boş body ile dönerse).
+      const raw = await res.text();
+      let data: { ok?: boolean; error?: string } = {};
+      if (raw) {
+        try { data = JSON.parse(raw); }
+        catch { data = { error: raw.slice(0, 200) }; }
+      }
       if (!res.ok) {
-        setError(data.error || "Hesap oluşturulamadı");
+        setError(data.error || `Hesap oluşturulamadı (HTTP ${res.status})`);
         setLoading(false);
         return;
       }
