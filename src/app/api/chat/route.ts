@@ -192,7 +192,10 @@ export async function POST(req: Request) {
     const resp = await client.messages.create({
       model: "claude-haiku-4-5-20251001",  // hızlı + ucuz — marketing site için yeterli
       max_tokens: 512,
-      system: SYSTEM_PROMPT,
+      // System prompt cached (ephemeral, 5dk TTL). 8.8KB system + ürün
+      // listesi her request'te yeniden okunmasın diye. İlk istek %25 daha
+      // pahalı (cache write), sonrakiler aynı 5dk içinde %90 ucuz.
+      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       messages: trimmed.map((m) => ({ role: m.role, content: m.content })),
     });
     const text = resp.content
