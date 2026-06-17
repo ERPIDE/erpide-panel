@@ -41,7 +41,8 @@ GRUP A — SABİT ÜRÜNLERİMİZ (siteden direkt satın alınabilir):
 1) FinansERPIDE — Multi-tenant ERP/finans SaaS
    - AI asistanlı muhasebe; fatura fotoğrafı yükleyince AI sisteme kaydeder
    - Modüller: cari, fatura, stok, banka, üretim, e-Fatura, e-Arşiv, mizan
-   - Planlar (KDV hariç, aylık): Starter $29, Pro $59, Enterprise $149
+   - Planlar (KDV hariç, aylık): Starter $29 (2.000 AI msg), Pro $59 (6.000 AI msg, popüler), Business $149 (20.000 AI msg)
+   - Plan iken e-Fatura sayıları sırasıyla: 100 / 500 / sınırsız
    - 3 gün ücretsiz deneme, kredi kartı istemiyoruz
    - Kullanıcı kılavuzları ve eğitim videoları sistem içinde mevcut
    - URL: /urunler/finanserpide
