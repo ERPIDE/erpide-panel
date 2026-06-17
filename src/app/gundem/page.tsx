@@ -223,14 +223,27 @@ function FeedCard({ post, delay, locale, readMoreLabel }: { post: NewsPost; dela
                 unoptimized={post.image.includes("/api/og/")}
               />
             ) : post.image ? (
-              <div className={`absolute inset-0 bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"} flex items-center justify-center`}>
-                <Image
-                  src={post.image}
-                  alt={post.imageAlt}
-                  width={120}
-                  height={120}
-                  className="drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
-                />
+              <div
+                className={`absolute inset-0 ${post.imageBackground ? "" : `bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"} flex items-center justify-center`}`}
+                style={post.imageBackground ? { background: post.imageBackground } : undefined}
+              >
+                {post.imageBackground ? (
+                  <Image
+                    src={post.image}
+                    alt={post.imageAlt}
+                    fill
+                    className="object-contain p-3 group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, 280px"
+                  />
+                ) : (
+                  <Image
+                    src={post.image}
+                    alt={post.imageAlt}
+                    width={120}
+                    height={120}
+                    className="drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
+                  />
+                )}
               </div>
             ) : (
               <div className={`absolute inset-0 bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"}`}>

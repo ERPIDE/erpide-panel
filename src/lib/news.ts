@@ -40,6 +40,10 @@ export interface NewsPost {
   badges?: string[];
   /** Tematik gradient (Tailwind class). Special-day için tema rengi, default brand mavi-mor */
   gradient?: string;
+  /** Ürün ikonu post'ları için kart background rengi (örn. "#091e42"). Set edildiğinde
+   *  gradient'i geçersiz kılar; logo object-contain ile ortalanır, etrafta uyumsuz
+   *  gradient yerine ikonun kendi rengini yayar. */
+  imageBackground?: string;
   /** Bu post bir ürünle ilgiliyse, detay sayfasında "Ürüne git" CTA */
   productSlug?: string;
   /** Dinamik OG image üretimi için: post'u temsil eden büyük emoji veya glyph
@@ -239,6 +243,7 @@ export const NEWS: NewsPost[] = [
       "Önemli bir kilometre taşı: ERPIDE bugün resmi olarak 1Ci ürün ailesinin Türkiye distribütörü oldu.\n\n**Ne anlama geliyor?**\n\nDünya çapında binlerce işletmenin güvendiği 1C:ERP ve 1C:Drive ürünleri artık Türkiye'de ERPIDE garantisiyle satın alınabiliyor. Lisanslama, kurulum, Türk vergi mevzuatına yerelleştirme, eğitim ve canlı destek paketleri tek elden sunuluyor.\n\n**1C:ERP** — orta ve büyük ölçekli üretim firmaları için yüksek fonksiyonlu ERP. Kesikli + sürekli üretim, MRP, planlama, finans, regulated raporlama hepsi tek platformda.\n\n**1C:Drive** — küçük ve orta ölçekli işletmeler için tam kapsamlı ERP. Çok seviyeli BOM, gerçek zamanlı sipariş takibi, mobil uygulama, hızlı kurulum.\n\nERPIDE ekibimiz 15+ yıllık ERP sektör tecrübesiyle, kurulum sonrası destekten yerelleştirmeye kadar tüm süreçleri yönetiyor. Demo talepleri ve fiyat bilgisi için erpide.com/urunler üzerinden iletişime geçebilirsiniz.",
     image: "/products/1c/logo.webp",
     imageAlt: "1Ci ürün ailesi distribütör anlaşması",
+    imageBackground: "#091e42",
     gradient: "from-indigo-700 to-blue-800",
     badges: ["DAĞITICI", "GLOBAL"],
     productSlug: "1c-erp",
@@ -306,6 +311,7 @@ export const NEWS: NewsPost[] = [
       "PocketERPIDE — bireysel kullanıcılar için tasarladığımız AI destekli cüzdan & bütçe uygulamamız — bugün TestFlight üzerinden iOS Beta erişimine açıldı.\n\n**Kimler için?**\n\nERP karmaşıklığı istemeyen, sade ve şık bir kişisel finans uygulaması arayan herkes için: memurlar, mühendisler, doktorlar, freelancerlar — kısacası gelir-gider takip eden ve kontrolü elinde tutmak isteyen herkes.\n\n**Özellikler:**\n\n- Maaşını brüt veya net olarak tanımla, sistem her ay otomatik gelir kaydetsin\n- Fatura geldiğinde AI'a fotoğraf at veya yazılı söyle, kategorize edilip cüzdanına işlensin\n- Aylık özet + kategori bazlı harcama analizi\n- Hedef bütçe takibi\n- Vergi iadesi hesaplama\n- Türk vergi dilimleri (brüt-net) ve TR'ye özel harcama kategorileriyle uyumlu\n\nReact Native (Expo) ile geliştirildi, iOS + Android için tek codebase. Android Beta'sı önümüzdeki haftalarda Google Play'de.\n\nBeta erişimi için pocket.erpide.com üzerinden e-posta bırakabilirsin.",
     image: "/products/pocketerpide/icon.png",
     imageAlt: "PocketERPIDE iOS uygulama ikonu",
+    imageBackground: "#db2777",
     gradient: "from-pink-500 to-rose-600",
     badges: ["YENİ ÜRÜN", "MOBİL", "TR"],
     productSlug: "pocketerpide",
@@ -373,6 +379,7 @@ export const NEWS: NewsPost[] = [
       "ERPIDE büyümeye devam ediyor: bugün CANIAS ERP'in Türkiye distribütör ağına resmen katıldık.\n\n**CANIAS ERP nedir?**\n\nKöklü bir Türk endüstriyel ERP markası. MRP, üretim, satınalma, depo yönetimi, satış, finans, insan kaynakları — kurumsal bir işletmenin ihtiyaç duyduğu tüm modüller tek platformda. Türk vergi mevzuatına ve endüstri standartlarına özel geliştirilmiş.\n\n**ERPIDE ne sunuyor?**\n\n- CANIAS lisanslama ve kurulum\n- Modül seçimi ve özelleştirme\n- Veri taşıma + entegrasyon\n- Kullanıcı eğitimi\n- Aylık bakım ve destek paketleri\n- Türkiye + Kazakistan ofislerimizden bölgesel hizmet\n\nFabrika, üretim tesisi veya orta-büyük ölçekli işletme yöneticisiyseniz, CANIAS ile iş süreçlerinizi standartlaştırıp performansınızı artırabilirsiniz. erpide.com/urunler/canias üzerinden detaylı inceleyebilir, demo talep edebilirsiniz.",
     image: "/products/canias/logo.jpg",
     imageAlt: "CANIAS ERP distribütör anlaşması",
+    imageBackground: "#ffffff",
     gradient: "from-slate-600 to-slate-800",
     badges: ["DAĞITICI", "TR"],
     productSlug: "canias",
@@ -440,6 +447,7 @@ export const NEWS: NewsPost[] = [
       "ERPIDE ürün ailesine bugün yeni bir üye katıldı: **WITMA — Understand Everything**.\n\n**WITMA nedir?**\n\nMesajlaşma, sesli ve görüntülü görüşme ile canlı çeviriyi tek bir uygulamada birleştiren, uçtan uca şifreli yeni nesil iletişim platformu.\n\n**Öne çıkan özellikler:**\n\n- **Sınırsız mesajlaşma** — metin, dosya, ses, görüntü\n- **Sesli & görüntülü görüşme** — bireysel ve grup\n- **Canlı çeviri** — konuşurken anlık çevrilen alt yazılar, 50+ dil\n- **E2E şifreleme** — Signal protokolü tabanlı, mesajlarınız sadece sizin\n- **Çapraz platform** — iOS + Android + web\n- **Yapay zeka asistanı** — özet alma, hatırlatma, ajandanıza işleme\n\n**Kimler için?**\n\nYurt dışındaki müşterileriyle anlık iletişim kurması gereken işletmeler, çok dilli ekipler, yurtdışındaki ailesiyle konuşan herkes, yurt dışı seyahatinde dil bariyeriyle karşılaşan herkes için tasarlandı.\n\n**Erişim:**\n\nİlk lansman olarak iOS ve Android'de mevcut. WITMA web versiyonu witma-site.vercel.app adresinden incelenebilir (witma.app DNS taşıma sürecinde).\n\nERPIDE olarak WITMA'yı 2026'nın en heyecan verici ürünü olarak görüyoruz. Geri bildirimlerinizi bekliyoruz!",
     image: "/products/witma/icon.png",
     imageAlt: "WITMA uygulama ikonu",
+    imageBackground: "#0a0f1f",
     gradient: "from-purple-600 via-pink-500 to-cyan-400",
     badges: ["YENİ ÜRÜN", "BUGÜN", "GLOBAL"],
     productSlug: "witma",

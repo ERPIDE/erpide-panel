@@ -701,6 +701,7 @@ export const PRODUCTS: Product[] = [
       "PocketERPIDE; bireysel kullanıcılar için yapılmış, AI asistanlı kişisel finans takip uygulamasıdır. Maaşını (brüt veya net) bir kez tanımla, sistem her ay otomatik gelir olarak kaydetsin. Fatura geldikçe AI'a fotoğraf at veya yazılı olarak söyle — kategorize edilip cüzdanına işlensin. Aylık özet, kategori bazlı harcama analizi, hedef bütçe takibi, vergi iadesi hesaplama. Şirket muhasebesi karmaşıklığı yok; herkesin kullanabildiği sade bir kişisel bütçe uygulaması.",
     icon: Wallet,
     logoImage: "/products/pocketerpide/icon.png",
+    logoBackgroundColor: "#db2777",
     color: "from-pink-500 to-rose-600",
     domain: "pocket.erpide.com",
     category: "mobile",
@@ -855,6 +856,7 @@ export const PRODUCTS: Product[] = [
       "WITMA; \"Understand Everything\" felsefesiyle tasarlanmış küresel iletişim platformu. İki kişinin her birinin kendi dilinde yazıp kendi dilinde okuduğu, çevirinin tamamen otomatik yapıldığı modern sohbet uygulaması. Sen Türkçe yazarsın, karşıdaki Rusça/Japonca/İngilizce görür; o kendi dilinde yazar, sen Türkçe görürsün. Mesajlar uçtan uca şifreli (ECDH/Curve25519); sunucu sadece şifreli veriye bakar. Sesli ve görüntülü aramada canlı altyazı + dublaj. 60+ dil, KVKK/GDPR uyumlu. iOS App Store ve Google Play'den indir — web/masaüstüne kurulum yok.",
     icon: MessageCircle,
     logoImage: "/products/witma/icon.png",
+    logoBackgroundColor: "#0a0f1f",
     color: "from-purple-500 via-pink-500 to-cyan-400",
     // Şimdilik Vercel preview — witma.app domain DNS yönlendirmesi yapılınca
     // burayı "witma.app"a çevir.
