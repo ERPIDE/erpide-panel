@@ -690,6 +690,51 @@ function Inner({ productId }: { productId: string }) {
                 </>
               )}
 
+              {/* Data Engine — on-premise validation dashboard. Show the
+                  walkthrough video + content-rich screenshot gallery. */}
+              {product.id === "dataengine" && (
+                <>
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-1">Canlı Dashboard Turu</h2>
+                    <p className="text-xs text-gray-500 mb-3">dataengine.erpide.com üzerinden gerçek ATM müşteri kurulumundan kaydedildi — modül ve drill-down akışını gösterir.</p>
+                    <video
+                      className="w-full rounded-2xl border border-white/10 bg-black"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      poster="/screenshots/dataengine/01-dashboard.png"
+                    >
+                      <source src="/videos/dataengine/walkthrough.webm" type="video/webm" />
+                    </video>
+                  </section>
+
+                  <section className="mb-10">
+                    <h2 className="text-xl font-bold text-white mb-1">Ekran Görüntüleri</h2>
+                    <p className="text-xs text-gray-500 mb-4">Dashboard, karşılaştırma, mizan ve drill-down ekranları.</p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[
+                        { src: "/screenshots/dataengine/01-dashboard.png",            caption: "Dashboard — toplam belge, modül bazlı sayım, 7 günlük trend" },
+                        { src: "/screenshots/dataengine/02-karsilastirma.png",        caption: "Karşılaştırma — her belge tipi için ERP↔ACC kaynak/hedef satır farkı" },
+                        { src: "/screenshots/dataengine/03-mizan.png",                caption: "Mizan — ACC vs ERP iki tarafın hesap bakiyeleri yan yana + fark" },
+                        { src: "/screenshots/dataengine/04-modul-detay-satinalma.png", caption: "Modül detay — Satınalma altındaki 7 belge tipi, sync durumu ve bridge tablo" },
+                        { src: "/screenshots/dataengine/06-belge-tipi-detay.png",     caption: "Belge tipi drill-down — Mal Satınalma'da hangi belge tamam/kısmi/bekliyor/hatalı" },
+                        { src: "/screenshots/dataengine/05-profil.png",               caption: "Profil — hesap bilgileri ve lisans durumu" },
+                        { src: "/screenshots/dataengine/00-login.png",                caption: "Giriş — ERPIDE ailesi paleti (siyah bg + blue→purple gradient marka)" },
+                      ].map((s) => (
+                        <figure key={s.src} className="rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0f]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={s.src} alt={s.caption} className="w-full h-auto block" loading="lazy" />
+                          <figcaption className="px-3 py-2 text-[11px] text-gray-400 border-t border-white/5">{s.caption}</figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </section>
+                </>
+              )}
+
               {/* 1C ürünleri — generic placeholder */}
               {(product.id === "1c-erp" || product.id === "1c-drive") && (
                 <section className="mb-10">
