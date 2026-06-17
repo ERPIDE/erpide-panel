@@ -40,9 +40,6 @@ export interface NewsPost {
   badges?: string[];
   /** Tematik gradient (Tailwind class). Special-day için tema rengi, default brand mavi-mor */
   gradient?: string;
-  /** Solid CSS arka plan (örn. "#0b1020"). Set edilirse gradient'i geçersiz kılar.
-   *  Transparent ürün ikonlarının üstüne busy gradient yerine sade kontrast vermek için. */
-  imageBackground?: string;
   /** Bu post bir ürünle ilgiliyse, detay sayfasında "Ürüne git" CTA */
   productSlug?: string;
   /** Dinamik OG image üretimi için: post'u temsil eden büyük emoji veya glyph
@@ -309,7 +306,6 @@ export const NEWS: NewsPost[] = [
       "PocketERPIDE — bireysel kullanıcılar için tasarladığımız AI destekli cüzdan & bütçe uygulamamız — bugün TestFlight üzerinden iOS Beta erişimine açıldı.\n\n**Kimler için?**\n\nERP karmaşıklığı istemeyen, sade ve şık bir kişisel finans uygulaması arayan herkes için: memurlar, mühendisler, doktorlar, freelancerlar — kısacası gelir-gider takip eden ve kontrolü elinde tutmak isteyen herkes.\n\n**Özellikler:**\n\n- Maaşını brüt veya net olarak tanımla, sistem her ay otomatik gelir kaydetsin\n- Fatura geldiğinde AI'a fotoğraf at veya yazılı söyle, kategorize edilip cüzdanına işlensin\n- Aylık özet + kategori bazlı harcama analizi\n- Hedef bütçe takibi\n- Vergi iadesi hesaplama\n- Türk vergi dilimleri (brüt-net) ve TR'ye özel harcama kategorileriyle uyumlu\n\nReact Native (Expo) ile geliştirildi, iOS + Android için tek codebase. Android Beta'sı önümüzdeki haftalarda Google Play'de.\n\nBeta erişimi için pocket.erpide.com üzerinden e-posta bırakabilirsin.",
     image: "/products/pocketerpide/icon.png",
     imageAlt: "PocketERPIDE iOS uygulama ikonu",
-    imageBackground: "#1a0b14",
     gradient: "from-pink-500 to-rose-600",
     badges: ["YENİ ÜRÜN", "MOBİL", "TR"],
     productSlug: "pocketerpide",
@@ -444,7 +440,6 @@ export const NEWS: NewsPost[] = [
       "ERPIDE ürün ailesine bugün yeni bir üye katıldı: **WITMA — Understand Everything**.\n\n**WITMA nedir?**\n\nMesajlaşma, sesli ve görüntülü görüşme ile canlı çeviriyi tek bir uygulamada birleştiren, uçtan uca şifreli yeni nesil iletişim platformu.\n\n**Öne çıkan özellikler:**\n\n- **Sınırsız mesajlaşma** — metin, dosya, ses, görüntü\n- **Sesli & görüntülü görüşme** — bireysel ve grup\n- **Canlı çeviri** — konuşurken anlık çevrilen alt yazılar, 50+ dil\n- **E2E şifreleme** — Signal protokolü tabanlı, mesajlarınız sadece sizin\n- **Çapraz platform** — iOS + Android + web\n- **Yapay zeka asistanı** — özet alma, hatırlatma, ajandanıza işleme\n\n**Kimler için?**\n\nYurt dışındaki müşterileriyle anlık iletişim kurması gereken işletmeler, çok dilli ekipler, yurtdışındaki ailesiyle konuşan herkes, yurt dışı seyahatinde dil bariyeriyle karşılaşan herkes için tasarlandı.\n\n**Erişim:**\n\nİlk lansman olarak iOS ve Android'de mevcut. WITMA web versiyonu witma-site.vercel.app adresinden incelenebilir (witma.app DNS taşıma sürecinde).\n\nERPIDE olarak WITMA'yı 2026'nın en heyecan verici ürünü olarak görüyoruz. Geri bildirimlerinizi bekliyoruz!",
     image: "/products/witma/icon.png",
     imageAlt: "WITMA uygulama ikonu",
-    imageBackground: "#0a0f1f",
     gradient: "from-purple-600 via-pink-500 to-cyan-400",
     badges: ["YENİ ÜRÜN", "BUGÜN", "GLOBAL"],
     productSlug: "witma",

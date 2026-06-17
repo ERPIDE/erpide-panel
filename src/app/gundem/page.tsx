@@ -223,10 +223,7 @@ function FeedCard({ post, delay, locale, readMoreLabel }: { post: NewsPost; dela
                 unoptimized={post.image.includes("/api/og/")}
               />
             ) : post.image ? (
-              <div
-                className={`absolute inset-0 flex items-center justify-center ${post.imageBackground ? "" : `bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"}`}`}
-                style={post.imageBackground ? { background: post.imageBackground } : undefined}
-              >
+              <div className={`absolute inset-0 bg-gradient-to-br ${post.gradient || "from-blue-600 to-purple-600"} flex items-center justify-center`}>
                 <Image
                   src={post.image}
                   alt={post.imageAlt}
