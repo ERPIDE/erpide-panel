@@ -1,0 +1,59 @@
+{
+  "name": "ERPIDE Satis Destek",
+  "firstMessage": "Merhaba, ben Eylül — ERPIDE'nin AI destek asistanıyım. Sizinle nasıl konuşalım, isminiz nedir?",
+  "firstMessageMode": "assistant-speaks-first",
+  "endCallPhrases": [
+    "gorusmek uzere",
+    "iyi gunler",
+    "do svidaniya"
+  ],
+  "voice": {
+    "voiceId": "tr-TR-EmelNeural",
+    "provider": "azure"
+  },
+  "transcriber": {
+    "model": "nova-2",
+    "keywords": [
+      "ERPIDE:5",
+      "Örpayd:5",
+      "FinansERPIDE:5",
+      "CaptchaERPIDE:5",
+      "CANIAS:5",
+      "Kanyas:5",
+      "Drive:3",
+      "TROIA:3",
+      "MRP:3"
+    ],
+    "language": "tr",
+    "provider": "deepgram",
+    "fallbackPlan": {
+      "transcribers": [
+        {
+          "model": "flux-general-en",
+          "language": "en",
+          "provider": "deepgram"
+        },
+        {
+          "model": "flux-general-en",
+          "language": "en",
+          "provider": "deepgram"
+        }
+      ]
+    }
+  },
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "@prompt.md"
+      }
+    ],
+    "temperature": 0.5
+  },
+  "server": {
+    "url": "https://erpide.com/api/webhooks/vapi"
+  },
+  "serverUrl": "https://erpide.com/api/webhooks/vapi"
+}

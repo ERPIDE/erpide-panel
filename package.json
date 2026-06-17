@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --experimental-build-mode=compile",
-    "start": "next start"
+    "start": "next start",
+    "vapi:pull": "node scripts/vapi-pull.mjs",
+    "vapi:push": "node scripts/vapi-push.mjs"
   },
   "keywords": [],
   "author": "",
