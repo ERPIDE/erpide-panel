@@ -691,6 +691,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "mobile.qr_scan_desc": " to open the store.",
     "mobile.qr_desktop_blocked": "This app cannot be installed on desktop.",
     "mobile.desktop_disabled_note": "desktop download disabled",
+    "mobile.visit_website": "Visit website",
     "mobile.billing_note": "Billing and subscription happen via the store (Apple / Google / Chrome). Not charged from erpide.com cart.",
   },
 
@@ -1368,6 +1369,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "mobile.qr_scan_desc": ", mağazaya yönlendirilirsin.",
     "mobile.qr_desktop_blocked": "Bu uygulamayı masaüstüne kuramazsın.",
     "mobile.desktop_disabled_note": "masaüstünden indirme kapalı",
+    "mobile.visit_website": "Web sitesini ziyaret et",
     "mobile.billing_note": "Ücretlendirme ve abonelik mağaza üzerinden yapılır (Apple / Google / Chrome ödeme akışı). erpide.com sepetinden alınmaz.",
   },
 
@@ -2043,6 +2045,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "mobile.qr_scan_desc": ", откроется магазин.",
     "mobile.qr_desktop_blocked": "Это приложение нельзя установить на десктоп.",
     "mobile.desktop_disabled_note": "загрузка с десктопа отключена",
+    "mobile.visit_website": "Перейти на сайт",
     "mobile.billing_note": "Оплата и подписка проходят через магазин (Apple / Google / Chrome). Корзина erpide.com не списывает.",
   },
 
@@ -2718,6 +2721,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "mobile.qr_scan_desc": ", дүкенге жөнелтілесіз.",
     "mobile.qr_desktop_blocked": "Бұл қосымшаны жұмыс үстеліне орната алмайсыз.",
     "mobile.desktop_disabled_note": "жұмыс үстелінен жүктеу өшірілген",
+    "mobile.visit_website": "Веб-сайтқа кіру",
     "mobile.billing_note": "Төлем және жазылым дүкен арқылы жүзеге асырылады (Apple / Google / Chrome). erpide.com себетінен есептелмейді.",
   },
 };

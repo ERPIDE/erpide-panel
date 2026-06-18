@@ -177,6 +177,19 @@ export default function MobileAppStoreCard({ product }: { product: Product }) {
         </div>
       )}
 
+      {product.webUrl && (
+        <a
+          href={product.webUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 hover:underline transition"
+        >
+          <Globe size={14} />
+          <span>{t("mobile.visit_website")}</span>
+          <ExternalLink size={11} className="opacity-70" />
+        </a>
+      )}
+
       <div className="mt-5 pt-5 border-t border-white/5 text-xs text-gray-500 flex items-start gap-2">
         <ShoppingBag size={11} className="flex-shrink-0 mt-0.5" />
         <span>{t("mobile.billing_note")}</span>

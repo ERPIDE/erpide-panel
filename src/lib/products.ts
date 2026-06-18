@@ -222,6 +222,10 @@ export interface Product {
   testFlightUrl?: string;
   /** Doğrudan APK indirme linki (Play Store dışı dağıtım, geçici) */
   apkDirectUrl?: string;
+  /** Web tanıtım/marketing sitesi — mobil uygulamanın yanı sıra (WITMA gibi
+   *  bir landing page'i olan ürünlerde). MobileAppStoreCard'ın altında
+   *  "Web sitesini ziyaret et" butonu olarak görünür. */
+  webUrl?: string;
   /** Mobil uygulamalar için: masaüstünden indirme DEVRE DIŞI (QR kod göster). */
   mobileOnlyDownload?: boolean;
 
@@ -923,6 +927,7 @@ export const PRODUCTS: Product[] = [
     // adıyla açılmıştı, rebrand sonrası ASC tarafında "WITMA" olarak rename
     // edildi; Bundle ID ve TestFlight join link KORUNUR).
     testFlightUrl: "https://testflight.apple.com/join/3S1JyZuU",
+    webUrl: "https://witma-site.vercel.app",
     // Android: APK preview build var ama Play Store yayını ERPIDE A.Ş. organizasyon hesabına
     // geçiş sonrasına bırakıldı. Yayınlanınca buraya store link gelir.
     // androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.aelteam.witma",
