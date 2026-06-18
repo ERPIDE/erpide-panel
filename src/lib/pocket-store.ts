@@ -1,14 +1,18 @@
 /**
  * PocketERPIDE mobile backend storage.
  *
- * Şema (Vercel Blob):
- *  - data/pocket-tokens.json  → token → { userId, label, createdAt, lastUsedAt }
- *  - data/pocket-data.json    → userId → PocketData
+ * Moved off Vercel Blob (data/pocket-tokens.json, data/pocket-data.json,
+ * data/pocket-push-tokens.json) onto Neon Postgres — same reason as the
+ * rest of Phase 2 migration: per-write Blob ops were eating the Hobby quota.
  *
- * Her kullanıcı kendi verisini görür. License kontrolü endpoint katmanında.
+ * Tablolar (prisma/schema):
+ *  - PocketToken      → token → { userId, label, createdAt, lastUsedAt }
+ *  - PocketData       → userId → PocketData (updatedAt, data Json)
+ *  - PocketPushToken  → expoPushToken → { userId, platform, deviceName, ... }
  */
-import { put } from "@vercel/blob";
 import { randomBytes } from "crypto";
+import { Prisma } from "@prisma/client";
+import { getPrisma } from "./db";
 
 export interface PocketTokenRecord {
   userId: string;
@@ -24,114 +28,89 @@ export interface PocketDataRecord {
   data: unknown;
 }
 
-const TOKENS_KEY = "data/pocket-tokens.json";
-const DATA_KEY = "data/pocket-data.json";
-const PUSH_TOKENS_KEY = "data/pocket-push-tokens.json";
-
-function getBlobBaseUrl(): string {
-  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-  const parts = token.split("_");
-  if (parts.length >= 4) {
-    const storeId = parts[3].toLowerCase();
-    return `https://${storeId}.public.blob.vercel-storage.com`;
-  }
-  return "";
-}
-
-async function readBlob<T>(key: string, fallback: T): Promise<T> {
-  try {
-    const baseUrl = getBlobBaseUrl();
-    if (!baseUrl) return fallback;
-    const res = await fetch(`${baseUrl}/${key}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return fallback;
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeBlob(key: string, value: unknown): Promise<void> {
-  await put(key, JSON.stringify(value, null, 2), {
-    access: "public",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  });
-}
-
 // ===== TOKENS =====
 
-async function readTokens(): Promise<Record<string, PocketTokenRecord>> {
-  return await readBlob<Record<string, PocketTokenRecord>>(TOKENS_KEY, {});
-}
-
-async function writeTokens(tokens: Record<string, PocketTokenRecord>): Promise<void> {
-  await writeBlob(TOKENS_KEY, tokens);
-}
-
 export async function issueToken(userId: string, label = "mobile"): Promise<string> {
-  const tokens = await readTokens();
   const token = "pkt_" + randomBytes(24).toString("base64url");
-  tokens[token] = {
-    userId,
-    label,
-    createdAt: new Date().toISOString(),
-  };
-  await writeTokens(tokens);
+  await getPrisma().pocketToken.create({
+    data: {
+      token,
+      userId,
+      label,
+      createdAt: new Date(),
+    },
+  });
   return token;
 }
 
 export async function validateToken(token: string): Promise<PocketTokenRecord | null> {
   if (!token || !token.startsWith("pkt_")) return null;
-  const tokens = await readTokens();
-  const rec = tokens[token];
-  if (!rec) return null;
-  // lastUsedAt'i güncelle (fire-and-forget)
-  rec.lastUsedAt = new Date().toISOString();
-  tokens[token] = rec;
-  writeTokens(tokens).catch(() => {});
-  return rec;
+  const row = await getPrisma().pocketToken.findUnique({ where: { token } });
+  if (!row) return null;
+
+  // Fire-and-forget lastUsedAt update; mobile devices poll a lot, don't block.
+  getPrisma()
+    .pocketToken.update({
+      where: { token },
+      data: { lastUsedAt: new Date() },
+    })
+    .catch(() => {});
+
+  return {
+    userId: row.userId,
+    label: row.label,
+    createdAt: row.createdAt.toISOString(),
+    lastUsedAt: row.lastUsedAt?.toISOString(),
+  };
 }
 
 export async function revokeToken(token: string): Promise<boolean> {
-  const tokens = await readTokens();
-  if (!tokens[token]) return false;
-  delete tokens[token];
-  await writeTokens(tokens);
-  return true;
+  try {
+    await getPrisma().pocketToken.delete({ where: { token } });
+    return true;
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return false;
+    }
+    throw e;
+  }
 }
 
-export async function listTokensForUser(userId: string): Promise<Array<{ token: string } & PocketTokenRecord>> {
-  const tokens = await readTokens();
-  return Object.entries(tokens)
-    .filter(([, rec]) => rec.userId === userId)
-    .map(([token, rec]) => ({ token, ...rec }));
+export async function listTokensForUser(
+  userId: string,
+): Promise<Array<{ token: string } & PocketTokenRecord>> {
+  const rows = await getPrisma().pocketToken.findMany({ where: { userId } });
+  return rows.map((r) => ({
+    token: r.token,
+    userId: r.userId,
+    label: r.label,
+    createdAt: r.createdAt.toISOString(),
+    lastUsedAt: r.lastUsedAt?.toISOString(),
+  }));
 }
 
 // ===== POCKET DATA =====
 
-async function readAllData(): Promise<Record<string, PocketDataRecord>> {
-  return await readBlob<Record<string, PocketDataRecord>>(DATA_KEY, {});
-}
-
-async function writeAllData(map: Record<string, PocketDataRecord>): Promise<void> {
-  await writeBlob(DATA_KEY, map);
-}
-
 export async function getUserData(userId: string): Promise<PocketDataRecord | null> {
-  const map = await readAllData();
-  return map[userId] || null;
+  const row = await getPrisma().pocketData.findUnique({ where: { userId } });
+  if (!row) return null;
+  return {
+    updatedAt: row.updatedAt.toISOString(),
+    data: row.data,
+  };
 }
 
 export async function setUserData(userId: string, data: unknown): Promise<PocketDataRecord> {
-  const map = await readAllData();
-  const rec: PocketDataRecord = {
-    updatedAt: new Date().toISOString(),
-    data,
+  const now = new Date();
+  const row = await getPrisma().pocketData.upsert({
+    where: { userId },
+    create: { userId, data: data as Prisma.InputJsonValue, updatedAt: now },
+    update: { data: data as Prisma.InputJsonValue, updatedAt: now },
+  });
+  return {
+    updatedAt: row.updatedAt.toISOString(),
+    data: row.data,
   };
-  map[userId] = rec;
-  await writeAllData(map);
-  return rec;
 }
 
 // ===== PUSH TOKENS =====
@@ -148,52 +127,59 @@ export interface PushTokenRecord {
   lastUsedAt: string;
 }
 
-type PushTokenMap = Record<string, PushTokenRecord>;  // expoPushToken → record
-
-async function readPushTokens(): Promise<PushTokenMap> {
-  return await readBlob<PushTokenMap>(PUSH_TOKENS_KEY, {});
-}
-
-async function writePushTokens(map: PushTokenMap): Promise<void> {
-  await writeBlob(PUSH_TOKENS_KEY, map);
-}
-
 export async function registerPushToken(
   userId: string,
   expoPushToken: string,
   platform: string,
   deviceName: string,
 ): Promise<PushTokenRecord> {
-  const map = await readPushTokens();
-  const now = new Date().toISOString();
-  const existing = map[expoPushToken];
-  const rec: PushTokenRecord = {
-    expoPushToken,
-    userId,
-    platform,
-    deviceName,
-    createdAt: existing?.createdAt ?? now,
-    lastUsedAt: now,
+  const now = new Date();
+  const row = await getPrisma().pocketPushToken.upsert({
+    where: { expoPushToken },
+    create: {
+      expoPushToken,
+      userId,
+      platform,
+      deviceName,
+      createdAt: now,
+      lastUsedAt: now,
+    },
+    update: {
+      userId,
+      platform,
+      deviceName,
+      lastUsedAt: now,
+    },
+  });
+  return {
+    expoPushToken: row.expoPushToken,
+    userId: row.userId,
+    platform: row.platform,
+    deviceName: row.deviceName,
+    createdAt: row.createdAt.toISOString(),
+    lastUsedAt: row.lastUsedAt.toISOString(),
   };
-  map[expoPushToken] = rec;
-  await writePushTokens(map);
-  return rec;
 }
 
 export async function unregisterPushToken(
   userId: string,
   expoPushToken: string,
 ): Promise<boolean> {
-  const map = await readPushTokens();
-  const rec = map[expoPushToken];
-  // Sadece sahibi unregister edebilir (cross-user delete'i engelle)
-  if (!rec || rec.userId !== userId) return false;
-  delete map[expoPushToken];
-  await writePushTokens(map);
-  return true;
+  // Sadece sahibi unregister edebilir (cross-user delete'i engelle).
+  const result = await getPrisma().pocketPushToken.deleteMany({
+    where: { expoPushToken, userId },
+  });
+  return result.count > 0;
 }
 
 export async function listPushTokensForUser(userId: string): Promise<PushTokenRecord[]> {
-  const map = await readPushTokens();
-  return Object.values(map).filter((r) => r.userId === userId);
+  const rows = await getPrisma().pocketPushToken.findMany({ where: { userId } });
+  return rows.map((r) => ({
+    expoPushToken: r.expoPushToken,
+    userId: r.userId,
+    platform: r.platform,
+    deviceName: r.deviceName,
+    createdAt: r.createdAt.toISOString(),
+    lastUsedAt: r.lastUsedAt.toISOString(),
+  }));
 }

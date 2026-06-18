@@ -1,4 +1,14 @@
-import { put } from "@vercel/blob";
+/**
+ * Panel auth (admin + customer logins, session lookup).
+ *
+ * Previously each session was its own blob (`sessions/{token}.json`) and the
+ * admin/customer lists were `data/admins.json` / `data/customers.json` on
+ * Vercel Blob. Every login burned an Advanced Op, which hit the Hobby
+ * quota and suspended the store. Storage moved to Neon (see prisma/schema)
+ * keeping every exported function signature identical so callers don't care.
+ */
+import { Prisma } from "@prisma/client";
+import { getPrisma } from "./db";
 import {
   AdminUser,
   CustomerUser,
@@ -57,65 +67,98 @@ export const getOwnerSession = getElevatedSession;
 export const SESSION_COOKIE = "erpide_session";
 const SESSION_EXPIRY_DAYS = 7;
 
-// ── Blob helpers ──────────────────────────────────────────────────
-
-function getBlobBaseUrl(): string {
-  // Extract store ID from token: vercel_blob_rw_{storeId}_{rest}
-  const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-  const parts = token.split("_");
-  if (parts.length >= 4) {
-    const storeId = parts[3].toLowerCase();
-    return `https://${storeId}.public.blob.vercel-storage.com`;
-  }
-  return "";
-}
-
-async function readBlob<T>(key: string, fallback: T): Promise<T> {
-  try {
-    const baseUrl = getBlobBaseUrl();
-    if (!baseUrl) return fallback;
-
-    const res = await fetch(`${baseUrl}/${key}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return fallback;
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeBlob(key: string, data: unknown): Promise<void> {
-  const body = JSON.stringify(data, null, 2);
-  await put(key, body, {
-    access: "public",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  });
-}
-
 // ── Admin CRUD ────────────────────────────────────────────────────
+// First request on a fresh DB seeds initialAdmins so the bootstrap login
+// works without a separate migration step.
+
+async function ensureAdminSeed(): Promise<void> {
+  const prisma = getPrisma();
+  const count = await prisma.admin.count();
+  if (count === 0) {
+    await prisma.admin.createMany({ data: initialAdmins });
+  }
+}
 
 export async function getAdmins(): Promise<AdminUser[]> {
-  return readBlob<AdminUser[]>("data/admins.json", initialAdmins);
+  await ensureAdminSeed();
+  const rows = await getPrisma().admin.findMany();
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    password: r.password,
+    role: r.role as AdminUser["role"],
+  }));
 }
 
 export async function saveAdmins(admins: AdminUser[]): Promise<void> {
-  await writeBlob("data/admins.json", admins);
+  const prisma = getPrisma();
+  // Full replace: existing API treats the list as a single document, so we
+  // delete rows that disappeared and upsert the rest.
+  const keepIds = new Set(admins.map((a) => a.id));
+  await prisma.admin.deleteMany({ where: { id: { notIn: [...keepIds] } } });
+  for (const a of admins) {
+    await prisma.admin.upsert({
+      where: { id: a.id },
+      create: { id: a.id, name: a.name, email: a.email, password: a.password, role: a.role },
+      update: { name: a.name, email: a.email, password: a.password, role: a.role },
+    });
+  }
 }
 
 // ── Customer CRUD ─────────────────────────────────────────────────
 
+async function ensureCustomerSeed(): Promise<void> {
+  const prisma = getPrisma();
+  const count = await prisma.customer.count();
+  if (count === 0) {
+    await prisma.customer.createMany({ data: initialCustomers });
+  }
+}
+
 export async function getCustomers(): Promise<CustomerUser[]> {
-  return readBlob<CustomerUser[]>("data/customers.json", initialCustomers);
+  await ensureCustomerSeed();
+  const rows = await getPrisma().customer.findMany();
+  return rows.map((r) => ({
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    password: r.password,
+    project: r.project,
+    contactEmail: r.contactEmail,
+    contactPhone: r.contactPhone ?? undefined,
+  }));
 }
 
-export async function saveCustomers(
-  customers: CustomerUser[]
-): Promise<void> {
-  await writeBlob("data/customers.json", customers);
+export async function saveCustomers(customers: CustomerUser[]): Promise<void> {
+  const prisma = getPrisma();
+  const keepIds = new Set(customers.map((c) => c.id));
+  await prisma.customer.deleteMany({ where: { id: { notIn: [...keepIds] } } });
+  for (const c of customers) {
+    await prisma.customer.upsert({
+      where: { id: c.id },
+      create: {
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        password: c.password,
+        project: c.project,
+        contactEmail: c.contactEmail,
+        contactPhone: c.contactPhone ?? null,
+      },
+      update: {
+        code: c.code,
+        name: c.name,
+        password: c.password,
+        project: c.project,
+        contactEmail: c.contactEmail,
+        contactPhone: c.contactPhone ?? null,
+      },
+    });
+  }
 }
 
-// ── Session management (each session = separate blob file) ───────
+// ── Session management ────────────────────────────────────────────
 
 export async function createSession(data: {
   userId: string;
@@ -131,42 +174,48 @@ export async function createSession(data: {
     now.getTime() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000
   );
 
-  const session: Session = {
-    token,
-    userId: data.userId,
-    userType: data.userType,
-    userName: data.userName,
-    userEmail: data.userEmail,
-    userRole: data.userRole,
-    customerCode: data.customerCode,
-    createdAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  };
-
-  // Each session is its own blob — no cache conflict
-  await writeBlob(`sessions/${token}.json`, session);
+  await getPrisma().session.create({
+    data: {
+      token,
+      userId: data.userId,
+      userType: data.userType,
+      userName: data.userName,
+      userEmail: data.userEmail ?? null,
+      userRole: data.userRole ?? null,
+      customerCode: data.customerCode ?? null,
+      createdAt: now,
+      expiresAt,
+    },
+  });
 
   return token;
 }
 
 export async function getSession(token: string): Promise<Session | null> {
-  const session = await readBlob<Session | null>(`sessions/${token}.json`, null);
-  if (!session) return null;
+  const row = await getPrisma().session.findUnique({ where: { token } });
+  if (!row) return null;
+  if (row.expiresAt < new Date()) return null;
 
-  // Check expiry
-  if (new Date(session.expiresAt) < new Date()) {
-    return null;
-  }
-
-  return session;
+  return {
+    token: row.token,
+    userId: row.userId,
+    userType: row.userType as Session["userType"],
+    userName: row.userName,
+    userEmail: row.userEmail ?? undefined,
+    userRole: row.userRole ?? undefined,
+    customerCode: row.customerCode ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    expiresAt: row.expiresAt.toISOString(),
+  };
 }
 
 export async function deleteSession(token: string): Promise<void> {
   try {
-    const { del } = await import("@vercel/blob");
-    const baseUrl = getBlobBaseUrl();
-    if (baseUrl) {
-      await del(`${baseUrl}/sessions/${token}.json`);
+    await getPrisma().session.delete({ where: { token } });
+  } catch (e) {
+    // P2025 = row not found; logout is idempotent.
+    if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2025") {
+      throw e;
     }
-  } catch {}
+  }
 }

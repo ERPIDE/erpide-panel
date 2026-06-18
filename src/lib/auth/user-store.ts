@@ -2,6 +2,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { put, list } from "@vercel/blob";
+import { Prisma } from "@prisma/client";
+import { getPrisma, HAS_DB } from "../db";
 
 export type CustomerType = "individual" | "corporate";
 
@@ -190,21 +192,25 @@ export interface BankTransferRequest {
   orderId?: string;      // approve sonrası yaratılan order
 }
 
+// ============== JSON FALLBACK (local dev / preview without DB) ==============
+//
+// When DATABASE_URL is not set we keep the legacy single-JSON path so local
+// `npm run dev` keeps working unchanged. The Blob path is retained too in
+// case anyone wants to run against the existing blob during transition —
+// not recommended given the rate-limit incident.
+
 interface State {
   users: Record<string, UserRecord>;
   orders: Record<string, OrderRecord>;
-  /** key = normalize edilmiş kod (büyük harf, tireler korunur) */
   licenseCodes?: Record<string, LicenseCodeRecord>;
-  /** key = HAV-XXXXXXXX havale kodu */
   bankTransfers?: Record<string, BankTransferRequest>;
   __version: 1;
 }
 
 const STATE_KEY = "erpide-state.json";
 const CACHE_TTL_MS = 3000;
-const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+const USE_BLOB = !HAS_DB && !!process.env.BLOB_READ_WRITE_TOKEN;
 
-// Local-dev fallback paths (only used when BLOB_READ_WRITE_TOKEN is missing)
 const STORAGE_DIR = path.join(process.env.HOME || process.env.USERPROFILE || "/tmp", ".erpide-data");
 const STATE_FILE = path.join(STORAGE_DIR, STATE_KEY);
 
@@ -282,23 +288,229 @@ async function saveState(state: State): Promise<void> {
   }
 }
 
-// ---- public API ----
+// ============== PRISMA <-> TS RECORD MAPPERS ==============
+//
+// Prisma returns Date objects + null; the legacy record types are ISO strings
+// + undefined. These mappers keep the boundary clean so callers see the same
+// shape they always have.
 
-export async function findUserByEmail(email: string, forceFresh = false): Promise<UserRecord | undefined> {
-  const s = await loadState(forceFresh);
+type AnyRow = Record<string, unknown>;
+
+function iso(value: unknown): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return undefined;
+}
+
+function dateOrNull(value: string | undefined): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function rowToUser(row: AnyRow): UserRecord {
+  return {
+    id: row.id as string,
+    email: row.email as string,
+    name: row.name as string,
+    surname: row.surname as string,
+    passwordHash: row.passwordHash as string,
+    emailVerified: (row.emailVerified as boolean) || undefined,
+    verificationToken: (row.verificationToken as string) || undefined,
+    verificationTokenExpiresAt: iso(row.verificationTokenExpiresAt),
+    gsmNumber: (row.gsmNumber as string) || undefined,
+    identityNumber: (row.identityNumber as string) || undefined,
+    companyName: (row.companyName as string) || undefined,
+    taxNumber: (row.taxNumber as string) || undefined,
+    address: (row.address as string) || undefined,
+    city: (row.city as string) || undefined,
+    postalCode: (row.postalCode as string) || undefined,
+    district: (row.district as string) || undefined,
+    savedAddresses: (row.savedAddresses as SavedAddress[]) ?? undefined,
+    acceptedTermsAt: iso(row.acceptedTermsAt),
+    acceptedKvkkAt: iso(row.acceptedKvkkAt),
+    marketingConsentAt: iso(row.marketingConsentAt),
+    oauthProvider: (row.oauthProvider as UserRecord["oauthProvider"]) || undefined,
+    oauthProviderId: (row.oauthProviderId as string) || undefined,
+    avatarUrl: (row.avatarUrl as string) || undefined,
+    iyzicoCardUserKey: (row.iyzicoCardUserKey as string) || undefined,
+    iyzicoCardToken: (row.iyzicoCardToken as string) || undefined,
+    iyzicoCardLastFour: (row.iyzicoCardLastFour as string) || undefined,
+    iyzicoCardAssociation: (row.iyzicoCardAssociation as string) || undefined,
+    iyzicoCardSavedAt: iso(row.iyzicoCardSavedAt),
+    createdAt: iso(row.createdAt) || new Date().toISOString(),
+    updatedAt: iso(row.updatedAt) || new Date().toISOString(),
+  };
+}
+
+function userToPrisma(rec: Partial<UserRecord>): AnyRow {
+  // Only includes keys the caller set (so Prisma update doesn't null out
+  // fields by accident).
+  const out: AnyRow = {};
+  if (rec.email !== undefined) out.email = rec.email;
+  if (rec.name !== undefined) out.name = rec.name;
+  if (rec.surname !== undefined) out.surname = rec.surname;
+  if (rec.passwordHash !== undefined) out.passwordHash = rec.passwordHash;
+  if (rec.emailVerified !== undefined) out.emailVerified = rec.emailVerified;
+  if (rec.verificationToken !== undefined) out.verificationToken = rec.verificationToken || null;
+  if (rec.verificationTokenExpiresAt !== undefined) out.verificationTokenExpiresAt = dateOrNull(rec.verificationTokenExpiresAt);
+  if (rec.gsmNumber !== undefined) out.gsmNumber = rec.gsmNumber || null;
+  if (rec.identityNumber !== undefined) out.identityNumber = rec.identityNumber || null;
+  if (rec.companyName !== undefined) out.companyName = rec.companyName || null;
+  if (rec.taxNumber !== undefined) out.taxNumber = rec.taxNumber || null;
+  if (rec.address !== undefined) out.address = rec.address || null;
+  if (rec.city !== undefined) out.city = rec.city || null;
+  if (rec.postalCode !== undefined) out.postalCode = rec.postalCode || null;
+  if (rec.district !== undefined) out.district = rec.district || null;
+  if (rec.savedAddresses !== undefined) out.savedAddresses = rec.savedAddresses ?? null;
+  if (rec.acceptedTermsAt !== undefined) out.acceptedTermsAt = dateOrNull(rec.acceptedTermsAt);
+  if (rec.acceptedKvkkAt !== undefined) out.acceptedKvkkAt = dateOrNull(rec.acceptedKvkkAt);
+  if (rec.marketingConsentAt !== undefined) out.marketingConsentAt = dateOrNull(rec.marketingConsentAt);
+  if (rec.oauthProvider !== undefined) out.oauthProvider = rec.oauthProvider || null;
+  if (rec.oauthProviderId !== undefined) out.oauthProviderId = rec.oauthProviderId || null;
+  if (rec.avatarUrl !== undefined) out.avatarUrl = rec.avatarUrl || null;
+  if (rec.iyzicoCardUserKey !== undefined) out.iyzicoCardUserKey = rec.iyzicoCardUserKey || null;
+  if (rec.iyzicoCardToken !== undefined) out.iyzicoCardToken = rec.iyzicoCardToken || null;
+  if (rec.iyzicoCardLastFour !== undefined) out.iyzicoCardLastFour = rec.iyzicoCardLastFour || null;
+  if (rec.iyzicoCardAssociation !== undefined) out.iyzicoCardAssociation = rec.iyzicoCardAssociation || null;
+  if (rec.iyzicoCardSavedAt !== undefined) out.iyzicoCardSavedAt = dateOrNull(rec.iyzicoCardSavedAt);
+  return out;
+}
+
+function rowToOrder(row: AnyRow): OrderRecord {
+  return {
+    id: row.id as string,
+    userId: row.userId as string,
+    items: (row.items as OrderItem[]) ?? [],
+    totalPrice: row.totalPrice as number,
+    currency: row.currency as OrderRecord["currency"],
+    paymentId: (row.paymentId as string) || undefined,
+    conversationId: row.conversationId as string,
+    status: row.status as OrderRecord["status"],
+    iyzicoToken: (row.iyzicoToken as string) || undefined,
+    isTrial: (row.isTrial as boolean) || undefined,
+    trialExpiresAt: iso(row.trialExpiresAt),
+    subscriptionExpiresAt: iso(row.subscriptionExpiresAt),
+    billingCycle: (row.billingCycle as OrderRecord["billingCycle"]) || undefined,
+    autoRenewEnabled: (row.autoRenewEnabled as boolean) ?? undefined,
+    lastRenewAttemptAt: iso(row.lastRenewAttemptAt),
+    lastRenewError: (row.lastRenewError as string) || undefined,
+    renewedFromOrderId: (row.renewedFromOrderId as string) || undefined,
+    cancelledAt: iso(row.cancelledAt),
+    cancelledBy: (row.cancelledBy as OrderRecord["cancelledBy"]) || undefined,
+    cancellationReason: (row.cancellationReason as string) || undefined,
+    expiringSoonEmailSentAt: iso(row.expiringSoonEmailSentAt),
+    renewFailedEmailSentAt: iso(row.renewFailedEmailSentAt),
+    creditsConsumed: (row.creditsConsumed as number) ?? undefined,
+    createdAt: iso(row.createdAt) || new Date().toISOString(),
+    paidAt: iso(row.paidAt),
+  };
+}
+
+function orderToPrisma(rec: Partial<OrderRecord>): AnyRow {
+  const out: AnyRow = {};
+  if (rec.userId !== undefined) out.userId = rec.userId;
+  if (rec.items !== undefined) out.items = rec.items;
+  if (rec.totalPrice !== undefined) out.totalPrice = rec.totalPrice;
+  if (rec.currency !== undefined) out.currency = rec.currency;
+  if (rec.paymentId !== undefined) out.paymentId = rec.paymentId || null;
+  if (rec.conversationId !== undefined) out.conversationId = rec.conversationId;
+  if (rec.status !== undefined) out.status = rec.status;
+  if (rec.iyzicoToken !== undefined) out.iyzicoToken = rec.iyzicoToken || null;
+  if (rec.isTrial !== undefined) out.isTrial = !!rec.isTrial;
+  if (rec.trialExpiresAt !== undefined) out.trialExpiresAt = dateOrNull(rec.trialExpiresAt);
+  if (rec.subscriptionExpiresAt !== undefined) out.subscriptionExpiresAt = dateOrNull(rec.subscriptionExpiresAt);
+  if (rec.billingCycle !== undefined) out.billingCycle = rec.billingCycle || null;
+  if (rec.autoRenewEnabled !== undefined) out.autoRenewEnabled = rec.autoRenewEnabled ?? null;
+  if (rec.lastRenewAttemptAt !== undefined) out.lastRenewAttemptAt = dateOrNull(rec.lastRenewAttemptAt);
+  if (rec.lastRenewError !== undefined) out.lastRenewError = rec.lastRenewError || null;
+  if (rec.renewedFromOrderId !== undefined) out.renewedFromOrderId = rec.renewedFromOrderId || null;
+  if (rec.cancelledAt !== undefined) out.cancelledAt = dateOrNull(rec.cancelledAt);
+  if (rec.cancelledBy !== undefined) out.cancelledBy = rec.cancelledBy || null;
+  if (rec.cancellationReason !== undefined) out.cancellationReason = rec.cancellationReason || null;
+  if (rec.expiringSoonEmailSentAt !== undefined) out.expiringSoonEmailSentAt = dateOrNull(rec.expiringSoonEmailSentAt);
+  if (rec.renewFailedEmailSentAt !== undefined) out.renewFailedEmailSentAt = dateOrNull(rec.renewFailedEmailSentAt);
+  if (rec.creditsConsumed !== undefined) out.creditsConsumed = rec.creditsConsumed ?? null;
+  if (rec.paidAt !== undefined) out.paidAt = dateOrNull(rec.paidAt);
+  return out;
+}
+
+function rowToLicenseCode(row: AnyRow): LicenseCodeRecord {
+  return {
+    code: row.code as string,
+    skuId: row.skuId as string,
+    productId: row.productId as string,
+    durationDays: row.durationDays as number,
+    batchId: (row.batchId as string) || undefined,
+    note: (row.note as string) || undefined,
+    createdAt: iso(row.createdAt) || new Date().toISOString(),
+    expiresAt: iso(row.expiresAt),
+    redeemedBy: (row.redeemedBy as string) || undefined,
+    redeemedAt: iso(row.redeemedAt),
+    redeemedOrderId: (row.redeemedOrderId as string) || undefined,
+  };
+}
+
+function rowToBankTransfer(row: AnyRow): BankTransferRequest {
+  return {
+    code: row.code as string,
+    userId: row.userId as string,
+    userEmail: row.userEmail as string,
+    productId: row.productId as string,
+    skuIds: (row.skuIds as string[]) ?? [],
+    skuNames: (row.skuNames as string[]) ?? undefined,
+    amountUSD: row.amountUSD as number,
+    fxRate: row.fxRate as number,
+    fxRateDate: row.fxRateDate as string,
+    amountTRY: row.amountTRY as number,
+    ibanUsed: row.ibanUsed as string,
+    ibanHolder: row.ibanHolder as string,
+    status: row.status as BankTransferRequest["status"],
+    createdAt: iso(row.createdAt) || new Date().toISOString(),
+    expiresAt: iso(row.expiresAt) || new Date().toISOString(),
+    approvedBy: (row.approvedBy as string) || undefined,
+    approvedAt: iso(row.approvedAt),
+    rejectionReason: (row.rejectionReason as string) || undefined,
+    orderId: (row.orderId as string) || undefined,
+  };
+}
+
+function normalizeCode(input: string): string {
+  return input.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+// ============== PUBLIC API ==============
+
+export async function findUserByEmail(email: string, _forceFresh = false): Promise<UserRecord | undefined> {
   const lower = email.toLowerCase().trim();
+  if (HAS_DB) {
+    const row = await getPrisma().user.findUnique({ where: { email: lower } });
+    return row ? rowToUser(row as unknown as AnyRow) : undefined;
+  }
+  const s = await loadState(_forceFresh);
   for (const user of Object.values(s.users)) {
     if (user.email.toLowerCase() === lower) return user;
   }
   return undefined;
 }
 
-export async function findUserById(id: string, forceFresh = false): Promise<UserRecord | undefined> {
-  const s = await loadState(forceFresh);
+export async function findUserById(id: string, _forceFresh = false): Promise<UserRecord | undefined> {
+  if (HAS_DB) {
+    const row = await getPrisma().user.findUnique({ where: { id } });
+    return row ? rowToUser(row as unknown as AnyRow) : undefined;
+  }
+  const s = await loadState(_forceFresh);
   return s.users[id];
 }
 
 export async function findUserByOAuth(provider: "google" | "facebook" | "github", providerId: string): Promise<UserRecord | undefined> {
+  if (HAS_DB) {
+    const row = await getPrisma().user.findUnique({
+      where: { oauth_provider_lookup: { oauthProvider: provider, oauthProviderId: providerId } },
+    });
+    return row ? rowToUser(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState(true);
   for (const user of Object.values(s.users)) {
     if (user.oauthProvider === provider && user.oauthProviderId === providerId) return user;
@@ -307,8 +519,10 @@ export async function findUserByOAuth(provider: "google" | "facebook" | "github"
 }
 
 export async function findUserByVerificationToken(token: string): Promise<UserRecord | undefined> {
-  // Always read fresh state for verification token lookups — they're security-sensitive
-  // and a stale cache could either miss a just-registered token or return one already burned.
+  if (HAS_DB) {
+    const row = await getPrisma().user.findUnique({ where: { verificationToken: token } });
+    return row ? rowToUser(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState(true);
   for (const user of Object.values(s.users)) {
     if (user.verificationToken === token) return user;
@@ -317,8 +531,20 @@ export async function findUserByVerificationToken(token: string): Promise<UserRe
 }
 
 export async function createUser(input: Omit<UserRecord, "id" | "createdAt" | "updatedAt">): Promise<UserRecord> {
-  const s = await loadState(true);
   const lower = input.email.toLowerCase().trim();
+  if (HAS_DB) {
+    const id = randomUUID();
+    const data = { id, ...userToPrisma({ ...input, email: lower }) };
+    try {
+      const row = await getPrisma().user.create({ data: data as any });
+      return rowToUser(row as unknown as AnyRow);
+    } catch (e: any) {
+      // Prisma unique-violation code (P2002) means the email is taken.
+      if (e?.code === "P2002") throw new Error("Bu e-mail ile zaten bir hesap var");
+      throw e;
+    }
+  }
+  const s = await loadState(true);
   for (const existing of Object.values(s.users)) {
     if (existing.email.toLowerCase() === lower) throw new Error("Bu e-mail ile zaten bir hesap var");
   }
@@ -331,6 +557,18 @@ export async function createUser(input: Omit<UserRecord, "id" | "createdAt" | "u
 }
 
 export async function updateUser(id: string, patch: Partial<UserRecord>): Promise<UserRecord | undefined> {
+  if (HAS_DB) {
+    try {
+      const row = await getPrisma().user.update({
+        where: { id },
+        data: userToPrisma(patch) as any,
+      });
+      return rowToUser(row as unknown as AnyRow);
+    } catch (e: any) {
+      if (e?.code === "P2025") return undefined; // not found
+      throw e;
+    }
+  }
   const s = await loadState(true);
   const existing = s.users[id];
   if (!existing) return undefined;
@@ -341,6 +579,12 @@ export async function updateUser(id: string, patch: Partial<UserRecord>): Promis
 }
 
 export async function createOrder(input: Omit<OrderRecord, "id" | "createdAt">): Promise<OrderRecord> {
+  if (HAS_DB) {
+    const id = randomUUID();
+    const data = { id, ...orderToPrisma(input) };
+    const row = await getPrisma().order.create({ data: data as any });
+    return rowToOrder(row as unknown as AnyRow);
+  }
   const s = await loadState(true);
   const id = randomUUID();
   const order: OrderRecord = { ...input, id, createdAt: new Date().toISOString() };
@@ -350,6 +594,18 @@ export async function createOrder(input: Omit<OrderRecord, "id" | "createdAt">):
 }
 
 export async function updateOrder(id: string, patch: Partial<OrderRecord>): Promise<OrderRecord | undefined> {
+  if (HAS_DB) {
+    try {
+      const row = await getPrisma().order.update({
+        where: { id },
+        data: orderToPrisma(patch) as any,
+      });
+      return rowToOrder(row as unknown as AnyRow);
+    } catch (e: any) {
+      if (e?.code === "P2025") return undefined;
+      throw e;
+    }
+  }
   const s = await loadState(true);
   const existing = s.orders[id];
   if (!existing) return undefined;
@@ -360,11 +616,19 @@ export async function updateOrder(id: string, patch: Partial<OrderRecord>): Prom
 }
 
 export async function findOrderById(id: string): Promise<OrderRecord | undefined> {
+  if (HAS_DB) {
+    const row = await getPrisma().order.findUnique({ where: { id } });
+    return row ? rowToOrder(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState();
   return s.orders[id];
 }
 
 export async function findOrderByConversationId(conversationId: string): Promise<OrderRecord | undefined> {
+  if (HAS_DB) {
+    const row = await getPrisma().order.findUnique({ where: { conversationId } });
+    return row ? rowToOrder(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState();
   for (const order of Object.values(s.orders)) {
     if (order.conversationId === conversationId) return order;
@@ -373,6 +637,13 @@ export async function findOrderByConversationId(conversationId: string): Promise
 }
 
 export async function listOrdersByUserId(userId: string): Promise<OrderRecord[]> {
+  if (HAS_DB) {
+    const rows = await getPrisma().order.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map((r: unknown) => rowToOrder(r as AnyRow));
+  }
   const s = await loadState();
   return Object.values(s.orders)
     .filter((order) => order.userId === userId)
@@ -380,12 +651,31 @@ export async function listOrdersByUserId(userId: string): Promise<OrderRecord[]>
 }
 
 export async function listAllOrders(): Promise<OrderRecord[]> {
-  // Used by the renewal cron — must see absolutely the freshest state.
+  if (HAS_DB) {
+    const rows = await getPrisma().order.findMany();
+    return rows.map((r: unknown) => rowToOrder(r as AnyRow));
+  }
   const s = await loadState(true);
   return Object.values(s.orders);
 }
 
 export async function findActiveTrialForUserSku(userId: string, skuId: string): Promise<OrderRecord | undefined> {
+  if (HAS_DB) {
+    // Filter by user + trial status in SQL, then check items + expiry in JS.
+    // The items field is a JSON column so we can't filter it server-side
+    // without a generated column — but trial+user already narrows hard.
+    const rows = await getPrisma().order.findMany({
+      where: { userId, isTrial: true, status: "TRIAL" },
+    });
+    const now = Date.now();
+    for (const r of rows) {
+      const order = rowToOrder(r as unknown as AnyRow);
+      if (!order.items.some((it) => it.skuId === skuId)) continue;
+      if (order.trialExpiresAt && new Date(order.trialExpiresAt).getTime() < now) continue;
+      return order;
+    }
+    return undefined;
+  }
   const s = await loadState();
   const now = Date.now();
   for (const order of Object.values(s.orders)) {
@@ -399,13 +689,18 @@ export async function findActiveTrialForUserSku(userId: string, skuId: string): 
   return undefined;
 }
 
-export async function hasUsedTrialForSku(userId: string, skuId: string, forceFresh = false): Promise<boolean> {
-  // forceFresh is critical at the /api/trial/start endpoint: a stale read
-  // here allows two near-simultaneous POSTs to both see "no prior trial"
-  // and both create orders — a double-click yields two trial licenses for
-  // the same SKU. Pages that only read for display can leave forceFresh
-  // at the default to avoid hammering Vercel Blob on every render.
-  const s = await loadState(forceFresh);
+export async function hasUsedTrialForSku(userId: string, skuId: string, _forceFresh = false): Promise<boolean> {
+  if (HAS_DB) {
+    const rows = await getPrisma().order.findMany({
+      where: { userId, isTrial: true },
+    });
+    for (const r of rows) {
+      const order = rowToOrder(r as unknown as AnyRow);
+      if (order.items.some((it) => it.skuId === skuId)) return true;
+    }
+    return false;
+  }
+  const s = await loadState(_forceFresh);
   for (const order of Object.values(s.orders)) {
     if (order.userId !== userId) continue;
     if (!order.isTrial) continue;
@@ -417,33 +712,59 @@ export async function hasUsedTrialForSku(userId: string, skuId: string, forceFre
 
 // ============== LICENSE CODES ==============
 
-function normalizeCode(input: string): string {
-  return input.trim().toUpperCase().replace(/\s+/g, "");
-}
-
 export async function getLicenseCode(code: string): Promise<LicenseCodeRecord | undefined> {
+  const key = normalizeCode(code);
+  if (HAS_DB) {
+    const row = await getPrisma().licenseCode.findUnique({ where: { code: key } });
+    return row ? rowToLicenseCode(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState();
-  return s.licenseCodes?.[normalizeCode(code)];
+  return s.licenseCodes?.[key];
 }
 
 export async function createLicenseCode(input: Omit<LicenseCodeRecord, "createdAt" | "redeemedBy" | "redeemedAt" | "redeemedOrderId">): Promise<LicenseCodeRecord> {
+  const code = normalizeCode(input.code);
+  if (HAS_DB) {
+    try {
+      const row = await getPrisma().licenseCode.create({
+        data: {
+          code,
+          skuId: input.skuId,
+          productId: input.productId,
+          durationDays: input.durationDays,
+          batchId: input.batchId ?? null,
+          note: input.note ?? null,
+          expiresAt: dateOrNull(input.expiresAt),
+        },
+      });
+      return rowToLicenseCode(row as unknown as AnyRow);
+    } catch (e: any) {
+      if (e?.code === "P2002") throw new Error("Bu kod zaten mevcut");
+      throw e;
+    }
+  }
   const s = await loadState(true);
   if (!s.licenseCodes) s.licenseCodes = {};
-  const code = normalizeCode(input.code);
   if (s.licenseCodes[code]) throw new Error("Bu kod zaten mevcut");
-  const record: LicenseCodeRecord = {
-    ...input,
-    code,
-    createdAt: new Date().toISOString(),
-  };
+  const record: LicenseCodeRecord = { ...input, code, createdAt: new Date().toISOString() };
   s.licenseCodes[code] = record;
   await saveState(s);
   return record;
 }
 
 export async function markLicenseCodeRedeemed(code: string, userId: string, orderId: string): Promise<void> {
-  const s = await loadState(true);
   const key = normalizeCode(code);
+  if (HAS_DB) {
+    const existing = await getPrisma().licenseCode.findUnique({ where: { code: key } });
+    if (!existing) throw new Error("Kod bulunamadı");
+    if ((existing as any).redeemedBy) throw new Error("Kod zaten kullanılmış");
+    await getPrisma().licenseCode.update({
+      where: { code: key },
+      data: { redeemedBy: userId, redeemedAt: new Date(), redeemedOrderId: orderId },
+    });
+    return;
+  }
+  const s = await loadState(true);
   const rec = s.licenseCodes?.[key];
   if (!rec) throw new Error("Kod bulunamadı");
   if (rec.redeemedBy) throw new Error("Kod zaten kullanılmış");
@@ -454,6 +775,10 @@ export async function markLicenseCodeRedeemed(code: string, userId: string, orde
 }
 
 export async function listLicenseCodes(): Promise<LicenseCodeRecord[]> {
+  if (HAS_DB) {
+    const rows = await getPrisma().licenseCode.findMany();
+    return rows.map((r: unknown) => rowToLicenseCode(r as AnyRow));
+  }
   const s = await loadState();
   return Object.values(s.licenseCodes || {});
 }
@@ -461,25 +786,61 @@ export async function listLicenseCodes(): Promise<LicenseCodeRecord[]> {
 // ============ HAVALE / EFT ÖDEME İSTEKLERİ ============
 
 export async function createBankTransferRequest(input: Omit<BankTransferRequest, "createdAt" | "status">): Promise<BankTransferRequest> {
+  if (HAS_DB) {
+    try {
+      const row = await getPrisma().bankTransferRequest.create({
+        data: {
+          code: input.code,
+          userId: input.userId,
+          userEmail: input.userEmail,
+          productId: input.productId,
+          skuIds: input.skuIds,
+          skuNames: input.skuNames ?? Prisma.DbNull,
+          amountUSD: input.amountUSD,
+          fxRate: input.fxRate,
+          fxRateDate: input.fxRateDate,
+          amountTRY: input.amountTRY,
+          ibanUsed: input.ibanUsed,
+          ibanHolder: input.ibanHolder,
+          status: "PENDING",
+          expiresAt: new Date(input.expiresAt),
+        },
+      });
+      return rowToBankTransfer(row as unknown as AnyRow);
+    } catch (e: any) {
+      if (e?.code === "P2002") throw new Error("Bu kod zaten mevcut");
+      throw e;
+    }
+  }
   const s = await loadState(true);
   if (!s.bankTransfers) s.bankTransfers = {};
   if (s.bankTransfers[input.code]) throw new Error("Bu kod zaten mevcut");
-  const record: BankTransferRequest = {
-    ...input,
-    status: "PENDING",
-    createdAt: new Date().toISOString(),
-  };
+  const record: BankTransferRequest = { ...input, status: "PENDING", createdAt: new Date().toISOString() };
   s.bankTransfers[input.code] = record;
   await saveState(s);
   return record;
 }
 
 export async function getBankTransferRequest(code: string): Promise<BankTransferRequest | undefined> {
+  if (HAS_DB) {
+    const row = await getPrisma().bankTransferRequest.findUnique({ where: { code } });
+    return row ? rowToBankTransfer(row as unknown as AnyRow) : undefined;
+  }
   const s = await loadState();
   return s.bankTransfers?.[code];
 }
 
 export async function listBankTransferRequests(opts?: { status?: BankTransferRequest["status"]; userId?: string }): Promise<BankTransferRequest[]> {
+  if (HAS_DB) {
+    const rows = await getPrisma().bankTransferRequest.findMany({
+      where: {
+        ...(opts?.status ? { status: opts.status } : {}),
+        ...(opts?.userId ? { userId: opts.userId } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map((r: unknown) => rowToBankTransfer(r as AnyRow));
+  }
   const s = await loadState();
   let list = Object.values(s.bankTransfers || {});
   if (opts?.status) list = list.filter((b) => b.status === opts.status);
@@ -488,6 +849,21 @@ export async function listBankTransferRequests(opts?: { status?: BankTransferReq
 }
 
 export async function approveBankTransferRequest(code: string, adminEmail: string, orderId: string): Promise<BankTransferRequest> {
+  if (HAS_DB) {
+    const existing = await getPrisma().bankTransferRequest.findUnique({ where: { code } });
+    if (!existing) throw new Error("Havale isteği bulunamadı");
+    if ((existing as any).status !== "PENDING") throw new Error(`İstek zaten ${(existing as any).status}`);
+    const row = await getPrisma().bankTransferRequest.update({
+      where: { code },
+      data: {
+        status: "APPROVED",
+        approvedBy: adminEmail,
+        approvedAt: new Date(),
+        orderId,
+      },
+    });
+    return rowToBankTransfer(row as unknown as AnyRow);
+  }
   const s = await loadState(true);
   const rec = s.bankTransfers?.[code];
   if (!rec) throw new Error("Havale isteği bulunamadı");
@@ -501,6 +877,21 @@ export async function approveBankTransferRequest(code: string, adminEmail: strin
 }
 
 export async function rejectBankTransferRequest(code: string, adminEmail: string, reason: string): Promise<BankTransferRequest> {
+  if (HAS_DB) {
+    const existing = await getPrisma().bankTransferRequest.findUnique({ where: { code } });
+    if (!existing) throw new Error("Havale isteği bulunamadı");
+    if ((existing as any).status !== "PENDING") throw new Error(`İstek zaten ${(existing as any).status}`);
+    const row = await getPrisma().bankTransferRequest.update({
+      where: { code },
+      data: {
+        status: "REJECTED",
+        approvedBy: adminEmail,
+        approvedAt: new Date(),
+        rejectionReason: reason,
+      },
+    });
+    return rowToBankTransfer(row as unknown as AnyRow);
+  }
   const s = await loadState(true);
   const rec = s.bankTransfers?.[code];
   if (!rec) throw new Error("Havale isteği bulunamadı");
