@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, SESSION_COOKIE, getAdmins, saveAdmins } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/password";
 
 /** GET — sadece çağıran admin'in kendi profilini döner. */
 export async function GET(req: NextRequest) {
@@ -59,15 +60,18 @@ export async function PATCH(req: NextRequest) {
     me.email = newEmail;
   }
 
-  // Password update — mevcut şifre doğrulansın
+  // Password update — mevcut şifre doğrulansın (bcrypt hash veya legacy plaintext).
   if (body.newPassword) {
-    if (!body.currentPassword || body.currentPassword !== me.password) {
+    const currentOk = body.currentPassword
+      ? await verifyPassword(body.currentPassword, me.password)
+      : false;
+    if (!currentOk) {
       return NextResponse.json({ error: "wrong_current_password" }, { status: 403 });
     }
     if (body.newPassword.length < 6) {
       return NextResponse.json({ error: "password_too_short" }, { status: 400 });
     }
-    me.password = body.newPassword;
+    me.password = await hashPassword(body.newPassword);
   }
 
   admins[idx] = me;

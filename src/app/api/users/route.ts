@@ -7,6 +7,20 @@ import {
   SESSION_COOKIE,
   getOwnerSession,
 } from "@/lib/auth";
+import { hashPassword, looksHashed } from "@/lib/password";
+
+/** Admin/Customer şifresi update sırasında gelmemiş olabilir (UI yalnızca
+ * yeni şifre değiştiğinde gönderir) — boş gelirse mevcut hash'i koru. */
+async function nextPasswordHash(
+  inputPassword: string | undefined,
+  existing: string,
+): Promise<string> {
+  if (!inputPassword) return existing;
+  // Çağıran zaten bcrypt hash gönderdiyse (yeniden hash'leme döngüsü
+  // engellemek için), olduğu gibi kabul et.
+  if (looksHashed(inputPassword)) return inputPassword;
+  return hashPassword(inputPassword);
+}
 
 /** Kullanıcı CRUD = sadece site sahibinin işi. Geliştirici rolündeki adminler
  * kendi şifresini /api/admin/profil ile günceller; başka kullanıcıyı
@@ -64,7 +78,8 @@ export async function POST(req: NextRequest) {
         // Update existing
         const idx = admins.findIndex((a) => a.id === id);
         if (idx >= 0) {
-          admins[idx] = { ...admins[idx], name, email, password, role: role as "admin" | "developer" };
+          const nextPw = await nextPasswordHash(password, admins[idx].password);
+          admins[idx] = { ...admins[idx], name, email, password: nextPw, role: role as "admin" | "developer" };
           await saveAdmins(admins);
           return NextResponse.json({ success: true });
         }
@@ -78,7 +93,13 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      admins.push({ id: `a${Date.now()}`, name, email, password, role: role as "admin" | "developer" });
+      admins.push({
+        id: `a${Date.now()}`,
+        name,
+        email,
+        password: await hashPassword(password),
+        role: role as "admin" | "developer",
+      });
       await saveAdmins(admins);
       return NextResponse.json({ success: true }, { status: 201 });
     }
@@ -99,7 +120,8 @@ export async function POST(req: NextRequest) {
         // Update existing
         const idx = customers.findIndex((c) => c.id === id);
         if (idx >= 0) {
-          customers[idx] = { ...customers[idx], code, name, password, project, contactEmail, contactPhone };
+          const nextPw = await nextPasswordHash(password, customers[idx].password);
+          customers[idx] = { ...customers[idx], code, name, password: nextPw, project, contactEmail, contactPhone };
           await saveCustomers(customers);
           return NextResponse.json({ success: true });
         }
@@ -112,7 +134,15 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const newCustomer = { id: `c${Date.now()}`, code, name, password, project, contactEmail, contactPhone };
+      const newCustomer = {
+        id: `c${Date.now()}`,
+        code,
+        name,
+        password: await hashPassword(password),
+        project,
+        contactEmail,
+        contactPhone,
+      };
       customers.push(newCustomer);
       await saveCustomers(customers);
 

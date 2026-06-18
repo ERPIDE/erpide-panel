@@ -3,8 +3,11 @@ import {
   getAdmins,
   getCustomers,
   createSession,
+  saveAdmins,
+  saveCustomers,
   SESSION_COOKIE,
 } from "@/lib/auth";
+import { hashPassword, looksHashed, verifyPassword } from "@/lib/password";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,15 +24,31 @@ export async function POST(req: NextRequest) {
       }
 
       const admins = await getAdmins();
-      const user = admins.find(
-        (a) => a.email === email && a.password === password
-      );
+      const candidate = admins.find((a) => a.email === email);
+      const user = candidate && (await verifyPassword(password, candidate.password))
+        ? candidate
+        : undefined;
 
       if (!user) {
         return NextResponse.json(
           { error: "Geçersiz email veya parola" },
           { status: 401 }
         );
+      }
+
+      // Legacy plaintext kaydı bu login'de bcrypt'e yükselt — fire-and-forget.
+      if (!looksHashed(user.password)) {
+        const updated = admins.map((a) =>
+          a.id === user.id ? { ...a, password: "" } : a,
+        );
+        hashPassword(password)
+          .then((hashed) => {
+            const next = updated.map((a) =>
+              a.id === user.id ? { ...a, password: hashed } : a,
+            );
+            return saveAdmins(next);
+          })
+          .catch(() => {});
       }
 
       const token = await createSession({
@@ -72,15 +91,28 @@ export async function POST(req: NextRequest) {
       }
 
       const customers = await getCustomers();
-      const user = customers.find(
-        (c) => c.code === code && c.password === password
-      );
+      const candidate = customers.find((c) => c.code === code);
+      const user = candidate && (await verifyPassword(password, candidate.password))
+        ? candidate
+        : undefined;
 
       if (!user) {
         return NextResponse.json(
           { error: "Geçersiz müşteri kodu veya parola" },
           { status: 401 }
         );
+      }
+
+      // Legacy plaintext kaydı bu login'de bcrypt'e yükselt — fire-and-forget.
+      if (!looksHashed(user.password)) {
+        hashPassword(password)
+          .then((hashed) => {
+            const next = customers.map((c) =>
+              c.id === user.id ? { ...c, password: hashed } : c,
+            );
+            return saveCustomers(next);
+          })
+          .catch(() => {});
       }
 
       const token = await createSession({
