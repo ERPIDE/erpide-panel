@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { DATAENGINE_LICENSES } from "@/lib/dataengine-licenses";
+import { getPrisma } from "@/lib/db";
+import { normalizeLicenseKey } from "@/lib/dataengine-licenses";
 
 /**
  * POST /api/dataengine/license/validate
  *
- * Müşteri sunucusundaki dataengine.exe startup'ta ve her 12 saatte bir bu
- * endpoint'i çağırır. valid=false → exe açılmaz / çalışmayı durdurur
- * (client side `app/license_check.py` mantığı). Detaylı plan için
- * project_dataengine_production memory'si.
+ * Müşteri sunucusundaki dataengine.exe startup'ta (ve gelecekte periyodik)
+ * çağırır. valid=false → exe açılmaz / durdurur. Her başarılı validate'de
+ * lastValidatedAt + lastClientVersion + lastSeenIp güncellenir (admin UI'da
+ * son ne zaman görüldüğünü izleriz).
+ *
+ * Fingerprint binding henüz sert kural değil — ilk validate'de set edilir,
+ * sonraki sapmalarda sadece log atılır (Faz 3: ikinci makinada exe açılmasın).
  */
 
 const schema = z.object({
@@ -34,23 +38,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ valid: false, reason: "Invalid request" }, { status: 400 });
   }
 
-  const key = parsed.data.key.trim().toUpperCase();
-  const lic = DATAENGINE_LICENSES[key];
+  const key = normalizeLicenseKey(parsed.data.key);
+  const db = getPrisma();
+  const lic = await db.dataEngineLicense.findUnique({ where: { key } });
 
   if (!lic) return unauthorized("Bilinmeyen lisans anahtarı");
   if (!lic.active) return unauthorized("Lisans askıya alınmış");
+  if (lic.expiresAt && lic.expiresAt < new Date()) {
+    return unauthorized("Lisans süresi dolmuş", { expires_at: lic.expiresAt.toISOString() });
+  }
 
-  if (lic.expiresAt) {
-    const exp = new Date(lic.expiresAt);
-    if (Number.isFinite(exp.getTime()) && exp < new Date()) {
-      return unauthorized("Lisans süresi dolmuş", { expires_at: lic.expiresAt });
-    }
+  // İzleme alanlarını güncelle (best-effort; başarısız olsa bile valid response döner).
+  const fp = parsed.data.fingerprint;
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    null;
+  try {
+    await db.dataEngineLicense.update({
+      where: { key },
+      data: {
+        lastValidatedAt: new Date(),
+        lastClientVersion: parsed.data.version || null,
+        lastSeenIp: ip,
+        // Aktivasyon: fingerprint ilk gelenle birlikte set, sonra dokunma
+        ...(fp && !lic.activeFingerprint
+          ? { activeFingerprint: fp, firstSeenAt: new Date() }
+          : {}),
+      },
+    });
+  } catch (e) {
+    console.error("[dataengine.license] update tracking failed:", e);
   }
 
   return NextResponse.json({
     valid: true,
     customer: lic.customer,
-    expires_at: lic.expiresAt,
+    expires_at: lic.expiresAt?.toISOString() ?? null,
     note: lic.note ?? null,
   });
 }

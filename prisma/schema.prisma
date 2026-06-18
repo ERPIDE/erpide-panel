@@ -15,8 +15,8 @@ datasource db {
 }
 
 model User {
-  id           String  @id
-  email        String  @unique
+  id           String @id
+  email        String @unique
   name         String
   surname      String
   passwordHash String
@@ -25,21 +25,21 @@ model User {
   verificationToken          String?   @unique
   verificationTokenExpiresAt DateTime?
 
-  gsmNumber       String?
-  identityNumber  String?
-  companyName     String?
-  taxNumber       String?
-  address         String?
-  city            String?
-  postalCode      String?
-  district        String?
+  gsmNumber      String?
+  identityNumber String?
+  companyName    String?
+  taxNumber      String?
+  address        String?
+  city           String?
+  postalCode     String?
+  district       String?
 
   // Array of SavedAddress — see UserRecord.savedAddresses in user-store.ts.
   savedAddresses Json?
 
-  acceptedTermsAt     DateTime?
-  acceptedKvkkAt      DateTime?
-  marketingConsentAt  DateTime?
+  acceptedTermsAt    DateTime?
+  acceptedKvkkAt     DateTime?
+  marketingConsentAt DateTime?
 
   oauthProvider   String?
   oauthProviderId String?
@@ -61,38 +61,38 @@ model User {
 }
 
 model Order {
-  id             String   @id
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  id     String @id
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Array of OrderItem — license keys, sku ids, backend provisioning data.
   items          Json
   totalPrice     Float
   currency       String
   paymentId      String?
-  conversationId String   @unique
+  conversationId String  @unique
   status         String
 
   iyzicoToken    String?
-  isTrial        Boolean  @default(false)
+  isTrial        Boolean   @default(false)
   trialExpiresAt DateTime?
 
-  subscriptionExpiresAt    DateTime?
-  billingCycle             String?
-  autoRenewEnabled         Boolean?
-  lastRenewAttemptAt       DateTime?
-  lastRenewError           String?
-  renewedFromOrderId       String?
+  subscriptionExpiresAt DateTime?
+  billingCycle          String?
+  autoRenewEnabled      Boolean?
+  lastRenewAttemptAt    DateTime?
+  lastRenewError        String?
+  renewedFromOrderId    String?
 
-  cancelledAt              DateTime?
-  cancelledBy              String?
-  cancellationReason       String?
-  expiringSoonEmailSentAt  DateTime?
-  renewFailedEmailSentAt   DateTime?
+  cancelledAt             DateTime?
+  cancelledBy             String?
+  cancellationReason      String?
+  expiringSoonEmailSentAt DateTime?
+  renewFailedEmailSentAt  DateTime?
 
-  creditsConsumed          Int?
+  creditsConsumed Int?
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   paidAt    DateTime?
 
   @@index([userId])
@@ -102,14 +102,14 @@ model Order {
 
 model LicenseCode {
   // Normalized code (uppercase, hyphens preserved) — see normalizeCode().
-  code            String   @id
-  skuId           String
-  productId       String
-  durationDays    Int
-  batchId         String?
-  note            String?
+  code         String  @id
+  skuId        String
+  productId    String
+  durationDays Int
+  batchId      String?
+  note         String?
 
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
   expiresAt       DateTime?
   redeemedBy      String?
   redeemedAt      DateTime?
@@ -121,29 +121,54 @@ model LicenseCode {
 
 model BankTransferRequest {
   // HAV-XXXXXXXX format.
-  code        String   @id
-  userId      String
-  userEmail   String
-  productId   String
-  skuIds      Json
-  skuNames    Json?
-  amountUSD   Float
-  fxRate      Float
-  fxRateDate  String
-  amountTRY   Float
-  ibanUsed    String
-  ibanHolder  String
-  status      String
+  code       String @id
+  userId     String
+  userEmail  String
+  productId  String
+  skuIds     Json
+  skuNames   Json?
+  amountUSD  Float
+  fxRate     Float
+  fxRateDate String
+  amountTRY  Float
+  ibanUsed   String
+  ibanHolder String
+  status     String
 
-  createdAt        DateTime @default(now())
-  expiresAt        DateTime
-  approvedBy       String?
-  approvedAt       DateTime?
-  rejectionReason  String?
-  orderId          String?
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  orderId         String?
 
   @@index([userId])
   @@index([status])
+}
+
+model DataEngineLicense {
+  // Format: DE-XXXX-YYYY-ZZZZ-NNNN (15 chars + 4 dashes), normalize edilmiş upper-case.
+  key       String    @id
+  customer  String
+  productId String    @default("dataengine")
+  expiresAt DateTime?
+  active    Boolean   @default(true)
+  note      String?
+
+  // Aktivasyon: ilk başarılı validate'de set; sonraki farklı fingerprint reject (gelecek faz).
+  activeFingerprint String?
+  firstSeenAt       DateTime?
+
+  // İzleme: her başarılı validate'de güncellenir
+  lastValidatedAt   DateTime?
+  lastClientVersion String?
+  lastSeenIp        String?
+
+  createdAt DateTime @default(now())
+  createdBy String? // admin userId / email
+
+  @@index([active])
+  @@index([expiresAt])
 }
 
 // ── Phase 2: panel auth / pocket / support ────────────────────────
@@ -153,7 +178,7 @@ model BankTransferRequest {
 // rate-limit cure stays cured.
 
 model Session {
-  token        String   @id
+  token        String  @id
   userId       String
   userType     String
   userName     String
@@ -187,10 +212,10 @@ model Customer {
 
 model PocketToken {
   // pkt_<random> prefix from issueToken().
-  token      String   @id
+  token      String    @id
   userId     String
   label      String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 
   @@index([userId])
@@ -229,7 +254,7 @@ model RateLimitHit {
 }
 
 model SupportRequest {
-  id            String   @id
+  id            String  @id
   channel       String
   customerName  String?
   customerEmail String?
@@ -239,7 +264,7 @@ model SupportRequest {
   meta          Json?
   status        String
   // Vapi call.id — idempotency for end-of-call-report webhook.
-  externalId    String?  @unique
+  externalId    String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
