@@ -28,7 +28,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
   const path = `/urunler/${product.id}`;
   const url = `${SITE_URL}${path}`;
-  const ogImage = product.logoImage ? `${SITE_URL}${product.logoImage}` : `${SITE_URL}/logo-wide.png`;
+  // Markalı dinamik OG kartı (1200x630). Sosyal medya unfurl'ünde statik
+  // PNG'den çok daha çekici. Edge'de generate, 1 saat cache.
+  const ogImage = `${SITE_URL}/api/og/product/${product.id}`;
 
   const languages: Record<string, string> = {};
   for (const loc of LOCALES) {
@@ -49,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       siteName: "ERPIDE",
       title: `${product.name} — ${product.tagline}`,
       description: product.description.slice(0, 200),
-      images: [{ url: ogImage, alt: `${product.name} logo` }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `${product.name} — ${product.tagline}` }],
       locale: "tr_TR",
       alternateLocale: ["en_US", "ru_RU", "kk_KZ"],
     },
@@ -128,6 +130,19 @@ export default async function ProductLayout({
     ],
   };
 
+  // FAQPage rich result — Google accordion gösterir, organic CTR ciddi
+  // şekilde artar. En az 3 Q&A olmalı, içerik gerçek olmalı (uydurma
+  // FAQ'lar manuel action yer).
+  const faqJsonLd = (product.faqs && product.faqs.length >= 3) ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: product.faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  } : null;
+
   return (
     <>
       <script
@@ -138,6 +153,12 @@ export default async function ProductLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       {children}
     </>
   );

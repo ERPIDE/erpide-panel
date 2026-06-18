@@ -54,6 +54,16 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // Search Console (Google) ve Bing Webmaster doğrulamaları. Token'lar env
+  // vars'tan geldiği için kod'da plain duruyor — yine de meta tag olarak
+  // public, secret değil. Eksik olduklarında metadata bu alanı atlar.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    yandex: process.env.YANDEX_VERIFICATION || undefined,
+    other: process.env.BING_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_VERIFICATION }
+      : undefined,
+  },
   alternates: {
     canonical: "/",
     languages: {
@@ -187,6 +197,11 @@ const WEBSITE_JSON_LD = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // GA4 sadece NEXT_PUBLIC_GA_MEASUREMENT_ID set olduğunda yüklenir —
+  // local dev'de analytics noise olmasın diye opt-in. Production'da Vercel
+  // env'inde G-XXXXXXXXXX formatında set edilir.
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
@@ -198,6 +213,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
         />
+        {gaId && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}', { anonymize_ip: true });
+                `,
+              }}
+            />
+          </>
+        )}
       </head>
       <body className={inter.className}>
         <I18nProvider>

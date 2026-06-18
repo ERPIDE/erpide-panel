@@ -226,6 +226,13 @@ export interface Product {
    *  bir landing page'i olan ürünlerde). MobileAppStoreCard'ın altında
    *  "Web sitesini ziyaret et" butonu olarak görünür. */
   webUrl?: string;
+
+  /** Sıkça Sorulan Sorular — opsiyonel. Doldurulursa product detail layout
+   *  FAQPage JSON-LD üretir, Google'da rich result çıkar (accordion). En az
+   *  3 soru olmalı ki Google işe yarar bulsun. TR varsayılan; i18n ileride.
+   *  Soru-cevap'lar canlı destek kayıtlarından (SupportRequest tablosu)
+   *  beslenebilir. */
+  faqs?: Array<{ q: string; a: string }>;
   /** Mobil uygulamalar için: masaüstünden indirme DEVRE DIŞI (QR kod göster). */
   mobileOnlyDownload?: boolean;
 
