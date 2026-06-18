@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["iyzipay"],
@@ -13,4 +14,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry wrapper. Source map upload için SENTRY_AUTH_TOKEN gerekli (CI'de
+// set edilince stack trace satırları okunabilir hale gelir). Token YOKKEN
+// build başarılı olur, sadece source map'siz hatalar görürsün — sonradan
+// token ekleyince geçmişe dönük source map yüklenmez ama yeni deploy'lar
+// hizalanır.
+export default withSentryConfig(nextConfig, {
+  org: "erpide-yazilim-sanayi-ticaret",
+  project: "javascript-nextjs",
+  silent: !process.env.CI,
+  // Ad-blocker'lar ingest.sentry.io'yu blokluyor; client'tan gelen
+  // event'ler /monitoring proxy üzerinden gönderilir.
+  tunnelRoute: "/monitoring",
+  disableLogger: true,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+});
