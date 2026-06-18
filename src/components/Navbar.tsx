@@ -168,6 +168,7 @@ export default function Navbar() {
                     desc={t("nav.app_desc_witma")}
                     state="none"
                     buyUrl="/urunler/witma"
+                    freeApp
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="border-t border-white/5">
@@ -318,7 +319,7 @@ export default function Navbar() {
 
 
 function AppLauncherItem({
-  icon, name, desc, state, appUrl, buyUrl, onClose, trialSkuId, trialEligible,
+  icon, name, desc, state, appUrl, buyUrl, onClose, trialSkuId, trialEligible, freeApp,
 }: {
   icon: React.ReactNode;
   name: string;
@@ -334,6 +335,10 @@ function AppLauncherItem({
   trialSkuId?: string;
   /** false ise kullanıcı trial'ı zaten kullanmış; "3 Gün Dene" yerine "Satın Al". */
   trialEligible?: boolean;
+  /** true ise ürün ücretsiz (örn. WITMA — store'dan indirilir, premium
+   *  in-app purchase ile alınır). "Satın Al" yerine "İncele" gösterilir,
+   *  trial seçenekleri devre dışı bırakılır. */
+  freeApp?: boolean;
 }) {
   const { t } = useTranslation();
   const [trialing, setTrialing] = useState(false);
@@ -396,7 +401,9 @@ function AppLauncherItem({
     }
   }
 
-  const showTrial = !!trialSkuId && trialEligible === true;
+  // Ücretsiz uygulamalarda (WITMA gibi) trial/satın al butonları yok —
+  // store linkine yönlendiren tek bir "İncele" görünür.
+  const showTrial = !freeApp && !!trialSkuId && trialEligible === true;
 
   return (
     <div className="px-4 py-3 hover:bg-white/5 transition">
@@ -422,7 +429,7 @@ function AppLauncherItem({
           onClick={onClose}
           className="flex-1 py-1.5 rounded-lg border border-white/10 text-gray-300 text-[11px] font-semibold hover:bg-white/5 transition text-center"
         >
-          {showTrial ? "İncele" : `${t("nav.buy")} →`}
+          {freeApp || showTrial ? "İncele →" : `${t("nav.buy")} →`}
         </Link>
       </div>
       {trialError && (
