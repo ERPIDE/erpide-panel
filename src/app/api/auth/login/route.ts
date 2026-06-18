@@ -8,9 +8,17 @@ import {
   SESSION_COOKIE,
 } from "@/lib/auth";
 import { hashPassword, looksHashed, verifyPassword } from "@/lib/password";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+    const limit = await checkRateLimit(
+      { scope: "panel_login", windowSeconds: 60, maxAttempts: 8 },
+      ip,
+    );
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfterSeconds);
+
     const body = await req.json();
     const { type, password } = body;
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findUserByEmail } from "@/lib/auth/user-store";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { getSession } from "@/lib/auth/session";
+import { checkRateLimit, clientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,12 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const limit = await checkRateLimit(
+      { scope: "shop_login", windowSeconds: 60, maxAttempts: 8 },
+      clientIp(req),
+    );
+    if (!limit.allowed) return rateLimitedResponse(limit.retryAfterSeconds);
+
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Geçersiz e-mail veya şifre" }, { status: 400 });

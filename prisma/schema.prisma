@@ -215,6 +215,19 @@ model PocketPushToken {
   @@index([userId])
 }
 
+// Per-IP/per-route attempt log. checkRateLimit() inserts one row per attempt
+// and counts how many fall inside the configured window. A daily cron prunes
+// rows older than 24h — at typical traffic the table stays under 10k rows.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  scope     String
+  ipAddress String
+  createdAt DateTime @default(now())
+
+  @@index([scope, ipAddress, createdAt])
+  @@index([createdAt])
+}
+
 model SupportRequest {
   id            String   @id
   channel       String
