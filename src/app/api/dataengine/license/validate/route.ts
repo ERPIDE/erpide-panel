@@ -48,8 +48,17 @@ export async function POST(req: NextRequest) {
     return unauthorized("Lisans süresi dolmuş", { expires_at: lic.expiresAt.toISOString() });
   }
 
-  // İzleme alanlarını güncelle (best-effort; başarısız olsa bile valid response döner).
+  // Fingerprint binding: ilk validate'de set edilir, sonraki farklı fingerprint reject.
+  // İstemci fingerprint göndermezse (geriye uyumluluk için) sadece tracking yap.
   const fp = parsed.data.fingerprint;
+  if (fp && lic.activeFingerprint && lic.activeFingerprint !== fp) {
+    return unauthorized("Lisans başka bir makinaya bağlı (fingerprint uyuşmazlığı)", {
+      bound_to: lic.activeFingerprint,
+      received: fp,
+    });
+  }
+
+  // İzleme alanlarını güncelle (best-effort; başarısız olsa bile valid response döner).
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     req.headers.get("x-real-ip") ||
