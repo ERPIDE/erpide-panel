@@ -6,44 +6,23 @@ import {
   Globe, Wifi, WifiOff, Crown, Smartphone, Radio,
 } from "lucide-react";
 
-const SB_URL = "https://gynooxlltoohalbxbhrw.supabase.co";
-const SB_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5bm9veGxsdG9vaGFsYnhiaHJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTkyNTMsImV4cCI6MjA5NjY3NTI1M30.Ff_zfpVkSa5sJDTp4tD6TvId1YY3R__xxXSDvAuxs2k";
-
-const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" };
-
-async function sbCount(table: string, filter = ""): Promise<number | null> {
-  try {
-    const res = await fetch(
-      `${SB_URL}/rest/v1/${table}?select=*${filter ? `&${filter}` : ""}&limit=0`,
-      { headers: { ...H, Prefer: "count=exact" } }
-    );
-    if (!res.ok) return null;
-    const range = res.headers.get("Content-Range");
-    const m = range?.match(/\/(\d+)$/);
-    return m ? parseInt(m[1]) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function sbRows<T>(table: string, select: string, extra = "", limit = 50): Promise<T[]> {
-  try {
-    const res = await fetch(
-      `${SB_URL}/rest/v1/${table}?select=${select}${extra ? `&${extra}` : ""}&limit=${limit}&order=created_at.desc`,
-      { headers: H }
-    );
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
-  }
-}
 
 const CURRENT_OTA = "v51";
 const OTA_DATE = "2026-06-21";
 
 type Tab = "genel" | "kullanicilar" | "aktivite";
+
+type StatsResponse = {
+  hasServiceKey: boolean;
+  totalUsers: number | null;
+  onlineNow: number | null;
+  todayMsgs: number | null;
+  todayCalls: number | null;
+  todayOpens: number | null;
+  premiumUsers: number | null;
+  profiles: any[];
+  events: any[];
+};
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
   user_open:   { label: "Açılış",     color: "text-blue-400 bg-blue-500/10" },
@@ -106,32 +85,26 @@ export default function WitmaAdminPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayISO = todayStart.toISOString();
-  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const [hasServiceKey, setHasServiceKey] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [tu, on, tm, tc, to, pu, prof, evts] = await Promise.all([
-      sbCount("profiles"),
-      sbCount("ops_presence", `last_seen=gte.${fiveMinAgo}`),
-      sbCount("messages", `created_at=gte.${todayISO}`),
-      sbCount("ops_events", `event=eq.call_start&created_at=gte.${todayISO}`),
-      sbCount("ops_events", `event=eq.user_open&created_at=gte.${todayISO}`),
-      sbCount("profiles", "plan=eq.premium"),
-      sbRows<any>("profiles", "phone,name,plan,plan_expires_at,updated_at", "", 200),
-      sbRows<any>("ops_events", "id,event,user_id,meta,created_at", "", 100),
-    ]);
-    setTotalUsers(tu);
-    setOnlineNow(on);
-    setTodayMsgs(tm);
-    setTodayCalls(tc);
-    setTodayOpens(to);
-    setPremiumUsers(pu);
-    setProfiles(prof);
-    setEvents(evts);
+    try {
+      const res = await fetch("/api/admin/witma");
+      if (!res.ok) throw new Error("API error");
+      const data: StatsResponse = await res.json();
+      setHasServiceKey(data.hasServiceKey);
+      setTotalUsers(data.totalUsers);
+      setOnlineNow(data.onlineNow);
+      setTodayMsgs(data.todayMsgs);
+      setTodayCalls(data.todayCalls);
+      setTodayOpens(data.todayOpens);
+      setPremiumUsers(data.premiumUsers);
+      setProfiles(data.profiles || []);
+      setEvents(data.events || []);
+    } catch {
+      // sessiz hata
+    }
     setLoading(false);
   }, []);
 
@@ -272,7 +245,11 @@ export default function WitmaAdminPage() {
             <div className="p-5 rounded-xl bg-[#111118] border border-white/5 text-center">
               <WifiOff size={24} className="text-gray-600 mx-auto mb-2" />
               <p className="text-sm text-gray-500">Aktivite verisi alınamadı</p>
-              <p className="text-xs text-gray-600 mt-1">ops_events tablosu için Supabase service key gerekebilir</p>
+              {!hasServiceKey && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Vercel'e <span className="text-yellow-500 font-mono">WITMA_SUPABASE_SERVICE_KEY</span> ekle
+                </p>
+              )}
             </div>
           )}
         </motion.div>
@@ -348,10 +325,12 @@ export default function WitmaAdminPage() {
           {events.length === 0 && !loading ? (
             <div className="p-8 rounded-xl bg-[#111118] border border-white/5 text-center">
               <WifiOff size={32} className="text-gray-600 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">ops_events verisi alınamadı</p>
-              <p className="text-xs text-gray-600 mt-1">
-                Supabase RLS kısıtlaması — service key Vercel env'e eklenince erişim açılır
-              </p>
+              <p className="text-sm text-gray-400">Aktivite verisi yok</p>
+              {!hasServiceKey && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Vercel env'e <span className="text-yellow-500 font-mono">WITMA_SUPABASE_SERVICE_KEY</span> ekle
+                </p>
+              )}
             </div>
           ) : (
             <div className="rounded-xl bg-[#111118] border border-white/5 overflow-hidden">
