@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Key, Package, MapPin, Lock, LayoutDashboard, LogOut } from "lucide-react";
+import { User, Key, Package, MapPin, Lock, LayoutDashboard, LogOut, LifeBuoy } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 export default function AccountSidebar({ userName }: { userName?: string }) {
@@ -15,6 +15,7 @@ export default function AccountSidebar({ userName }: { userName?: string }) {
     { href: "/hesabim/siparislerim", label: t("sidebar.orders"), icon: Package },
     { href: "/hesabim/adres", label: t("sidebar.addresses"), icon: MapPin },
     { href: "/hesabim/sifre", label: t("sidebar.change_password"), icon: Lock },
+    { href: "/hesabim/destek", label: "Destek Talepleri", icon: LifeBuoy },
   ];
 
   return (

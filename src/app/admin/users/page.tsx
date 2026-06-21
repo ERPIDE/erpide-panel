@@ -12,17 +12,203 @@ import {
   Shield,
   Building2,
   X,
+  KeyRound,
+  RotateCcw,
+  Save,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import {
   AdminUser,
   CustomerUser,
 } from "@/lib/store";
+import {
+  ALL_MODULES,
+  resolvePermissions,
+  type ModulePermissions,
+} from "@/lib/permissions";
 
 // ── helpers ──────────────────────────────────────────────────────────
 const genId = () => Math.random().toString(36).slice(2, 10);
 
-const projectOptions = ["CANIAS", "1C ERP", "Python Botları", "Kripto Botu"];
+const projectOptions = ["CANIAS", "1C ERP"];
+
+// ── Permissions Modal ────────────────────────────────────────────────
+function PermissionsModal({
+  admin,
+  onClose,
+  onSaved,
+}: {
+  admin: AdminUser;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const effective = resolvePermissions(admin.role, admin.permissions ?? null);
+  const [perms, setPerms] = useState<ModulePermissions>(() => {
+    // Derin klon — state'i bağımsız tut
+    return Object.fromEntries(
+      Object.entries(effective).map(([k, v]) => [k, { ...v }])
+    );
+  });
+  const [saving, setSaving] = useState(false);
+  const [hasCustom] = useState(!!admin.permissions);
+
+  const toggle = (moduleKey: string, level: "read" | "edit" | "write") => {
+    setPerms((prev) => {
+      const cur = { ...prev[moduleKey] };
+      const next = !cur[level];
+      cur[level] = next;
+      // Hiyerarşi: write→edit→read
+      if (level === "write" && next) { cur.edit = true; cur.read = true; }
+      if (level === "edit" && next) { cur.read = true; }
+      if (level === "read" && !next) { cur.edit = false; cur.write = false; }
+      if (level === "edit" && !next) { cur.write = false; }
+      return { ...prev, [moduleKey]: cur };
+    });
+  };
+
+  const save = async () => {
+    setSaving(true);
+    await fetch("/api/admin/users/permissions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminId: admin.id, permissions: perms }),
+    });
+    setSaving(false);
+    onSaved();
+    onClose();
+  };
+
+  const resetToDefault = async () => {
+    setSaving(true);
+    await fetch("/api/admin/users/permissions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminId: admin.id, permissions: null }),
+    });
+    setSaving(false);
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.2 }}
+        className="relative w-full max-w-2xl rounded-2xl bg-[#111118] border border-white/10 shadow-2xl overflow-hidden"
+        style={{ maxHeight: "90vh" }}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-white/5 flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <KeyRound size={18} className="text-blue-400" />
+              Yetki Yönetimi
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              <span className="text-white font-medium">{admin.name}</span>
+              {" "}· {admin.role === "admin" ? "Admin" : "Geliştirici"}
+              {hasCustom && <span className="ml-2 text-yellow-400 text-xs">Özel yetkiler aktif</span>}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Permission Matrix */}
+        <div className="overflow-y-auto" style={{ maxHeight: "55vh" }}>
+          <div className="px-6 pt-5 pb-2">
+            {/* Column headers */}
+            <div className="grid grid-cols-[1fr_80px_80px_80px] gap-2 mb-3 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+              <div>Modül</div>
+              <div className="text-center">Okuma</div>
+              <div className="text-center">Değiştirme</div>
+              <div className="text-center">Yazma</div>
+            </div>
+            {/* Rows */}
+            <div className="space-y-1">
+              {ALL_MODULES.map((m) => {
+                const p = perms[m.key] ?? { read: false, edit: false, write: false };
+                return (
+                  <div
+                    key={m.key}
+                    className={`grid grid-cols-[1fr_80px_80px_80px] gap-2 items-center px-3 py-2 rounded-xl transition ${
+                      p.read ? "bg-white/[0.03]" : "opacity-60"
+                    }`}
+                  >
+                    <div className="text-sm text-gray-300">{m.label}</div>
+                    {(["read", "edit", "write"] as const).map((level) => (
+                      <div key={level} className="flex justify-center">
+                        <button
+                          onClick={() => toggle(m.key, level)}
+                          className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center transition ${
+                            p[level]
+                              ? level === "write"
+                                ? "bg-green-500/20 border-green-500/50 text-green-400"
+                                : level === "edit"
+                                ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                                : "bg-purple-500/20 border-purple-500/50 text-purple-400"
+                              : "border-white/10 bg-white/5 text-gray-700 hover:border-white/20"
+                          }`}
+                        >
+                          {p[level] && <span className="text-xs font-bold">✓</span>}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="px-6 py-3 border-t border-white/5 flex items-center gap-4 text-xs text-gray-500">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-purple-500/40 border border-purple-500/60" /> Okuma: görüntüleyebilir</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500/40 border border-blue-500/60" /> Değiştirme: mevcut kayıt güncelleyebilir</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-500/40 border border-green-500/60" /> Yazma: yeni kayıt oluşturabilir</span>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between gap-3">
+          <button
+            onClick={resetToDefault}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm transition disabled:opacity-40"
+          >
+            <RotateCcw size={14} />
+            Rol Varsayılanına Dön
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white/5 text-gray-400 hover:text-white text-sm transition"
+            >
+              İptal
+            </button>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition disabled:opacity-40"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Kaydet
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -119,6 +305,9 @@ export default function UsersPage() {
     id: string;
     name: string;
   } | null>(null);
+
+  // permissions editor
+  const [permTarget, setPermTarget] = useState<AdminUser | null>(null);
 
   // ── modal helpers ────────────────────────────────────────────────
   function resetCustomerForm() {
@@ -478,6 +667,13 @@ export default function UsersPage() {
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => setPermTarget(a)}
+                          className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-blue-400 transition"
+                          title="Yetkiler"
+                        >
+                          <KeyRound size={15} />
+                        </button>
+                        <button
                           onClick={() => openEditAdmin(a)}
                           className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-yellow-400 transition"
                           title="Düzenle"
@@ -739,6 +935,16 @@ export default function UsersPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+      {/* ── Permissions Modal ───────────────────────────────────── */}
+      <AnimatePresence>
+        {permTarget && (
+          <PermissionsModal
+            admin={permTarget}
+            onClose={() => setPermTarget(null)}
+            onSaved={fetchUsers}
+          />
         )}
       </AnimatePresence>
     </div>

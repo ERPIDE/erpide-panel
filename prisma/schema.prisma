@@ -193,11 +193,14 @@ model Session {
 }
 
 model Admin {
-  id       String @id
-  name     String
-  email    String @unique
-  password String
-  role     String
+  id          String @id
+  name        String
+  email       String @unique
+  password    String
+  role        String
+  // Modül bazlı yetki haritası: { moduleKey: { read, edit, write } }
+  // null ise rol bazlı varsayılan uygulanır (admin = tümü açık, developer = kısıtlı).
+  permissions Json?
 }
 
 model Customer {
@@ -271,4 +274,38 @@ model SupportRequest {
 
   @@index([status])
   @@index([updatedAt])
+}
+
+// ── Ticket system ─────────────────────────────────────────────────
+// Kullanıcıların /hesabim/destek üzerinden açtığı destek talepleri.
+// Admin /admin/tickets üzerinden görür ve yanıtlar.
+
+model Ticket {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String?  // hangi ürün için (finanserpide, captchaerpide vs.)
+  subject   String
+  status    String   @default("open") // open | in_progress | closed
+  priority  String   @default("normal") // normal | urgent
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id             String   @id @default(cuid())
+  ticketId       String
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  role           String   // "user" | "admin"
+  authorName     String?
+  content        String
+  attachmentUrls Json?    // string[]
+  createdAt      DateTime @default(now())
+
+  @@index([ticketId])
 }

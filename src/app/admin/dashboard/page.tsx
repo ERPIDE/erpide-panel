@@ -106,26 +106,6 @@ export default function DashboardPage() {
         done: oneC.filter((t) => t.status === "done").length,
         deadline: "2026-04-30",
       },
-      {
-        name: "Python Botlari",
-        client: "Marijeo",
-        color: "from-green-500 to-emerald-500",
-        border: "border-green-500/30",
-        tasks: [],
-        total: 0,
-        done: 0,
-        deadline: null as string | null,
-      },
-      {
-        name: "Kripto Botu",
-        client: "Skynet",
-        color: "from-orange-500 to-amber-500",
-        border: "border-orange-500/30",
-        tasks: [],
-        total: 0,
-        done: 0,
-        deadline: null as string | null,
-      },
     ];
   }, [tasks]);
 

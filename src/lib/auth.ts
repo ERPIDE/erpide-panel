@@ -75,7 +75,9 @@ async function ensureAdminSeed(): Promise<void> {
   const prisma = getPrisma();
   const count = await prisma.admin.count();
   if (count === 0) {
-    await prisma.admin.createMany({ data: initialAdmins });
+    await prisma.admin.createMany({
+      data: initialAdmins.map(({ permissions: _p, ...rest }) => rest),
+    });
   }
 }
 
@@ -88,6 +90,7 @@ export async function getAdmins(): Promise<AdminUser[]> {
     email: r.email,
     password: r.password,
     role: r.role as AdminUser["role"],
+    permissions: (r.permissions ?? null) as AdminUser["permissions"],
   }));
 }
 
@@ -104,6 +107,17 @@ export async function saveAdmins(admins: AdminUser[]): Promise<void> {
       update: { name: a.name, email: a.email, password: a.password, role: a.role },
     });
   }
+}
+
+/** Bir admin'in modül izinlerini günceller (diğer alanlar dokunulmaz). */
+export async function updateAdminPermissions(
+  id: string,
+  permissions: Record<string, { read: boolean; edit: boolean; write: boolean }> | null
+): Promise<void> {
+  await getPrisma().admin.update({
+    where: { id },
+    data: { permissions: permissions ?? Prisma.JsonNull },
+  });
 }
 
 // ── Customer CRUD ─────────────────────────────────────────────────

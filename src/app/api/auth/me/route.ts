@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, SESSION_COOKIE, getAdmins } from "@/lib/auth";
+import { resolvePermissions } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,14 +22,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Backfill userEmail: pre-RBAC session'larda userEmail yok — admin
-    // listesinden userId ile bul ki mevcut adminlerin yeniden login olmasına
-    // gerek kalmasın (isOwner check'i tutarlı çalışsın).
+    // Backfill userEmail + permissions: admin listesinden userId ile bul.
+    const admins = session.userType === "admin" ? await getAdmins() : [];
+    const adminRecord = admins.find((a) => a.id === session.userId);
+
     let userEmail = session.userEmail;
-    if (!userEmail && session.userType === "admin") {
-      const admins = await getAdmins();
-      userEmail = admins.find((a) => a.id === session.userId)?.email;
-    }
+    if (!userEmail && adminRecord) userEmail = adminRecord.email;
+
+    // Modül izinleri: DB'deki permissions + role bazlı defaults
+    const permissions = session.userType === "admin"
+      ? resolvePermissions(session.userRole, adminRecord?.permissions ?? null)
+      : null;
 
     return NextResponse.json({
       userId: session.userId,
@@ -37,6 +41,7 @@ export async function GET(req: NextRequest) {
       userType: session.userType,
       userRole: session.userRole,
       customerCode: session.customerCode,
+      permissions,
     });
   } catch {
     return NextResponse.json(

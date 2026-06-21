@@ -8,6 +8,7 @@ export interface AdminUser {
   email: string;
   password: string;
   role: "admin" | "developer";
+  permissions?: Record<string, { read: boolean; edit: boolean; write: boolean }> | null;
 }
 
 export interface CustomerUser {
