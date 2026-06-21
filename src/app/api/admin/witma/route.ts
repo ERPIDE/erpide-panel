@@ -36,9 +36,10 @@ async function sbCount(key: string, table: string, filter = ""): Promise<number 
   }
 }
 
-async function sbRows(key: string, table: string, select: string, extra = "", limit = 100): Promise<unknown[]> {
+async function sbRows(key: string, table: string, select: string, extra = "", limit = 100, orderBy = "created_at.desc"): Promise<unknown[]> {
   try {
-    const url = `${SB_URL}/rest/v1/${table}?select=${select}${extra ? `&${extra}` : ""}&limit=${limit}&order=created_at.desc`;
+    const orderPart = orderBy ? `&order=${orderBy}` : "";
+    const url = `${SB_URL}/rest/v1/${table}?select=${select}${extra ? `&${extra}` : ""}&limit=${limit}${orderPart}`;
     const res = await fetch(url, {
       headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     });
@@ -66,36 +67,55 @@ export async function GET() {
   const hasServiceKey = !!serviceKey;
 
   const now = new Date();
-  const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const todayISO   = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekISO    = new Date(Date.now() - 7  * 24 * 60 * 60 * 1000).toISOString();
+  const monthISO   = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
   const [
     totalUsers,
     onlineNow,
     todayMsgs,
+    weekMsgs,
+    monthMsgs,
     todayCalls,
+    weekCalls,
+    monthCalls,
     todayOpens,
+    weekOpens,
+    monthOpens,
+    todayTranslates,
+    monthTranslates,
     premiumUsers,
     profiles,
     events,
   ] = await Promise.all([
     sbCount(key, "profiles"),
     sbCount(key, "ops_presence", `last_seen=gte.${fiveMinAgo}`),
-    sbCount(key, "messages", `created_at=gte.${todayISO}`),
+    sbCount(key, "messages",   `created_at=gte.${todayISO}`),
+    sbCount(key, "messages",   `created_at=gte.${weekISO}`),
+    sbCount(key, "messages",   `created_at=gte.${monthISO}`),
     sbCount(key, "ops_events", `event=eq.call_start&created_at=gte.${todayISO}`),
+    sbCount(key, "ops_events", `event=eq.call_start&created_at=gte.${weekISO}`),
+    sbCount(key, "ops_events", `event=eq.call_start&created_at=gte.${monthISO}`),
     sbCount(key, "ops_events", `event=eq.user_open&created_at=gte.${todayISO}`),
-    sbCount(key, "profiles", "plan=eq.premium"),
-    sbRows(key, "profiles", "phone,name,plan,plan_expires_at,updated_at", "", 200),
-    sbRows(key, "ops_events", "id,event,user_id,meta,created_at", "", 100),
+    sbCount(key, "ops_events", `event=eq.user_open&created_at=gte.${weekISO}`),
+    sbCount(key, "ops_events", `event=eq.user_open&created_at=gte.${monthISO}`),
+    sbCount(key, "ops_events", `event=eq.translate&created_at=gte.${todayISO}`),
+    sbCount(key, "ops_events", `event=eq.translate&created_at=gte.${monthISO}`),
+    sbCount(key, "profiles",   "plan=eq.premium"),
+    sbRows(key, "profiles", "phone,name,plan,plan_expires_at,updated_at", "", 200, "updated_at.desc"),
+    sbRows(key, "ops_events", "id,event,user_id,meta,created_at", "", 200),
   ]);
 
   return NextResponse.json({
     hasServiceKey,
     totalUsers,
     onlineNow,
-    todayMsgs,
-    todayCalls,
-    todayOpens,
+    todayMsgs,   weekMsgs,   monthMsgs,
+    todayCalls,  weekCalls,  monthCalls,
+    todayOpens,  weekOpens,  monthOpens,
+    todayTranslates, monthTranslates,
     premiumUsers,
     profiles,
     events,
