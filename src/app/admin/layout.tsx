@@ -1,48 +1,77 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, ChevronRight, Loader2, Shield, Banknote, UserCircle,
-  Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3
+  Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3, Monitor
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
+import type { ModulePermissions } from "@/lib/permissions";
 
-// Elevated-only sekmeler: sadece role === "admin" görür (Ali Murat, mustafa.el).
-// Geliştirici rolündeki kullanıcılar (berkay.yasar, dilyar.yussupov) sadece
-// Dashboard/Task Yönetimi/Raporlar/Profilim görür — Ödemeler, Kullanıcılar,
-// Captcha Panel, Destek Talepleri ve Vapi Prompt onlara kapalıdır.
+// ── Permissions Context ──────────────────────────────────────────
+// Child page'ler useAdminPermissions() ile kendi yetkilerini okur.
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; elevatedOnly?: boolean };
+interface PermissionsContextValue {
+  permissions: ModulePermissions | null;
+  can: (module: string, level: "read" | "edit" | "write") => boolean;
+}
+
+const PermissionsContext = createContext<PermissionsContextValue>({
+  permissions: null,
+  can: () => true, // fallback: her şeye izin (auth check layout'ta zaten var)
+});
+
+export function useAdminPermissions() {
+  return useContext(PermissionsContext);
+}
+
+// ── Nav definition ───────────────────────────────────────────────
+// permissionKey: lib/permissions.ts'deki modül anahtarıyla eşleşmeli.
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  permissionKey: string;
+};
+
 const navItems: NavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/odemeler", label: "Ödemeler", icon: Banknote, elevatedOnly: true },
-  { href: "/admin/tasks", label: "Task Yönetimi", icon: ListTodo },
-  { href: "/admin/reports", label: "Raporlar", icon: FileText },
-  { href: "/admin/support-requests", label: "Destek Talepleri", icon: Headphones, elevatedOnly: true },
-  { href: "/admin/vapi", label: "Vapi Prompt", icon: Phone, elevatedOnly: true },
-  { href: "/admin/users", label: "Kullanıcılar", icon: Users, elevatedOnly: true },
-  { href: "/admin/finanserpide", label: "FinansERPIDE", icon: BarChart3, elevatedOnly: true },
-  { href: "/admin/pocketerpide", label: "PocketERPIDE", icon: Smartphone, elevatedOnly: true },
-  { href: "/admin/tickets", label: "Tickets", icon: Ticket, elevatedOnly: true },
-  { href: "/admin/witma", label: "WITMA", icon: MessageSquare, elevatedOnly: true },
-  { href: "/admin/captcha", label: "Captcha Panel", icon: Shield, elevatedOnly: true },
-  { href: "/admin/dataengine", label: "Data Engine", icon: Database, elevatedOnly: true },
-  { href: "/admin/profil", label: "Profilim", icon: UserCircle },
+  { href: "/admin/dashboard",        label: "Dashboard",        icon: LayoutDashboard, permissionKey: "dashboard" },
+  { href: "/admin/odemeler",         label: "Ödemeler",         icon: Banknote,        permissionKey: "odemeler" },
+  { href: "/admin/tasks",            label: "Task Yönetimi",    icon: ListTodo,        permissionKey: "tasks" },
+  { href: "/admin/reports",          label: "Raporlar",         icon: FileText,        permissionKey: "reports" },
+  { href: "/admin/support-requests", label: "Destek Talepleri", icon: Headphones,      permissionKey: "support-requests" },
+  { href: "/admin/vapi",             label: "Vapi Prompt",      icon: Phone,           permissionKey: "vapi" },
+  { href: "/admin/users",            label: "Kullanıcılar",     icon: Users,           permissionKey: "users" },
+  { href: "/admin/finanserpide",     label: "FinansERPIDE",     icon: BarChart3,       permissionKey: "finanserpide" },
+  { href: "/admin/pocketerpide",     label: "PocketERPIDE",     icon: Smartphone,      permissionKey: "pocketerpide" },
+  { href: "/admin/tickets",          label: "Tickets",          icon: Ticket,          permissionKey: "tickets" },
+  { href: "/admin/witma",            label: "WITMA",            icon: MessageSquare,   permissionKey: "witma" },
+  { href: "/admin/captcha",          label: "Captcha Panel",    icon: Shield,          permissionKey: "captcha" },
+  { href: "/admin/dataengine",       label: "Data Engine",      icon: Database,        permissionKey: "dataengine" },
+  { href: "/admin/sistem",           label: "Sistem",           icon: Monitor,         permissionKey: "sistem" },
+  { href: "/admin/profil",           label: "Profilim",         icon: UserCircle,      permissionKey: "profil" },
 ];
+
+// ── Layout ───────────────────────────────────────────────────────
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState("");
+  const [permissions, setPermissions] = useState<ModulePermissions | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   const isLoginPage = pathname === "/admin";
-  const isElevated = userRole === "admin";
+
+  const canAccess = (key: string, level: "read" | "edit" | "write" = "read") => {
+    if (!permissions) return false;
+    return !!permissions[key]?.[level];
+  };
 
   useEffect(() => {
     if (isLoginPage) { setAuthChecked(true); return; }
@@ -51,11 +80,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (res.ok) {
           const data = await res.json();
           setUserName(data.userName || "");
-          setUserRole(data.userRole || "");
+          setPermissions(data.permissions || null);
           setAuthChecked(true);
-          // Elevated-only route'a developer direkt URL ile geldiyse dashboard'a çevir
-          const hitElevated = navItems.find((n) => n.elevatedOnly && (pathname === n.href || pathname.startsWith(n.href + "/")));
-          if (hitElevated && data.userRole !== "admin") {
+          // Yetkisiz route'a gelindiyse dashboard'a yönlendir
+          const currentNav = navItems.find((n) => pathname === n.href || pathname.startsWith(n.href + "/"));
+          if (currentNav && data.permissions && !data.permissions[currentNav.permissionKey]?.read) {
             router.replace("/admin/dashboard");
           }
         } else {
@@ -75,14 +104,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  const visibleNav = navItems.filter((n) => !n.elevatedOnly || isElevated);
+  // Sadece read yetkisi olan modüller sidebar'da görünür
+  const visibleNav = navItems.filter((n) =>
+    permissions ? !!permissions[n.permissionKey]?.read : true
+  );
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/admin");
   };
 
+  const contextValue: PermissionsContextValue = {
+    permissions,
+    can: (module, level) => canAccess(module, level),
+  };
+
   return (
+    <PermissionsContext.Provider value={contextValue}>
     <ToastProvider>
     <div className="min-h-screen flex">
       {sidebarOpen && (
@@ -94,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/dashboard"><Logo size="small" /></Link>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {visibleNav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -142,5 +180,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </div>
     </ToastProvider>
+    </PermissionsContext.Provider>
   );
 }
