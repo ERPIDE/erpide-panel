@@ -7,65 +7,28 @@ const ADMIN_PATHS = [
   "/admin/users",
 ];
 
-const PANEL_PATHS = [
-  "/panel",
-];
-
-// Lightweight session check — full validation happens in /api/auth/me
-// but we need to read the blob to check userType
-async function getSessionType(token: string): Promise<string | null> {
-  try {
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN || "";
-    const parts = blobToken.split("_");
-    if (parts.length < 4) return null;
-    const storeId = parts[3].toLowerCase();
-    const baseUrl = `https://${storeId}.public.blob.vercel-storage.com`;
-    const res = await fetch(`${baseUrl}/sessions/${token}.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const session = await res.json();
-    if (new Date(session.expiresAt) < new Date()) return null;
-    return session.userType || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const host = req.headers.get("host") || "";
   const session = req.cookies.get("erpide_session");
 
   // ===== pocket.erpide.com subdomain rewrite =====
-  // Subdomain DNS Vercel'e gelir; burada path'i /pocket'a yönlendiririz.
-  // Kullanıcı pocket.erpide.com'a yazınca /pocket sayfası açılır,
-  // pocket.erpide.com/giris → /giris (auth aynı session paylaşılır).
   if (host.startsWith("pocket.")) {
-    // Root → /pocket; diğer pathler aynen passthrough (giris, hesabim, api, vs.)
     if (pathname === "/" || pathname === "") {
       const url = req.nextUrl.clone();
       url.pathname = "/pocket";
       return NextResponse.rewrite(url);
     }
-    // /pocket zaten /pocket'i gösterir, /pocket dışındaki path'ler de panel'in normal sayfaları
   }
 
   const isAdminRoute = ADMIN_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
-  if (isAdminRoute) {
-    if (!session?.value) {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    }
-
-    // Check that the session belongs to an admin, not a customer
-    const userType = await getSessionType(session.value);
-    if (userType !== "admin") {
-      // Clear invalid session and redirect to admin login
-      const res = NextResponse.redirect(new URL("/admin", req.url));
-      res.cookies.delete("erpide_session");
-      return res;
-    }
+  // Cookie yoksa login'e at. Tam session doğrulaması (Neon lookup) admin
+  // layout'unda /api/auth/me üzerinden yapılıyor.
+  if (isAdminRoute && !session?.value) {
+    return NextResponse.redirect(new URL("/admin", req.url));
   }
 
   return NextResponse.next();

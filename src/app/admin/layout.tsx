@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, ChevronRight, Loader2, Shield, Banknote, UserCircle,
-  Headphones, Phone, Database, MessageSquare
+  Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
@@ -24,6 +24,9 @@ const navItems: NavItem[] = [
   { href: "/admin/support-requests", label: "Destek Talepleri", icon: Headphones, elevatedOnly: true },
   { href: "/admin/vapi", label: "Vapi Prompt", icon: Phone, elevatedOnly: true },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, elevatedOnly: true },
+  { href: "/admin/finanserpide", label: "FinansERPIDE", icon: BarChart3, elevatedOnly: true },
+  { href: "/admin/pocketerpide", label: "PocketERPIDE", icon: Smartphone, elevatedOnly: true },
+  { href: "/admin/tickets", label: "Tickets", icon: Ticket, elevatedOnly: true },
   { href: "/admin/witma", label: "WITMA", icon: MessageSquare, elevatedOnly: true },
   { href: "/admin/captcha", label: "Captcha Panel", icon: Shield, elevatedOnly: true },
   { href: "/admin/dataengine", label: "Data Engine", icon: Database, elevatedOnly: true },
