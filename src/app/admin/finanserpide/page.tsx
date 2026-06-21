@@ -346,8 +346,16 @@ export default function FinansERPIDEAdminPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-white/5">
-                        {["Senaryo", "Haftalık", "Aylık", "Yıllık", "Altyapı", "Net Kâr (USD)", "Net Kâr (TRY)"].map((h) => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 last:text-right">{h}</th>
+                        {[
+                          { label: "Senaryo",       align: "text-left" },
+                          { label: "Haftalık",      align: "text-right" },
+                          { label: "Aylık",         align: "text-right" },
+                          { label: "Yıllık",        align: "text-right" },
+                          { label: "Altyapı",       align: "text-center" },
+                          { label: "Net Kâr (USD)", align: "text-right" },
+                          { label: "Net Kâr (TRY)", align: "text-right" },
+                        ].map((h) => (
+                          <th key={h.label} className={`px-4 py-3 text-xs font-medium text-gray-500 ${h.align}`}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
