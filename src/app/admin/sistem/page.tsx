@@ -5,7 +5,7 @@ import {
   RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock,
   Cpu, Globe, Smartphone, Shield, Phone, MessageSquare,
   BarChart3, Wifi, HardDrive, Calendar, ArrowUpRight,
-  Info, Activity,
+  Info, Activity, Users,
 } from "lucide-react";
 
 // ── Supabase (WITMA) ───────────────────────────────────────────────
@@ -33,6 +33,7 @@ type ServiceDef = {
   id: string;
   name: string;
   category: string;
+  product: "witma" | "erpide" | "both"; // hangi ürünün gideri
   description: string;
   icon: React.ReactNode;
   status: Status;
@@ -63,6 +64,7 @@ const SERVICES: ServiceDef[] = [
     id: "gemini",
     name: "Gemini 2.0 Flash",
     category: "ai",
+    product: "witma",
     description: "WITMA AI bot yanıtları (witma-chat edge fn)",
     icon: <Zap size={18} />,
     status: "free",
@@ -80,6 +82,7 @@ const SERVICES: ServiceDef[] = [
     id: "google-tts",
     name: "Google Cloud TTS",
     category: "ai",
+    product: "witma",
     description: "WITMA sesli bot (witma-tts edge fn)",
     icon: <Phone size={18} />,
     status: "free",
@@ -97,6 +100,7 @@ const SERVICES: ServiceDef[] = [
     id: "google-translate",
     name: "Google Translate API",
     category: "ai",
+    product: "witma",
     description: "WITMA anlık çeviri özelliği",
     icon: <Globe size={18} />,
     status: "free",
@@ -114,6 +118,7 @@ const SERVICES: ServiceDef[] = [
     id: "vapi",
     name: "Vapi (AI Phone)",
     category: "ai",
+    product: "erpide",
     description: "erpide.com AI telefon asistanı",
     icon: <Phone size={18} />,
     status: "usage",
@@ -130,6 +135,7 @@ const SERVICES: ServiceDef[] = [
     id: "supabase",
     name: "Supabase (WITMA)",
     category: "db",
+    product: "witma",
     description: "WITMA kullanıcılar, mesajlar, ops, edge functions, storage",
     icon: <Database size={18} />,
     status: "free",
@@ -147,6 +153,7 @@ const SERVICES: ServiceDef[] = [
     id: "neon",
     name: "Neon Postgres (Panel)",
     category: "db",
+    product: "erpide",
     description: "erpide.com admin panel: kullanıcılar, oturumlar, loglar",
     icon: <Database size={18} />,
     status: "free",
@@ -165,6 +172,7 @@ const SERVICES: ServiceDef[] = [
     id: "vercel",
     name: "Vercel (erpide.com)",
     category: "infra",
+    product: "both",
     description: "erpide.com, erpide-panel, pocket.erpide.com deploy",
     icon: <Globe size={18} />,
     status: "free",
@@ -182,6 +190,7 @@ const SERVICES: ServiceDef[] = [
     id: "eas",
     name: "EAS (Expo) — WITMA",
     category: "infra",
+    product: "witma",
     description: "WITMA iOS/Android build ve OTA update",
     icon: <Smartphone size={18} />,
     status: "free",
@@ -199,6 +208,7 @@ const SERVICES: ServiceDef[] = [
     id: "cloudflare",
     name: "Cloudflare Tunnel",
     category: "infra",
+    product: "erpide",
     description: "dataengine.erpide.com + captcha.erpide.com tunnel",
     icon: <Shield size={18} />,
     status: "free",
@@ -216,6 +226,7 @@ const SERVICES: ServiceDef[] = [
     id: "winserver",
     name: "Win Server (Şirket)",
     category: "infra",
+    product: "erpide",
     description: "Data Engine API + Captcha FastAPI + 1C:ERP sunucusu",
     icon: <Server size={18} />,
     status: "paid",
@@ -230,6 +241,7 @@ const SERVICES: ServiceDef[] = [
     id: "apple-dev",
     name: "Apple Developer",
     category: "dev",
+    product: "witma",
     description: "iOS uygulama dağıtımı (TestFlight + App Store)",
     icon: <Package size={18} />,
     status: "paid",
@@ -243,6 +255,7 @@ const SERVICES: ServiceDef[] = [
     id: "google-play",
     name: "Google Play Developer",
     category: "dev",
+    product: "witma",
     description: "Android uygulama dağıtımı",
     icon: <Package size={18} />,
     status: "onetime",
@@ -250,6 +263,25 @@ const SERVICES: ServiceDef[] = [
     currency: "USD",
     paidCost: "$25 tek seferlik (ödendi)",
     notes: "Bir kez ödendi, süresiz. Aylık maliyet yok.",
+  },
+  // ── WITMA Ağ Altyapısı ───────────────────────────────
+  {
+    id: "turn",
+    name: "TURN / STUN Sunucusu",
+    category: "infra",
+    product: "witma",
+    description: "WITMA sesli/görüntülü arama NAT traversal relay",
+    icon: <Wifi size={18} />,
+    status: "free",
+    monthlyCost: 0,
+    currency: "USD",
+    freeLimit: "Cloudflare TURN: 1.000 katılımcı-dak/ay",
+    freeUsed: 5,
+    freeUsedLabel: "Tahmini ~50 dakika (test fazı)",
+    paidPlan: "Pay-as-you-go",
+    paidCost: "$0.05 / katılımcı-dakika",
+    nextAction: "1.000 dak/ay aşılınca $0.05/dak",
+    notes: "WITMA WebRTC P2P başarısız olduğunda relay devreye girer. Türkiye'de ~%30 çağrı TURN gerektirir. 500 kullanıcıda ~500dk/ay tahmini.",
   },
 ];
 
@@ -260,7 +292,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   dev: "Geliştirici Paketleri",
 };
 
-type Tab = "ozet" | "ai" | "db" | "infra" | "dev" | "tahmin";
+type Tab = "ozet" | "witma" | "ai" | "db" | "infra" | "dev" | "tahmin";
 
 function StatusBadge({ status }: { status: Status }) {
   const map: Record<Status, { label: string; cls: string }> = {
@@ -441,11 +473,12 @@ export default function SistemPage() {
   const paidServicesCount = SERVICES.filter(s => s.status === "paid" || s.status === "onetime").length;
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: "ozet", label: "Genel Bakış" },
-    { key: "ai", label: "AI & API" },
-    { key: "db", label: "Veritabanı" },
-    { key: "infra", label: "Altyapı" },
-    { key: "dev", label: "Paketler" },
+    { key: "ozet",   label: "Genel Bakış" },
+    { key: "witma",  label: "WITMA Giderleri" },
+    { key: "ai",     label: "AI & API" },
+    { key: "db",     label: "Veritabanı" },
+    { key: "infra",  label: "Altyapı" },
+    { key: "dev",    label: "Paketler" },
     { key: "tahmin", label: "Tahminler" },
   ];
 
@@ -573,6 +606,99 @@ export default function SistemPage() {
           ))}
         </div>
       )}
+
+      {/* WITMA Giderleri */}
+      {tab === "witma" && (() => {
+        const witmaServices = SERVICES.filter(s => s.product === "witma" || s.product === "both");
+        const witmaMonthlyUSD = witmaServices
+          .filter(s => s.currency === "USD" && s.status === "paid")
+          .reduce((a, s) => a + s.monthlyCost, 0);
+        const witmaApple = 99 / 12;
+        const witmaTotal = witmaMonthlyUSD + ttsCostUSD + translateCostUSD + (witmaServices.find(s => s.id === "apple-dev") ? witmaApple : 0);
+
+        const witmaCats: Record<string, string> = {
+          ai: "AI & API",
+          db: "Veritabanı & Depolama",
+          infra: "Altyapı",
+          dev: "Geliştirici Paketleri",
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* WITMA maliyet özeti */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5"><DollarSign size={13} /> Aylık (cari)</div>
+                <div className="text-2xl font-bold text-green-400">{witmaTotal === 0 ? "$0" : usd(witmaTotal)}</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {witmaTotal === 0 ? "Sıfır maliyet" : `≈ ₺${Math.round(witmaTotal * USD_TRY)}`}
+                </div>
+              </div>
+              <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5"><Calendar size={13} /> Yıllık tahmini</div>
+                <div className="text-2xl font-bold text-yellow-400">{usd((witmaTotal + witmaApple) * 12)}</div>
+                <div className="text-xs text-gray-600 mt-1">Apple Dev dahil</div>
+              </div>
+              <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5"><Activity size={13} /> Bu Ay (canlı)</div>
+                <div className="text-2xl font-bold text-white">{loading ? "—" : (monthCalls + monthMsgs)}</div>
+                <div className="text-xs text-gray-600 mt-1">{monthCalls} arama · {monthMsgs} mesaj · {monthTranslates} çeviri</div>
+              </div>
+              <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5"><Users size={13} /> Kullanıcı</div>
+                <div className="text-2xl font-bold text-white">{loading ? "—" : (liveData.totalUsers ?? "—")}</div>
+                <div className="text-xs text-gray-600 mt-1">Supabase kayıtlı</div>
+              </div>
+            </div>
+
+            {/* Aylık maliyet kırılımı */}
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+              <h3 className="text-sm font-medium text-white mb-3">Aylık Maliyet Kırılımı</h3>
+              <div className="space-y-2">
+                {[
+                  { label: "Google Cloud TTS", val: ttsCostUSD, note: `${(estTtsChars/1000).toFixed(0)}K / 4.000K karakter kullanıldı` },
+                  { label: "Google Translate",  val: translateCostUSD, note: `${(estTranslateChars/1000).toFixed(0)}K / 500K karakter` },
+                  { label: "Gemini 2.0 Flash",  val: 0, note: "Free tier yeterli" },
+                  { label: "Supabase",           val: 0, note: "Free tier yeterli" },
+                  { label: "EAS Build",          val: 0, note: "Free tier yeterli (30 build/ay)" },
+                  { label: "Cloudflare TURN",    val: 0, note: "Free tier yeterli (1000 dak/ay)" },
+                  { label: "Apple Developer",    val: witmaApple, note: "$99/yıl · aylık ~$8.25" },
+                  { label: "Google Play",        val: 0, note: "Ödendi (tek seferlik $25)" },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                    <div>
+                      <span className="text-sm text-gray-300">{item.label}</span>
+                      <span className="text-xs text-gray-600 ml-2">{item.note}</span>
+                    </div>
+                    <span className={`text-sm font-medium ${item.val > 0 ? "text-yellow-400" : "text-green-400"}`}>
+                      {item.val === 0 ? "$0" : usd(item.val)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-2 mt-1">
+                  <span className="text-sm font-semibold text-white">Toplam</span>
+                  <span className="text-sm font-bold text-yellow-400">{usd(witmaTotal + witmaApple)}</span>
+                </div>
+                <div className="text-xs text-gray-600">≈ ₺{Math.round((witmaTotal + witmaApple) * USD_TRY)}/ay · ₺{Math.round((witmaTotal + witmaApple) * USD_TRY * 12)}/yıl</div>
+              </div>
+            </div>
+
+            {/* WITMA servisleri kategorilere göre */}
+            {(["ai", "db", "infra", "dev"] as const).map(cat => {
+              const catServices = witmaServices.filter(s => s.category === cat);
+              if (!catServices.length) return null;
+              return (
+                <div key={cat}>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">{witmaCats[cat]}</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {catServices.map(s => <ServiceCard key={s.id} s={s} />)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* AI & API */}
       {tab === "ai" && (
