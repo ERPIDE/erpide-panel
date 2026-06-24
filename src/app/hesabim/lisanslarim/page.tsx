@@ -60,7 +60,7 @@ function defaultAppUrl(productId: string, licenseKey?: string, apiKey?: string):
 }
 
 /** API anahtarı/dashboard credential mantığı yalnızca CaptchaERPIDE için
- *  geçerli (FinansERPIDE ve PocketERPIDE'da API key yok). "API anahtarın
+ *  geçerli (ERPIDE ve Pocket'da API key yok). "API anahtarın
  *  hazırlanıyor" gibi mesajlar bu ürünlerde yanıltıcı. */
 function productNeedsApiCredentials(productId: string): boolean {
   return productId === "captchaerpide";

@@ -129,7 +129,7 @@ export default function PocketERPIDEAdminPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">PocketERPIDE</h1>
+          <h1 className="text-2xl font-bold text-white">Pocket</h1>
           <p className="text-sm text-gray-500 mt-1">Mobil Kullanıcılar · Senkronizasyon · Altyapı</p>
         </div>
         <button

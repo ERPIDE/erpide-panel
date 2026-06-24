@@ -5,7 +5,7 @@ const SITE_URL = "https://www.erpide.com";
 export const metadata: Metadata = {
   title: "Ürünler — ERP SaaS, Captcha API, 1C ERP, CANIAS",
   description:
-    "ERPIDE ürün portföyü: FinansERPIDE AI muhasebe SaaS, CaptchaERPIDE çözüm API, PocketERPIDE bireysel cüzdan, WITMA çeviri-mesajlaşma, 1C:ERP / 1C:Drive / CANIAS ERP distribütörlüğü. Aboneliklerle anında kullanmaya başla.",
+    "ERPIDE ürün portföyü: ERPIDE AI muhasebe SaaS, CaptchaERPIDE çözüm API, Pocket bireysel cüzdan, WITMA çeviri-mesajlaşma, 1C:ERP / 1C:Drive / CANIAS ERP distribütörlüğü. Aboneliklerle anında kullanmaya başla.",
   keywords: [
     "ERPIDE ürünler",
     "ERP SaaS",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "CANIAS ERP",
     "captcha API",
     "AI muhasebe",
-    "PocketERPIDE",
+    "Pocket",
     "WITMA",
   ],
   alternates: {

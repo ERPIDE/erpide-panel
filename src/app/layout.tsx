@@ -172,7 +172,7 @@ const ORGANIZATION_JSON_LD = {
   makesOffer: [
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "FinansERPIDE", applicationCategory: "BusinessApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "CaptchaERPIDE", applicationCategory: "WebApplication" } },
-    { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "PocketERPIDE", applicationCategory: "FinanceApplication" } },
+    { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "Pocket", applicationCategory: "FinanceApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "WITMA", applicationCategory: "CommunicationApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "Product", name: "1C:ERP", category: "ERP Software" } },
     { "@type": "Offer", itemOffered: { "@type": "Product", name: "1C:Drive", category: "ERP Software" } },

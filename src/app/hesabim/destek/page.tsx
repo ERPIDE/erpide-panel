@@ -27,7 +27,7 @@ type TicketItem = {
 const PRODUCTS = [
   { id: "finanserpide", label: "FinansERPIDE" },
   { id: "captchaerpide", label: "CaptchaERPIDE" },
-  { id: "pocketerpide", label: "PocketERPIDE" },
+  { id: "pocketerpide", label: "Pocket" },
   { id: "dataengine", label: "Data Engine" },
   { id: "", label: "Genel / Diğer" },
 ];

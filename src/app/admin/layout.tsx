@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
   { href: "/admin/vapi",             label: "Vapi Prompt",      icon: Phone,           permissionKey: "vapi" },
   { href: "/admin/users",            label: "Kullanıcılar",     icon: Users,           permissionKey: "users" },
   { href: "/admin/finanserpide",     label: "FinansERPIDE",     icon: BarChart3,       permissionKey: "finanserpide" },
-  { href: "/admin/pocketerpide",     label: "PocketERPIDE",     icon: Smartphone,      permissionKey: "pocketerpide" },
+  { href: "/admin/pocketerpide",     label: "Pocket",     icon: Smartphone,      permissionKey: "pocketerpide" },
   { href: "/admin/tickets",          label: "Tickets",          icon: Ticket,          permissionKey: "tickets" },
   { href: "/admin/witma",            label: "WITMA",            icon: MessageSquare,   permissionKey: "witma" },
   { href: "/admin/captcha",          label: "Captcha Panel",    icon: Shield,          permissionKey: "captcha" },
