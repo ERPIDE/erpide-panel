@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --experimental-build-mode=compile",
+    "build": "next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
