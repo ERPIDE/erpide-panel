@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Banknote, Key, CheckCircle2, XCircle, Copy, Check, Loader2, Plus, Download, AlertCircle, Clock } from "lucide-react";
+import { PRODUCTS } from "@/lib/products";
 
 interface BankTransferReq {
   code: string;
@@ -307,8 +308,10 @@ function Stat({ label, value, cls }: { label: string; value: number; cls: string
   );
 }
 
+const EPIN_PRODUCTS = PRODUCTS.filter((p) => p.skus.length > 0);
+
 function GenerateModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [skuId, setSkuId] = useState("");
+  const [skuId, setSkuId] = useState("finanserpide-base-monthly");
   const [count, setCount] = useState(10);
   const [durationDays, setDurationDays] = useState(30);
   const [note, setNote] = useState("");
@@ -317,8 +320,13 @@ function GenerateModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const [generated, setGenerated] = useState<string[] | null>(null);
   const [error, setError] = useState("");
 
+  const selectedSku = useMemo(
+    () => EPIN_PRODUCTS.flatMap((p) => p.skus).find((s) => s.id === skuId),
+    [skuId],
+  );
+
   async function submit() {
-    if (!skuId.trim()) { setError("SKU ID gerekli"); return; }
+    if (!skuId.trim()) { setError("Ürün seçimi gerekli"); return; }
     if (!adminToken.trim()) { setError("Admin token gerekli (ADMIN_BOOTSTRAP_TOKEN)"); return; }
     setError(""); setBusy(true);
     try {
@@ -359,8 +367,25 @@ function GenerateModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           </div>
         ) : (
           <div className="space-y-3">
-            <FormField label="SKU ID (örn: finanserpide-base-monthly)">
-              <input value={skuId} onChange={(e) => setSkuId(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+            <FormField label="Ürün / Paket">
+              <select
+                value={skuId}
+                onChange={(e) => setSkuId(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+              >
+                {EPIN_PRODUCTS.map((product) => (
+                  <optgroup key={product.id} label={product.name}>
+                    {product.skus.map((sku) => (
+                      <option key={sku.id} value={sku.id}>
+                        {sku.name} — {sku.description}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              {selectedSku && (
+                <p className="text-[11px] text-gray-500 mt-1 font-mono">{selectedSku.id}</p>
+              )}
             </FormField>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Adet">

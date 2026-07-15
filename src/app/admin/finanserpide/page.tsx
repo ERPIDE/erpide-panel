@@ -5,7 +5,7 @@ import {
   CheckCircle2, Clock, XCircle, RefreshCw, Loader2,
   ChevronDown, ChevronUp, Database, Globe, Mail,
   Server, Shield, ArrowUpRight, Info, BarChart3,
-  DollarSign, Calendar, Zap, Package,
+  DollarSign, Calendar, Zap, Package, CalendarPlus,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -108,6 +108,7 @@ export default function FinansERPIDEAdminPage() {
   const [loading, setLoading]       = useState(true);
   const [filter, setFilter]         = useState<"all" | "active" | "trial" | "expired" | "cancelled">("all");
   const [expanded, setExpanded]     = useState<string | null>(null);
+  const [extendTarget, setExtendTarget] = useState<Subscriber | null>(null);
 
   const loadMain = () => {
     setLoading(true);
@@ -282,6 +283,19 @@ export default function FinansERPIDEAdminPage() {
                                   </div>
                                 </div>
                               </div>
+                              <div className="mt-4 pt-4 border-t border-white/5 flex flex-wrap items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setExtendTarget(s)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition"
+                                >
+                                  <CalendarPlus size={14} />
+                                  Lisans Uzat
+                                </button>
+                                <p className="text-xs text-gray-500">
+                                  Bitiş: {s.isTrial ? fmt(s.trialExpiresAt) : fmt(s.subscriptionExpiresAt)}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -290,6 +304,14 @@ export default function FinansERPIDEAdminPage() {
                   </div>
                 )}
               </div>
+
+              {extendTarget && (
+                <ExtendLicenseModal
+                  subscriber={extendTarget}
+                  onClose={() => setExtendTarget(null)}
+                  onDone={() => { setExtendTarget(null); loadMain(); }}
+                />
+              )}
             </div>
           )}
 
@@ -445,6 +467,145 @@ export default function FinansERPIDEAdminPage() {
       ) : (
         <div className="text-center py-20 text-gray-500">Veri yüklenemedi.</div>
       )}
+    </div>
+  );
+}
+
+// ── ExtendLicenseModal ─────────────────────────────────────────────
+
+function ExtendLicenseModal({
+  subscriber,
+  onClose,
+  onDone,
+}: {
+  subscriber: Subscriber;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [extendDays, setExtendDays] = useState(30);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState<{ expiresAt: string } | null>(null);
+
+  const presets = [
+    { label: "30 gün", days: 30 },
+    { label: "90 gün", days: 90 },
+    { label: "180 gün", days: 180 },
+    { label: "1 yıl", days: 365 },
+  ];
+
+  async function submit() {
+    setError("");
+    setBusy(true);
+    try {
+      const r = await fetch("/api/admin/finanserpide/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: subscriber.orderId, extendDays }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error || "Uzatılamadı");
+        return;
+      }
+      setSuccess({ expiresAt: d.expiresAt });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const currentExpiry = subscriber.isTrial
+    ? subscriber.trialExpiresAt
+    : subscriber.subscriptionExpiresAt;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6">
+      <div className="bg-[#111118] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+        <h3 className="text-xl font-bold text-white mb-1">Lisans Uzat</h3>
+        <p className="text-sm text-gray-400 mb-4">
+          {subscriber.userName} · {subscriber.userEmail}
+        </p>
+
+        {success ? (
+          <div>
+            <p className="text-sm text-emerald-300 mb-3 flex items-center gap-2">
+              <CheckCircle2 size={16} />
+              Lisans {extendDays} gün uzatıldı
+            </p>
+            <p className="text-sm text-white">
+              Yeni bitiş: <span className="font-medium">{fmt(success.expiresAt)}</span>
+            </p>
+            <button
+              onClick={onDone}
+              className="mt-4 w-full px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold"
+            >
+              Tamam
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Mevcut bitiş</p>
+              <p className="text-sm text-white">{fmt(currentExpiry)}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Hızlı seçim</p>
+              <div className="flex flex-wrap gap-2">
+                {presets.map((p) => (
+                  <button
+                    key={p.days}
+                    type="button"
+                    onClick={() => setExtendDays(p.days)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                      extendDays === p.days
+                        ? "bg-blue-600/30 text-blue-300 border border-blue-500/40"
+                        : "bg-white/5 text-gray-400 hover:text-white border border-transparent"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1.5">Süre (gün)</label>
+              <input
+                type="number"
+                value={extendDays}
+                onChange={(e) => setExtendDays(Math.max(1, Math.min(3650, +e.target.value || 30)))}
+                className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 rounded-xl bg-white/5 text-gray-300 text-sm hover:bg-white/10"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={busy}
+                className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {busy ? <Loader2 className="animate-spin" size={14} /> : <CalendarPlus size={14} />}
+                {busy ? "Uzatılıyor..." : `${extendDays} Gün Uzat`}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
