@@ -25,7 +25,7 @@ export default function Page() {
       <section>
         <h2 className="text-xl font-semibold text-white mt-8 mb-3">2. Satın Alınan Hizmet</h2>
         <p>
-          FinansERPIDE veya CaptchaERPIDE abonelik paketi. Sipariş ekranında plan adı, içerik, aylık tutar
+          FinansERPIDE abonelik paketi. Sipariş ekranında plan adı, içerik, aylık tutar
           (KDV dahil) ve özellikler ayrıntılı olarak gösterilir. Hizmet dijital içerik niteliğinde olup
           elektronik ortamda anında teslim edilir.
         </p>

@@ -11,7 +11,7 @@ export default function Page() {
         <p>
           İşbu Kullanım Koşulları (&quot;Koşullar&quot;), {COMPANY.name}
           (&quot;ERPIDE&quot;) ile {COMPANY.website} ve alt alan adlarındaki
-          (örn. finans.erpide.com, captcha.erpide.com) hizmetleri kullanan
+          (örn. finans.erpide.com) hizmetleri kullanan
           kullanıcılar arasında akdedilmiştir.
         </p>
       </section>
@@ -19,7 +19,7 @@ export default function Page() {
       <section>
         <h2 className="text-xl font-semibold text-white mt-8 mb-3">2. Tanımlar</h2>
         <ul className="list-disc pl-6 space-y-2">
-          <li><strong>Hizmet:</strong> FinansERPIDE (ERP SaaS) ve CaptchaERPIDE (captcha çözüm API) başta olmak üzere ERPIDE tarafından sunulan tüm yazılım ve API hizmetleri.</li>
+          <li><strong>Hizmet:</strong> FinansERPIDE (ERP SaaS) başta olmak üzere ERPIDE tarafından sunulan tüm yazılım ve API hizmetleri.</li>
           <li><strong>Kullanıcı:</strong> Hizmete üye olan ve aboneliği aktif olan gerçek/tüzel kişi.</li>
           <li><strong>Lisans Anahtarı:</strong> Üyenin satın aldığı paket karşılığında kendisine iletilen, hizmetin kullanımına imkân veren benzersiz anahtar.</li>
           <li><strong>Abonelik:</strong> Aylık veya yıllık olarak yenilenen ücretli kullanım dönemi.</li>
@@ -29,7 +29,7 @@ export default function Page() {
       <section>
         <h2 className="text-xl font-semibold text-white mt-8 mb-3">3. Hizmetin Kapsamı</h2>
         <p>
-          ERPIDE; çok kiracılı (multi-tenant) ERP yazılımı, captcha çözüm API'si ve ilgili yazılım/danışmanlık
+          ERPIDE; çok kiracılı (multi-tenant) ERP yazılımı ve ilgili yazılım/danışmanlık
           hizmetlerini sağlar. Hizmetler internet üzerinden, abonelik karşılığında erişime açıktır.
           Hizmetlerin teknik özellikleri ve kapsamı {COMPANY.website}/fiyatlandirma sayfasında ayrıntılandırılmıştır.
         </p>

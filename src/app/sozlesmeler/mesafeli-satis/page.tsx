@@ -34,7 +34,7 @@ export default function Page() {
       <section>
         <h2 className="text-xl font-semibold text-white mt-8 mb-3">3. Sözleşme Konusu Hizmet</h2>
         <p>
-          Sipariş ekranında belirtilen ürün/plan (FinansERPIDE veya CaptchaERPIDE abonelik paketleri).
+          Sipariş ekranında belirtilen ürün/plan (FinansERPIDE abonelik paketleri).
           Sipariş özetinde ürün adı, plan, aylık tutar (KDV dahil) ve plan özellikleri yer almaktadır.
         </p>
       </section>
