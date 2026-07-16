@@ -3,16 +3,15 @@ import type { Metadata } from "next";
 const SITE_URL = "https://www.erpide.com";
 
 export const metadata: Metadata = {
-  title: "Ürünler — ERP SaaS, Captcha API, 1C ERP, CANIAS",
+  title: "Ürünler — ERP SaaS, 1C ERP, CANIAS",
   description:
-    "ERPIDE ürün portföyü: ERPIDE AI muhasebe SaaS, CaptchaERPIDE çözüm API, Pocket bireysel cüzdan, WITMA çeviri-mesajlaşma, 1C:ERP / 1C:Drive / CANIAS ERP distribütörlüğü. Aboneliklerle anında kullanmaya başla.",
+    "ERPIDE ürün portföyü: ERPIDE AI muhasebe SaaS, Pocket bireysel cüzdan, WITMA çeviri-mesajlaşma, 1C:ERP / 1C:Drive / CANIAS ERP distribütörlüğü. Aboneliklerle anında kullanmaya başla.",
   keywords: [
     "ERPIDE ürünler",
     "ERP SaaS",
     "1C ERP Türkiye",
     "1C Drive",
     "CANIAS ERP",
-    "captcha API",
     "AI muhasebe",
     "Pocket",
     "WITMA",
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
     type: "website",
     url: `${SITE_URL}/urunler`,
     siteName: "ERPIDE",
-    title: "ERPIDE Ürünleri — ERP SaaS, Captcha API, 1C, CANIAS",
+    title: "ERPIDE Ürünleri — ERP SaaS, 1C, CANIAS",
     description: "Tüm ürün portföyümüz: AI destekli SaaS + kurumsal ERP distribütörlüğü.",
     locale: "tr_TR",
     alternateLocale: ["en_US", "ru_RU", "kk_KZ"],

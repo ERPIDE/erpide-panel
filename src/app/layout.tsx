@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | ERPIDE",
   },
   description:
-    "ERPIDE; AI destekli ERP SaaS (FinansERPIDE), captcha çözüm API'si (CaptchaERPIDE), 1C:ERP/1C:Drive ve CANIAS ERP distribütörlüğü, özel yazılım geliştirme. Türkiye + Kazakistan ofisleriyle kurumsal dijital dönüşüm partneri.",
+    "ERPIDE; AI destekli ERP SaaS (FinansERPIDE), 1C:ERP/1C:Drive ve CANIAS ERP distribütörlüğü, özel yazılım geliştirme. Türkiye + Kazakistan ofisleriyle kurumsal dijital dönüşüm partneri.",
   keywords: [
     "ERP yazılım",
     "1C ERP Türkiye",
@@ -25,8 +25,6 @@ export const metadata: Metadata = {
     "1C:Drive",
     "CANIAS ERP",
     "FinansERPIDE",
-    "CaptchaERPIDE",
-    "captcha çözücü API",
     "ERP entegrasyon",
     "AI muhasebe",
     "e-Fatura",
@@ -80,7 +78,7 @@ export const metadata: Metadata = {
     siteName: "ERPIDE",
     title: "ERPIDE — Kurumsal ERP Çözümleri ve Yazılım Danışmanlığı",
     description:
-      "AI destekli ERP SaaS, captcha çözüm API, 1C ERP & CANIAS distribütörlüğü, özel yazılım geliştirme. Türkiye + Kazakistan.",
+      "AI destekli ERP SaaS, 1C ERP & CANIAS distribütörlüğü, özel yazılım geliştirme. Türkiye + Kazakistan.",
     locale: "tr_TR",
     alternateLocale: ["en_US", "ru_RU", "kk_KZ"],
     images: [
@@ -96,7 +94,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ERPIDE — Kurumsal ERP Çözümleri",
     description:
-      "AI destekli ERP SaaS, captcha çözüm API, 1C ERP & CANIAS distribütörlüğü. Türkiye + Kazakistan.",
+      "AI destekli ERP SaaS, 1C ERP & CANIAS distribütörlüğü. Türkiye + Kazakistan.",
     images: ["/logo-wide.png"],
   },
   category: "technology",
@@ -115,7 +113,7 @@ const ORGANIZATION_JSON_LD = {
   logo: `${SITE_URL}/logo.png`,
   image: `${SITE_URL}/logo-wide.png`,
   description:
-    "Kurumsal ERP çözümleri, AI destekli SaaS ürünleri, captcha çözüm API, 1C ERP & CANIAS ERP distribütörlüğü ve özel yazılım geliştirme hizmetleri sunan teknoloji şirketi.",
+    "Kurumsal ERP çözümleri, AI destekli SaaS ürünleri, 1C ERP & CANIAS ERP distribütörlüğü ve özel yazılım geliştirme hizmetleri sunan teknoloji şirketi.",
   foundingDate: "2022",
   foundingLocation: {
     "@type": "Place",
@@ -158,7 +156,6 @@ const ORGANIZATION_JSON_LD = {
     "1C:Drive",
     "CANIAS ERP",
     "AI-powered SaaS",
-    "Captcha Solving API",
     "e-Fatura",
     "Multi-tenant SaaS",
     "Software Consulting",
@@ -171,7 +168,6 @@ const ORGANIZATION_JSON_LD = {
   },
   makesOffer: [
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "FinansERPIDE", applicationCategory: "BusinessApplication" } },
-    { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "CaptchaERPIDE", applicationCategory: "WebApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "Pocket", applicationCategory: "FinanceApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "SoftwareApplication", name: "WITMA", applicationCategory: "CommunicationApplication" } },
     { "@type": "Offer", itemOffered: { "@type": "Product", name: "1C:ERP", category: "ERP Software" } },

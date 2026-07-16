@@ -5,7 +5,7 @@ const SITE_URL = "https://www.erpide.com";
 export const metadata: Metadata = {
   title: "Gündem — ERPIDE Haberler, Lansmanlar ve Güncellemeler",
   description:
-    "ERPIDE'den haberler: yeni ürün lansmanları, şirket güncellemeleri, sektör paylaşımları ve özel gün kutlamaları. CaptchaERPIDE, FinansERPIDE, WITMA, 1C ERP ve daha fazlası.",
+    "ERPIDE'den haberler: yeni ürün lansmanları, şirket güncellemeleri, sektör paylaşımları ve özel gün kutlamaları. FinansERPIDE, WITMA, 1C ERP ve daha fazlası.",
   keywords: [
     "ERPIDE gündem",
     "ERPIDE haberleri",
@@ -15,7 +15,6 @@ export const metadata: Metadata = {
     "1C ERP duyuru",
     "WITMA lansman",
     "FinansERPIDE",
-    "CaptchaERPIDE",
   ],
   alternates: {
     canonical: "/gundem",
