@@ -828,7 +828,7 @@ function Inner({ productId }: { productId: string }) {
                           ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 cursor-not-allowed"
                           : isUpgradeOrRenew
                           ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 disabled:opacity-50"
-                          : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 disabled:opacity-50"
+                          : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                       }`}
                     >
                       {adding ? <Loader2 size={16} className="animate-spin" />

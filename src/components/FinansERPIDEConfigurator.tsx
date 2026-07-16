@@ -373,7 +373,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
             className={`w-full py-3.5 rounded-xl font-semibold transition flex items-center justify-center gap-2 mb-2 ${
               isUpgrade
                 ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
-                : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                : "bg-blue-600 text-white hover:bg-blue-700"
             } disabled:opacity-50`}
           >
             {adding ? <Loader2 size={16} className="animate-spin" /> :

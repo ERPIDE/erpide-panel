@@ -285,9 +285,7 @@ function ProductBlock({ product, visibleSkus, activeSkuByProduct, lastSkuByProdu
                                 className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
                                   hasActiveOnProduct
                                     ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
-                                    : sku.highlight
-                                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
-                                    : "border border-white/10 text-white hover:bg-white/5"
+                                    : "bg-blue-600 text-white hover:bg-blue-700"
                                 }`}
                               >
                                 {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
