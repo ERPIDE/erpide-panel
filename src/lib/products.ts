@@ -402,6 +402,12 @@ export const PRODUCTS: Product[] = [
     domain: "captcha.erpide.com",
     category: "web",
     marketScope: "GLOBAL",
+    // Public site'ten çekildi (2026-07): CaptchaERPIDE artık satılan bir ürün
+    // olarak listelenmiyor; yalnızca captcha.erpide.com server'ında kendi
+    // kullanımımız için çalışıyor. Backend (captcha-provision, license-service,
+    // admin Captcha Paneli) mevcut lisanslar için olduğu gibi korunuyor.
+    hiddenFromPublic: true,
+    noTrial: true,
     i18n: {
       en: {
         name: "CaptchaERPIDE",

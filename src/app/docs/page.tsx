@@ -24,7 +24,7 @@ export default function DocsPage() {
           </header>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {PRODUCTS.map((p) => {
+            {PRODUCTS.filter((p) => !p.hiddenFromPublic).map((p) => {
               const Icon = p.icon;
               return (
                 <Link

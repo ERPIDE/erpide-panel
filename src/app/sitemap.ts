@@ -31,7 +31,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/kunye", priority: 0.3, changeFrequency: "yearly" },
     { path: "/docs", priority: 0.6, changeFrequency: "weekly" },
     { path: "/docs/finanserpide", priority: 0.6, changeFrequency: "weekly" },
-    { path: "/docs/captchaerpide", priority: 0.6, changeFrequency: "weekly" },
     // Sözleşmeler — yasal zorunluluk, indexlenmeli ama düşük priority
     { path: "/sozlesmeler/kvkk", priority: 0.3, changeFrequency: "yearly" },
     { path: "/sozlesmeler/gizlilik-politikasi", priority: 0.3, changeFrequency: "yearly" },

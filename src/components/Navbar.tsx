@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, Shield, ShoppingBag, MessageCircle } from "lucide-react";
+import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, ShoppingBag, MessageCircle } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 import { useCart } from "./CartProvider";
@@ -20,10 +20,6 @@ export default function Navbar() {
   const [user, setUser] = useState<MeUser | null>(null);
   const [apps, setApps] = useState<AppsState>({ finanserpide: false, captchaerpide: false, pocketerpide: false });
   const [appStates, setAppStates] = useState<AppStatesMap>({ finanserpide: "none", captchaerpide: "none", pocketerpide: "none" });
-  // Hangi ürünler için kullanıcı zaten trial almış? Dropdown'daki "3 Gün Dene"
-  // butonu sadece henüz denenmemiş ürünler için gösterilir; aksi halde
-  // "Satın Al" fallback'i.
-  const [trialedProducts, setTrialedProducts] = useState<string[]>([]);
   const { t, locale, setLocale } = useTranslation();
   const { itemCount } = useCart();
 
@@ -34,17 +30,9 @@ export default function Navbar() {
         setUser(d.user || null);
         if (d.apps) setApps(d.apps);
         if (d.appStates) setAppStates(d.appStates);
-        if (Array.isArray(d.trialedProducts)) setTrialedProducts(d.trialedProducts);
       })
       .catch(() => {});
   }, []);
-
-  // Hangi ürün için hangi SKU trial sunulur — /hesabim'daki TRIAL_OFFERS ile
-  // tutarlı. Tek kaynak yapmak için ileride lib'e taşınabilir.
-  const TRIAL_SKU: Record<string, string> = {
-    finanserpide:  "finanserpide-base-monthly",
-    captchaerpide: "captchaerpide-starter-monthly",
-  };
 
   const links = [
     { href: "/", label: t("nav.home") },
@@ -135,19 +123,6 @@ export default function Navbar() {
                     state={appStates.finanserpide}
                     appUrl="https://finans.erpide.com/giris"
                     buyUrl="/urunler/finanserpide"
-                    trialSkuId={TRIAL_SKU.finanserpide}
-                    trialEligible={!trialedProducts.includes("finanserpide")}
-                    onClose={() => setAppsOpen(false)}
-                  />
-                  <AppLauncherItem
-                    icon={<Shield size={18} className="text-emerald-400" />}
-                    name="CaptchaERPIDE"
-                    desc={t("nav.app_desc_captcha")}
-                    state={appStates.captchaerpide}
-                    appUrl="https://captcha.erpide.com/dashboard"
-                    buyUrl="/urunler/captchaerpide"
-                    trialSkuId={TRIAL_SKU.captchaerpide}
-                    trialEligible={!trialedProducts.includes("captchaerpide")}
                     onClose={() => setAppsOpen(false)}
                   />
                   <div className="px-4 py-2.5 border-y border-white/5 mt-1">
@@ -268,18 +243,6 @@ export default function Navbar() {
                       ? <ExternalLink size={12} className="text-blue-400" />
                       : <span className="text-[10px] text-gray-500">{t("nav.buy")}</span>}
                   </a>
-                  <a
-                    href={apps.captchaerpide ? "https://captcha.erpide.com/dashboard" : "/urunler/captchaerpide"}
-                    target={apps.captchaerpide ? "_blank" : undefined}
-                    rel={apps.captchaerpide ? "noopener noreferrer" : undefined}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between py-2 text-gray-300"
-                  >
-                    <span className="flex items-center gap-2"><Shield size={16} className="text-emerald-400" /> CaptchaERPIDE</span>
-                    {apps.captchaerpide
-                      ? <ExternalLink size={12} className="text-emerald-400" />
-                      : <span className="text-[10px] text-gray-500">{t("nav.buy")}</span>}
-                  </a>
                   <Link
                     href={apps.pocketerpide ? "/pocket" : "/urunler/pocketerpide"}
                     onClick={() => setOpen(false)}
@@ -319,7 +282,7 @@ export default function Navbar() {
 
 
 function AppLauncherItem({
-  icon, name, desc, state, appUrl, buyUrl, onClose, trialSkuId, trialEligible, freeApp,
+  icon, name, desc, state, appUrl, buyUrl, onClose, freeApp,
 }: {
   icon: React.ReactNode;
   name: string;
@@ -331,18 +294,11 @@ function AppLauncherItem({
   appUrl?: string;
   buyUrl: string;
   onClose: () => void;
-  /** Bu ürün için trial başlatılabilecek SKU id'si. Yoksa trial CTA gösterilmez. */
-  trialSkuId?: string;
-  /** false ise kullanıcı trial'ı zaten kullanmış; "3 Gün Dene" yerine "Satın Al". */
-  trialEligible?: boolean;
   /** true ise ürün ücretsiz (örn. WITMA — store'dan indirilir, premium
-   *  in-app purchase ile alınır). "Satın Al" yerine "İncele" gösterilir,
-   *  trial seçenekleri devre dışı bırakılır. */
+   *  in-app purchase ile alınır). "Satın Al" yerine "İncele" gösterilir. */
   freeApp?: boolean;
 }) {
   const { t } = useTranslation();
-  const [trialing, setTrialing] = useState(false);
-  const [trialError, setTrialError] = useState<string | null>(null);
 
   // Aktif veya süresi dolmuş kullanıcı → uygulamanın giriş ekranına yönlendir.
   if (state === "active" || state === "expired") {
@@ -371,40 +327,6 @@ function AppLauncherItem({
     );
   }
 
-  // Lisansı yok, trial almamış → tek tık "3 Gün Dene" — sepete ekle akışına
-  // gitmeden direkt trial başlat, sonra lisanslarım'a yönlendir.
-  // trialSkuId tanımlı + trialEligible=true ise bu yol; aksi halde "Satın Al".
-  async function handleStartTrial(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!trialSkuId || trialing) return;
-    setTrialing(true);
-    setTrialError(null);
-    try {
-      const res = await fetch("/api/trial/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skuId: trialSkuId }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setTrialError(data.error || "Deneme başlatılamadı");
-        setTrialing(false);
-        return;
-      }
-      onClose();
-      // Lisanslarım sayfasına yönlendir — "Şirket Hesabımı Kur" akışı oradan
-      window.location.href = "/hesabim/lisanslarim";
-    } catch (err) {
-      setTrialError("Bağlantı hatası: " + String(err));
-      setTrialing(false);
-    }
-  }
-
-  // Ücretsiz uygulamalarda (WITMA gibi) trial/satın al butonları yok —
-  // store linkine yönlendiren tek bir "İncele" görünür.
-  const showTrial = !freeApp && !!trialSkuId && trialEligible === true;
-
   return (
     <div className="px-4 py-3 hover:bg-white/5 transition">
       <div className="flex items-center gap-3">
@@ -415,26 +337,14 @@ function AppLauncherItem({
         </div>
       </div>
       <div className="mt-2 flex gap-2">
-        {showTrial && (
-          <button
-            onClick={handleStartTrial}
-            disabled={trialing}
-            className="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[11px] font-semibold hover:opacity-90 disabled:opacity-50 transition"
-          >
-            {trialing ? "Başlatılıyor…" : "3 Gün Ücretsiz Dene"}
-          </button>
-        )}
         <Link
           href={buyUrl}
           onClick={onClose}
           className="flex-1 py-1.5 rounded-lg border border-white/10 text-gray-300 text-[11px] font-semibold hover:bg-white/5 transition text-center"
         >
-          {freeApp || showTrial ? "İncele →" : `${t("nav.buy")} →`}
+          {freeApp ? "İncele →" : `${t("nav.buy")} →`}
         </Link>
       </div>
-      {trialError && (
-        <p className="mt-1.5 text-[10px] text-red-400">{trialError}</p>
-      )}
     </div>
   );
 }

@@ -22,7 +22,6 @@ const CATEGORY_ICON: Record<ProductCategory, React.ComponentType<{ size?: number
 
 export default function UrunlerPage() {
   const { t, locale } = useTranslation();
-  const [trialedProducts, setTrialedProducts] = useState<Set<string>>(new Set());
   const [activeSkuByProduct, setActiveSkuByProduct] = useState<Record<string, string>>({});
   const [lastSkuByProduct, setLastSkuByProduct] = useState<Record<string, string>>({});
   const [appStates, setAppStates] = useState<Record<string, "active" | "expired" | "none">>({});
@@ -39,7 +38,6 @@ export default function UrunlerPage() {
     fetch("/api/shop/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        if (Array.isArray(d?.trialedProducts)) setTrialedProducts(new Set(d.trialedProducts));
         if (d?.activeSkuByProduct && typeof d.activeSkuByProduct === "object") setActiveSkuByProduct(d.activeSkuByProduct);
         if (d?.lastSkuByProduct && typeof d.lastSkuByProduct === "object") setLastSkuByProduct(d.lastSkuByProduct);
         if (d?.appStates && typeof d.appStates === "object") setAppStates(d.appStates);
@@ -120,7 +118,6 @@ export default function UrunlerPage() {
                         key={product.id}
                         product={product}
                         visibleSkus={visibleSkus}
-                        trialedProducts={trialedProducts}
                         activeSkuByProduct={activeSkuByProduct}
                         lastSkuByProduct={lastSkuByProduct}
                         appStates={appStates}
@@ -165,14 +162,13 @@ function FilterChip({
 type ProductBlockProps = {
   product: Product;
   visibleSkus: Product["skus"];
-  trialedProducts: Set<string>;
   activeSkuByProduct: Record<string, string>;
   lastSkuByProduct: Record<string, string>;
   appStates: Record<string, "active" | "expired" | "none">;
   t: (key: string) => string;
 };
 
-function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
+function ProductBlock({ product, visibleSkus, activeSkuByProduct, lastSkuByProduct, appStates, t }: ProductBlockProps) {
   const { locale } = useTranslation();
   return (
                 <motion.section
@@ -254,7 +250,6 @@ function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduc
                           {(() => {
                             const isCurrent = activeSkuByProduct[product.id] === sku.id;
                             const hasActiveOnProduct = !!activeSkuByProduct[product.id];
-                            const hasTrialed = trialedProducts.has(product.id);
                             const isExpiredProduct = appStates[product.id] === "expired";
                             const isLastSku = lastSkuByProduct[product.id] === sku.id;
 
@@ -285,28 +280,18 @@ function ProductBlock({ product, visibleSkus, trialedProducts, activeSkuByProduc
                             }
 
                             return (
-                              <>
-                                {!hasTrialed && !hasActiveOnProduct && !product.noTrial && (
-                                  <Link
-                                    href={`/urunler/${product.id}?sku=${sku.id}&trial=1`}
-                                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90 transition"
-                                  >
-                                    <Sparkles size={14} /> {t("products.free_trial_3day")}
-                                  </Link>
-                                )}
-                                <Link
-                                  href={`/urunler/${product.id}?sku=${sku.id}`}
-                                  className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
-                                    hasActiveOnProduct
-                                      ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
-                                      : sku.highlight
-                                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
-                                      : "border border-white/10 text-white hover:bg-white/5"
-                                  }`}
-                                >
-                                  {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
-                                </Link>
-                              </>
+                              <Link
+                                href={`/urunler/${product.id}?sku=${sku.id}`}
+                                className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
+                                  hasActiveOnProduct
+                                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
+                                    : sku.highlight
+                                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                                    : "border border-white/10 text-white hover:bg-white/5"
+                                }`}
+                              >
+                                {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
+                              </Link>
                             );
                           })()}
                         </div>

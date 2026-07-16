@@ -15,7 +15,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Minus, ShoppingCart, Loader2, Sparkles, ArrowRight, Briefcase, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Plus, Minus, ShoppingCart, Loader2, ArrowRight, Briefcase, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -24,7 +24,6 @@ interface Props {
   product: Product;
   /** Kullanıcının mevcut FinansERPIDE planı varsa onun base SKU'su (yükselt akışı için). */
   activeBaseSkuId?: string | null;
-  hasTrialed?: boolean;
 }
 
 // FinansERPIDE canlı sistemden çekilmiş ekran görüntüleri — Playwright otomatik
@@ -44,7 +43,7 @@ const FINANSERPIDE_SCREENSHOTS = [
   { src: "/screenshots/finanserpide/12-amortisman-demo.png",       caption: "Amortisman — aylık otomatik 770/257 yevmiyesi" },
 ];
 
-export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, hasTrialed }: Props) {
+export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: Props) {
   const router = useRouter();
   const { addItem, lines } = useCart();
 
@@ -393,15 +392,6 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, has
             >
               Sepete Git <ArrowRight size={14} />
             </button>
-          )}
-
-          {!hasTrialed && !activeBaseSkuId && baseSku && (
-            <Link
-              href={`/urunler/${product.id}?sku=${baseSku.id}&trial=1`}
-              className="mt-2 w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 text-sm"
-            >
-              <Sparkles size={14} /> 3 Gün Ücretsiz Dene
-            </Link>
           )}
 
           <p className="text-[11px] text-gray-500 mt-4 leading-relaxed">

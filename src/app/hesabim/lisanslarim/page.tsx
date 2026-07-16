@@ -1,23 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Copy, ExternalLink, Clock, ShoppingCart, BookOpen, Key, Globe, Sparkles } from "lucide-react";
+import { Copy, ExternalLink, Clock, ShoppingCart, BookOpen, Key, Globe } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
-import { listOrdersByUserId, hasUsedTrialForSku } from "@/lib/auth/user-store";
+import { listOrdersByUserId } from "@/lib/auth/user-store";
 import { getProductOfSku, getSku } from "@/lib/products";
 import QuickStartTabs from "@/components/account/QuickStartTabs";
 import AutoRenewToggle from "@/components/account/AutoRenewToggle";
 import CancelSubscriptionButton from "@/components/account/CancelSubscriptionButton";
-import QuickTrialCard from "@/components/account/QuickTrialCard";
 import AiKontorOverview from "@/components/account/AiKontorOverview";
 import { getServerTranslations } from "@/lib/i18n-server";
-
-// "Henüz lisansın yok" durumunda gösterilecek hızlı trial seçenekleri.
-// Hesabım anasayfasındaki TRIAL_OFFERS ile aynı liste — tek kaynak için
-// ileride config'e taşınabilir.
-const TRIAL_OFFERS = [
-  { productId: "finanserpide",  productName: "FinansERPIDE",  skuId: "finanserpide-base-monthly",      planName: "Temel Paket", description: "Çok şirketli ERP — e-Fatura, banka mutabakatı, vergi, cari, fatura. 3 gün tam erişim.", gradient: "from-blue-600 to-purple-600" },
-  { productId: "captchaerpide", productName: "CaptchaERPIDE", skuId: "captchaerpide-starter-monthly", planName: "Starter",     description: "Captcha çözüm API'si — reCAPTCHA, hCaptcha, OCR. 3 gün boyunca günlük 500 çözüm.",  gradient: "from-emerald-600 to-teal-600" },
-];
 
 interface LicenseRow {
   orderId: string;
@@ -415,47 +406,13 @@ export default async function LisanslarimPage() {
 }
 
 
-async function EmptyLicenses({ session, t }: { session: { userId?: string }; t: (k: string) => string }) {
-  // Hangi ürün için trial daha önce alınmış? — kullanılmış olanlar gösterilmez
-  const offerable: typeof TRIAL_OFFERS = [];
-  for (const o of TRIAL_OFFERS) {
-    const used = await hasUsedTrialForSku(session.userId!, o.skuId);
-    if (!used) offerable.push(o);
-  }
-
+function EmptyLicenses({ t }: { session: { userId?: string }; t: (k: string) => string }) {
   return (
-    <div className="space-y-6">
-      {offerable.length > 0 && (
-        <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-blue-500/5 border border-emerald-500/20">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="text-emerald-300" size={18} />
-            <h2 className="font-semibold text-white">3 Gün Ücretsiz Dene</h2>
-          </div>
-          <p className="text-xs text-gray-400 mb-5">
-            Kart bilgisi gerekmez. Tek tıkla lisansını oluştur ve uygulamayı kullanmaya başla.
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {offerable.map((o) => (
-              <QuickTrialCard
-                key={o.skuId}
-                productId={o.productId}
-                productName={o.productName}
-                skuId={o.skuId}
-                planName={o.planName}
-                description={o.description}
-                gradient={o.gradient}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="p-10 rounded-2xl bg-[#111118] border border-white/5 text-center">
-        <p className="text-gray-400 mb-4">{t("account.no_licenses")}</p>
-        <Link href="/urunler" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition">
-          {t("cart.browse_products")}
-        </Link>
-      </div>
+    <div className="p-10 rounded-2xl bg-[#111118] border border-white/5 text-center">
+      <p className="text-gray-400 mb-4">{t("account.no_licenses")}</p>
+      <Link href="/urunler" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition">
+        {t("cart.browse_products")}
+      </Link>
     </div>
   );
 }

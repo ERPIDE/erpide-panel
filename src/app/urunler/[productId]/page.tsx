@@ -1,9 +1,9 @@
 "use client";
-import { useState, use, Suspense, useEffect, useRef } from "react";
+import { useState, use, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Play, BookOpen, ImageIcon, ExternalLink, Mail } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Play, BookOpen, ImageIcon, ExternalLink, Mail } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getProduct, getProductText, getSkuText } from "@/lib/products";
@@ -162,15 +162,10 @@ function Inner({ productId }: { productId: string }) {
   const onecLbl = ONEC_LABELS[featureLocale];
   const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0]?.id || "");
   const [adding, setAdding] = useState(false);
-  const [trialing, setTrialing] = useState(false);
-  const [trialMsg, setTrialMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const autoTrialFired = useRef(false);
-  const wantsAutoTrial = sp.get("trial") === "1";
 
-  // Kullanıcının mevcut durumu: trial daha önce yapılmış mı, aktif paid SKU var mı?
+  // Kullanıcının mevcut durumu: aktif paid SKU var mı?
   // me API'den çekiliyor; null = henüz yüklenmedi (UI default flow).
   const [meReady, setMeReady] = useState(false);
-  const [hasTrialedThisProduct, setHasTrialedThisProduct] = useState(false);
   const [activeSkuOfThisProduct, setActiveSkuOfThisProduct] = useState<string | null>(null);
   const [lastSkuOfThisProduct, setLastSkuOfThisProduct] = useState<string | null>(null);
   const [productAppState, setProductAppState] = useState<"active" | "expired" | "none">("none");
@@ -182,11 +177,9 @@ function Inner({ productId }: { productId: string }) {
     fetch("/api/shop/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        const trialed: string[] = Array.isArray(d?.trialedProducts) ? d.trialedProducts : [];
         const active: Record<string, string> = (d?.activeSkuByProduct && typeof d.activeSkuByProduct === "object") ? d.activeSkuByProduct : {};
         const last: Record<string, string> = (d?.lastSkuByProduct && typeof d.lastSkuByProduct === "object") ? d.lastSkuByProduct : {};
         const states: Record<string, "active" | "expired" | "none"> = (d?.appStates && typeof d.appStates === "object") ? d.appStates : {};
-        setHasTrialedThisProduct(trialed.includes(product.id));
         setActiveSkuOfThisProduct(active[product.id] ?? null);
         setLastSkuOfThisProduct(last[product.id] ?? null);
         setProductAppState(states[product.id] ?? "none");
@@ -345,43 +338,6 @@ function Inner({ productId }: { productId: string }) {
     setAdding(false);
   }
 
-  useEffect(() => {
-    if (wantsAutoTrial && !autoTrialFired.current && product) {
-      autoTrialFired.current = true;
-      handleStartTrial();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wantsAutoTrial, product]);
-
-  async function handleStartTrial() {
-    setTrialing(true);
-    setTrialMsg(null);
-    try {
-      const me = await fetch("/api/shop/auth/me", { cache: "no-store" }).then((r) => r.json());
-      if (!me.user) {
-        const next = `/urunler/${product?.id}?sku=${currentSku.id}&trial=1`;
-        router.push(`/uye-ol?next=${encodeURIComponent(next)}`);
-        return;
-      }
-      const res = await fetch("/api/trial/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skuId: currentSku.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setTrialMsg({ ok: false, text: data.error || "Deneme başlatılamadı" });
-        setTrialing(false);
-        return;
-      }
-      setTrialMsg({ ok: true, text: `Deneme aktif! Lisans anahtarın hesabımda. Nasıl kullanacağını /docs/${product?.id} sayfasında bul.` });
-      setTimeout(() => router.push("/hesabim/lisanslarim"), 1800);
-    } catch (e) {
-      setTrialMsg({ ok: false, text: "Bağlantı hatası: " + String(e) });
-      setTrialing(false);
-    }
-  }
-
   // FinansERPIDE özel sayfa: modüler plan konfigüratörü (base + modul + ek kullanıcı).
   // Diğer ürünler (Captcha, AI Kontör, Pocket) standart "Plan Seç" UI'ı kullanır.
   if (product.id === "finanserpide") {
@@ -396,7 +352,6 @@ function Inner({ productId }: { productId: string }) {
             <FinansERPIDEConfigurator
               product={product}
               activeBaseSkuId={activeSkuOfThisProduct}
-              hasTrialed={hasTrialedThisProduct}
             />
           </div>
         </main>
@@ -852,9 +807,6 @@ function Inner({ productId }: { productId: string }) {
                   const hasAnyActivePlanForProduct = meReady && !!activeSkuOfThisProduct;
                   const isExpiredProduct = productAppState === "expired";
                   const isExpiredSelected = isExpiredProduct && lastSkuOfThisProduct === currentSku.id;
-                  // noTrial urunlerde (AI Kontor) trial butonu HIC gosterilmez —
-                  // her mesaj gercek Claude $ yakar, ucretsiz deneme zarar yazar.
-                  const showTrial = meReady && !product.noTrial && !hasTrialedThisProduct && !hasAnyActivePlanForProduct && !isExpiredProduct;
 
                   const ctaLabel = isCurrentPlan
                     ? "Bu Plan Aktif"
@@ -868,34 +820,22 @@ function Inner({ productId }: { productId: string }) {
 
                   const isUpgradeOrRenew = isExpiredProduct || hasAnyActivePlanForProduct;
                   return (
-                    <>
-                      {showTrial && (
-                        <button
-                          onClick={handleStartTrial}
-                          disabled={trialing}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 transition flex items-center justify-center gap-2 mb-2"
-                        >
-                          {trialing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                          {trialing ? "Başlatılıyor..." : "3 Gün Ücretsiz Dene"}
-                        </button>
-                      )}
-                      <button
-                        onClick={handleAdd}
-                        disabled={adding || isCurrentPlan}
-                        className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 mb-2 ${
-                          isCurrentPlan
-                            ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 cursor-not-allowed"
-                            : isUpgradeOrRenew
-                            ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 disabled:opacity-50"
-                            : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 disabled:opacity-50"
-                        }`}
-                      >
-                        {adding ? <Loader2 size={16} className="animate-spin" />
-                          : isCurrentPlan ? <Check size={16} />
-                          : <ShoppingCart size={16} />}
-                        {adding ? "Ekleniyor..." : ctaLabel}
-                      </button>
-                    </>
+                    <button
+                      onClick={handleAdd}
+                      disabled={adding || isCurrentPlan}
+                      className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 mb-2 ${
+                        isCurrentPlan
+                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 cursor-not-allowed"
+                          : isUpgradeOrRenew
+                          ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90 disabled:opacity-50"
+                          : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 disabled:opacity-50"
+                      }`}
+                    >
+                      {adding ? <Loader2 size={16} className="animate-spin" />
+                        : isCurrentPlan ? <Check size={16} />
+                        : <ShoppingCart size={16} />}
+                      {adding ? "Ekleniyor..." : ctaLabel}
+                    </button>
                   );
                 })()}
                 {inCartQty > 0 && (
@@ -906,13 +846,7 @@ function Inner({ productId }: { productId: string }) {
                     Sepete Git →
                   </button>
                 )}
-                {trialMsg && (
-                  <div className={`mt-3 p-3 rounded-lg text-xs ${trialMsg.ok ? "bg-green-500/10 border border-green-500/20 text-green-300" : "bg-red-500/10 border border-red-500/20 text-red-300"}`}>
-                    {trialMsg.text}
-                  </div>
-                )}
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  Deneme süresinde kart bilgisi gerekmez.<br />
                   Ödeme güvenli iyzico altyapısı ile alınır.
                 </p>
               </div>
