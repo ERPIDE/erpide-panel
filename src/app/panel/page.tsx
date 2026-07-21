@@ -69,8 +69,10 @@ function getCustomers(): Record<string, { password: string; name: string; projec
   return defaultCustomers;
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return ""; // bozuk tarih → "NaN undefined NaN" basma
   const months = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
@@ -84,6 +86,14 @@ function daysUntil(dateStr: string): number {
   const target = new Date(dateStr);
   target.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/** createdAt → "YYYY-MM" ay anahtarı; geçersiz tarihte null. */
+function monthKey(d?: string): string | null {
+  if (!d) return null;
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return null;
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function PanelPage() {
@@ -112,6 +122,7 @@ export default function PanelPage() {
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [labelFilter, setLabelFilter] = useState<Label | "all">("all");
+  const [monthFilter, setMonthFilter] = useState("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -270,14 +281,34 @@ export default function PanelPage() {
   }
 
   const filteredTasks = useMemo(() => {
+    // Sayısal arama task numarasını hedefler: "82" → #82; "82 84" → ikisi.
+    const q = searchQuery.trim().toLowerCase();
+    const numTokens = q.replace(/#/g, " ").split(/[\s,]+/).filter(Boolean);
+    const isNumericSearch = numTokens.length > 0 && numTokens.every((tok) => /^\d+$/.test(tok));
+
     return customerTasks.filter((t) => {
-      if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase()) && !t.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (q) {
+        if (isNumericSearch) {
+          if (!numTokens.includes(String(t.id))) return false;
+        } else if (!t.title.toLowerCase().includes(q) && !t.description.toLowerCase().includes(q)) return false;
+      }
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
       if (labelFilter !== "all" && t.label !== labelFilter) return false;
+      if (monthFilter !== "all" && monthKey(t.createdAt) !== monthFilter) return false;
       return true;
     });
-  }, [customerTasks, searchQuery, statusFilter, priorityFilter, labelFilter]);
+  }, [customerTasks, searchQuery, statusFilter, priorityFilter, labelFilter, monthFilter]);
+
+  /** Görevlerin açılış aylarından filtre seçenekleri (yeniden eskiye). */
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    customerTasks.forEach((t) => {
+      const key = monthKey(t.createdAt);
+      if (key) set.add(key);
+    });
+    return Array.from(set).sort().reverse();
+  }, [customerTasks]);
 
   const stats = useMemo(() => {
     const total = customerTasks.length;
@@ -290,7 +321,10 @@ export default function PanelPage() {
   const progressPercent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
   const deadline = useMemo(() => {
-    const withDeadline = customerTasks.filter((t) => t.deadline);
+    // Bozuk tarihli deadline'ları ele — banner'da "NaN undefined NaN" çıkmasın
+    const withDeadline = customerTasks.filter(
+      (t) => t.deadline && !isNaN(new Date(t.deadline).getTime())
+    );
     if (withDeadline.length === 0) return null;
     withDeadline.sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime());
     return withDeadline[0].deadline!;
@@ -728,7 +762,7 @@ export default function PanelPage() {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
-              placeholder="Task ara..."
+              placeholder="Task ara... (baslik veya numara: 82 ya da 82 84)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-white placeholder-gray-500 focus:border-blue-500/50 focus:outline-none text-sm transition"
@@ -762,6 +796,18 @@ export default function PanelPage() {
             <option value="all">Tum Etiketler</option>
             {(Object.entries(labelConfig) as [Label, { label: string }][]).map(([key, val]) => (
               <option key={key} value={key}>{val.label}</option>
+            ))}
+          </select>
+          <select
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            className="px-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
+          >
+            <option value="all">Tum Aylar</option>
+            {availableMonths.map((m) => (
+              <option key={m} value={m}>
+                {new Date(`${m}-01T00:00:00`).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
+              </option>
             ))}
           </select>
           <button
@@ -810,7 +856,10 @@ export default function PanelPage() {
                 </div>
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <span className="shrink-0 px-2.5 py-1 rounded-lg font-mono font-extrabold text-base leading-none bg-gradient-to-br from-blue-600/25 to-purple-600/25 border border-blue-500/40 text-blue-300">
+                      #{task.id}
+                    </span>
                     <span className="text-sm font-medium text-white truncate">
                       {task.title}
                     </span>
@@ -826,10 +875,15 @@ export default function PanelPage() {
                     >
                       {statusConfig[task.status].label}
                     </span>
-                    {task.deadline && (
+                    {task.deadline && formatDate(task.deadline) && (
                       <span className="text-[10px] text-gray-500 flex items-center gap-1">
                         <CalendarDays size={10} />
                         {formatDate(task.deadline)}
+                      </span>
+                    )}
+                    {formatDate(task.createdAt) && (
+                      <span className="text-[10px] text-gray-600">
+                        Açılış: {formatDate(task.createdAt)}
                       </span>
                     )}
                   </div>
@@ -885,7 +939,12 @@ export default function PanelPage() {
                 </div>
 
                 {/* Task Info */}
-                <h2 className="text-xl font-bold mb-4">{selectedTask.title}</h2>
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="shrink-0 px-2.5 py-1 rounded-lg font-mono font-extrabold text-base leading-none bg-gradient-to-br from-blue-600/25 to-purple-600/25 border border-blue-500/40 text-blue-300 mt-0.5">
+                    #{selectedTask.id}
+                  </span>
+                  <h2 className="text-xl font-bold">{selectedTask.title}</h2>
+                </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusConfig[selectedTask.status].bg} ${statusConfig[selectedTask.status].color}`}>
@@ -894,6 +953,11 @@ export default function PanelPage() {
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${labelConfig[selectedTask.label].bg} ${labelConfig[selectedTask.label].color}`}>
                     {labelConfig[selectedTask.label].label}
                   </span>
+                  {formatDate(selectedTask.createdAt) && (
+                    <span className="text-xs px-3 py-1 rounded-full font-medium bg-white/5 text-gray-400 flex items-center gap-1">
+                      <CalendarDays size={11} /> Açılış: {formatDate(selectedTask.createdAt)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Priority Score Editor */}
