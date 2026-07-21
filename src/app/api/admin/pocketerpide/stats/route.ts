@@ -67,6 +67,39 @@ export async function GET() {
     platformCounts[pt.platform] = (platformCounts[pt.platform] || 0) + 1;
   }
 
+  // userId → hesap bilgisi (ad, e-posta). Pocket token'ları site (shop) User
+  // hesabına bağlı; admin panelde "bu kullanıcı kim" sorusunu cevaplar.
+  const userRecords = userIds.length > 0
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, surname: true, email: true, createdAt: true },
+      })
+    : [];
+  const paidUserIds = new Set(pocketOrders.map((o) => o.userId));
+
+  const users = userIds
+    .map((uid) => {
+      const u = userRecords.find((r) => r.id === uid);
+      const m = userMap[uid];
+      return {
+        userId: uid,
+        name: u ? `${u.name} ${u.surname}`.trim() : null,
+        email: u?.email ?? null,
+        registeredAt: u?.createdAt ?? null,
+        tokens: m.tokens,
+        hasSynced: m.hasSynced,
+        lastSync: m.lastSync,
+        pushDevices: m.pushDevices,
+        lastTokenUsed: m.lastTokenUsed,
+        isPaid: paidUserIds.has(uid),
+      };
+    })
+    .sort((a, b) => {
+      const ta = a.lastTokenUsed || a.lastSync;
+      const tb = b.lastTokenUsed || b.lastSync;
+      return (tb ? new Date(tb).getTime() : 0) - (ta ? new Date(ta).getTime() : 0);
+    });
+
   const stats = {
     totalTokens: tokens.length,
     uniqueUsers: userIds.length,
@@ -82,5 +115,5 @@ export async function GET() {
     updatedAt: d.updatedAt,
   }));
 
-  return NextResponse.json({ stats, userMap, recentSyncs, pocketOrders: pocketOrders.slice(0, 50) });
+  return NextResponse.json({ stats, users, userMap, recentSyncs, pocketOrders: pocketOrders.slice(0, 50) });
 }

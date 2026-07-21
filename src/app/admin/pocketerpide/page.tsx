@@ -15,6 +15,12 @@ type PocketStats = {
   paidSubscribers: number;
 };
 type RecentSync = { userId: string; updatedAt: string };
+type PocketUser = {
+  userId: string; name: string | null; email: string | null;
+  registeredAt: string | null; tokens: number; hasSynced: boolean;
+  lastSync: string | null; pushDevices: number; lastTokenUsed: string | null;
+  isPaid: boolean;
+};
 type AltyapiData = {
   db: {
     sizeMB: number; limitMB: number; usagePct: number;
@@ -84,6 +90,7 @@ type Tab = "kullanici" | "senkron" | "altyapi";
 export default function PocketERPIDEAdminPage() {
   const [tab, setTab]           = useState<Tab>("kullanici");
   const [stats, setStats]       = useState<PocketStats | null>(null);
+  const [pocketUsers, setPocketUsers] = useState<PocketUser[]>([]);
   const [recentSyncs, setRecentSyncs] = useState<RecentSync[]>([]);
   const [altyapi, setAltyapi]   = useState<AltyapiData | null>(null);
   const [altyapiLoading, setAltyapiLoading] = useState(false);
@@ -94,7 +101,7 @@ export default function PocketERPIDEAdminPage() {
     setLoading(true);
     fetch("/api/admin/pocketerpide/stats")
       .then((r) => r.json())
-      .then((d) => { setStats(d.stats); setRecentSyncs(d.recentSyncs || []); })
+      .then((d) => { setStats(d.stats); setPocketUsers(d.users || []); setRecentSyncs(d.recentSyncs || []); })
       .finally(() => setLoading(false));
   };
 
@@ -233,6 +240,56 @@ export default function PocketERPIDEAdminPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Kullanıcı Listesi */}
+              {pocketUsers.length > 0 && (
+                <div className="p-5 rounded-2xl bg-[#111118] border border-white/5">
+                  <h3 className="text-sm font-medium text-gray-300 mb-4">Kullanıcı Listesi</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/10 text-left">
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500">Kullanıcı</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500">Kayıt</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500 text-center">Token</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500 text-center">Push</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500">Son Sync</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500">Son Aktivite</th>
+                          <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500 text-center">Abonelik</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pocketUsers.map((u) => (
+                          <tr key={u.userId} className="border-b border-white/5 hover:bg-white/[0.02]">
+                            <td className="px-3 py-3">
+                              <p className="text-sm text-white font-medium">{u.name || "Bilinmeyen kullanıcı"}</p>
+                              <p className="text-xs text-gray-500">{u.email || u.userId}</p>
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{u.registeredAt ? fmt(u.registeredAt) : "—"}</td>
+                            <td className="px-3 py-3 text-sm text-white text-center">{u.tokens}</td>
+                            <td className="px-3 py-3 text-sm text-center">
+                              {u.pushDevices > 0
+                                ? <span className="text-orange-400">{u.pushDevices} cihaz</span>
+                                : <span className="text-gray-600">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-xs whitespace-nowrap">
+                              {u.hasSynced && u.lastSync
+                                ? <span className="text-purple-400">{fmt(u.lastSync)}</span>
+                                : <span className="text-gray-600">Hiç sync yok</span>}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{u.lastTokenUsed ? fmt(u.lastTokenUsed) : "—"}</td>
+                            <td className="px-3 py-3 text-center">
+                              {u.isPaid
+                                ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-medium">Ücretli</span>
+                                : <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 text-gray-500">Ücretsiz</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {stats.uniqueUsers === 0 && (
                 <div className="p-10 rounded-2xl bg-[#111118] border border-white/5 text-center">
