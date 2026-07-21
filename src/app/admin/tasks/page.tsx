@@ -124,6 +124,8 @@ export default function TasksPage() {
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
   const [fMonth, setFMonth] = useState("all");
+  // Sıralama — default task numarası (yeni → eski). Kullanıcı değiştirebilir.
+  const [sortBy, setSortBy] = useState<"num-desc" | "num-asc" | "score" | "date-desc">("num-desc");
 
   // proje oluştur modal
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -578,8 +580,16 @@ export default function TasksPage() {
       if (fLabel !== "all" && t.label !== fLabel) return false;
       if (fMonth !== "all" && monthKey(t.createdAt) !== fMonth) return false;
       return true;
-    }).sort((a, b) => b.priorityScore - a.priorityScore);
-  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fMonth]);
+    }).sort((a, b) => {
+      switch (sortBy) {
+        case "num-asc":   return a.id - b.id;
+        case "score":     return b.priorityScore - a.priorityScore;
+        case "date-desc": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id;
+        case "num-desc":
+        default:          return b.id - a.id;
+      }
+    });
+  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fMonth, sortBy]);
 
   /** Müşteri filtre seçenekleri: proje tanımlarındaki müşteriler + task'larda
    *  görülen client adları (eski task'larda serbest metin olabilir). */
@@ -699,6 +709,12 @@ export default function TasksPage() {
                 {new Date(`${m}-01T00:00:00`).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
               </option>
             ))}
+          </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="num-desc">Sirala: No (yeni → eski)</option>
+            <option value="num-asc">Sirala: No (eski → yeni)</option>
+            <option value="score">Sirala: Oncelik Puani</option>
+            <option value="date-desc">Sirala: Acilis Tarihi</option>
           </select>
           <button
             onClick={() => setShowCreateModal(true)}

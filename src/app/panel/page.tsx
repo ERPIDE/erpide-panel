@@ -123,6 +123,8 @@ export default function PanelPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [labelFilter, setLabelFilter] = useState<Label | "all">("all");
   const [monthFilter, setMonthFilter] = useState("all");
+  // Sıralama — default task numarası (yeni → eski)
+  const [sortBy, setSortBy] = useState<"num-desc" | "num-asc" | "score" | "date-desc">("num-desc");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -577,10 +579,17 @@ export default function PanelPage() {
     }, 600);
   }
 
-  // Sort tasks by priority score (highest first)
   const sortedFilteredTasks = useMemo(() => {
-    return [...filteredTasks].sort((a, b) => b.priorityScore - a.priorityScore);
-  }, [filteredTasks]);
+    return [...filteredTasks].sort((a, b) => {
+      switch (sortBy) {
+        case "num-asc":   return a.id - b.id;
+        case "score":     return b.priorityScore - a.priorityScore;
+        case "date-desc": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id;
+        case "num-desc":
+        default:          return b.id - a.id;
+      }
+    });
+  }, [filteredTasks, sortBy]);
 
   // LOGIN SCREEN
   if (!loggedIn) {
@@ -809,6 +818,16 @@ export default function PanelPage() {
                 {new Date(`${m}-01T00:00:00`).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
               </option>
             ))}
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="px-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
+          >
+            <option value="num-desc">Sirala: No (yeni → eski)</option>
+            <option value="num-asc">Sirala: No (eski → yeni)</option>
+            <option value="score">Sirala: Oncelik Puani</option>
+            <option value="date-desc">Sirala: Acilis Tarihi</option>
           </select>
           <button
             onClick={handleDownloadPDF}
