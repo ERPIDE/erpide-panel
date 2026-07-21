@@ -49,7 +49,15 @@ import { useToast } from "@/components/Toast";
 const statuses: Status[] = ["todo", "in_progress", "review", "done"];
 const priorities: Priority[] = ["critical", "high", "medium", "low"];
 const labels: Label[] = ["bug", "feature", "improvement", "docs", "urgent"];
-const projects = ["CANIAS", "1C ERP"] as const;
+
+/** /api/projects'ten gelen proje tanımı — tüm proje/müşteri dropdown'larının
+ *  tek kaynağı. Hardcoded proje listesi kullanma! */
+type ProjectDef = {
+  id: string;
+  name: string;
+  repo: string;
+  customer: { id: string; code: string; name: string } | null;
+};
 
 const statusIcons: Record<Status, typeof Circle> = {
   todo: Circle,
@@ -71,10 +79,6 @@ const roleBadge: Record<string, { label: string; color: string; bg: string }> = 
   developer: { label: "Gelistirici", color: "text-green-400", bg: "bg-green-500/10" },
 };
 
-const clientMap: Record<string, string> = {
-  CANIAS: "Sirmersan",
-  "1C ERP": "ATM Constructor",
-};
 
 function isOverdue(deadline?: string): boolean {
   if (!deadline) return false;
@@ -109,13 +113,23 @@ export default function TasksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentUserName, setCurrentUserName] = useState("Admin");
 
+  // projeler — DB'den (/api/projects); dropdown'lar ve müşteri eşlemesi buradan
+  const [projectList, setProjectList] = useState<ProjectDef[]>([]);
+
   // filters
   const [search, setSearch] = useState("");
   const [fProject, setFProject] = useState("all");
+  const [fCustomer, setFCustomer] = useState("all");
   const [fStatus, setFStatus] = useState("todo");
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
   const [fMonth, setFMonth] = useState("all");
+
+  // proje oluştur modal
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [newProject, setNewProject] = useState({ name: "", repo: "", customerId: "" });
+  const [customersForSelect, setCustomersForSelect] = useState<{ id: string; code: string; name: string }[]>([]);
 
   // comment state
   const [commentText, setCommentText] = useState("");
@@ -176,10 +190,73 @@ export default function TasksPage() {
     }
   }
 
+  async function fetchProjects() {
+    try {
+      const res = await fetch("/api/projects");
+      if (!res.ok) return;
+      const data = await res.json();
+      setProjectList(data.projects || []);
+    } catch {}
+  }
+
   useEffect(() => {
     fetchTasks();
+    fetchProjects();
     fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.userName) setCurrentUserName(d.userName); }).catch(() => {});
   }, []);
+
+  // Proje listesi gelince create-form'un default projesi listeden seçilsin
+  useEffect(() => {
+    if (projectList.length > 0 && !projectList.some((p) => p.name === newTask.project)) {
+      setNewTask((prev) => ({ ...prev, project: projectList[0].name }));
+    }
+  }, [projectList]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Proje adı → müşteri (firma) adı. Task'a client yazarken kullanılır. */
+  const clientOfProject = (projectName: string): string =>
+    projectList.find((p) => p.name === projectName)?.customer?.name ?? "";
+
+  async function openProjectModal() {
+    setShowProjectModal(true);
+    // Müşteri seçimi listeden yapılır (elle yazılmaz) — /api/users elevated-only,
+    // 401 dönerse select boş kalır, API zaten yetkisiz oluşturmayı reddeder.
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const d = await res.json();
+        setCustomersForSelect((d.customers || []).map((c: { id: string; code: string; name: string }) => ({ id: c.id, code: c.code, name: c.name })));
+      }
+    } catch {}
+  }
+
+  async function createProject() {
+    if (!newProject.name.trim()) return;
+    try {
+      setCreatingProject(true);
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProject.name.trim(),
+          repo: newProject.repo.trim() || undefined,
+          customerId: newProject.customerId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", data.error || "Proje oluşturulamadı");
+        return;
+      }
+      toast("success", `Proje oluşturuldu: ${data.project.name}`);
+      setNewProject({ name: "", repo: "", customerId: "" });
+      setShowProjectModal(false);
+      await fetchProjects();
+    } catch {
+      toast("error", "Proje oluşturulamadı");
+    } finally {
+      setCreatingProject(false);
+    }
+  }
 
   /* ─── fetch comments when task detail opens ─── */
   async function fetchComments(task: Task) {
@@ -267,7 +344,7 @@ export default function TasksPage() {
         title: newTask.title.trim(),
         description: newTask.description.trim(),
         project: newTask.project,
-        client: clientMap[newTask.project] ?? "",
+        client: clientOfProject(newTask.project),
         label: newTask.label,
         priority: newTask.priority,
         deadline: newTask.deadline || undefined,
@@ -495,13 +572,23 @@ export default function TasksPage() {
         } else if (!t.title.toLowerCase().includes(q)) return false;
       }
       if (fProject !== "all" && t.project !== fProject) return false;
+      if (fCustomer !== "all" && t.client !== fCustomer) return false;
       if (fStatus !== "all" && t.status !== fStatus) return false;
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
       if (fMonth !== "all" && monthKey(t.createdAt) !== fMonth) return false;
       return true;
     }).sort((a, b) => b.priorityScore - a.priorityScore);
-  }, [tasks, search, fProject, fStatus, fPriority, fLabel, fMonth]);
+  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fMonth]);
+
+  /** Müşteri filtre seçenekleri: proje tanımlarındaki müşteriler + task'larda
+   *  görülen client adları (eski task'larda serbest metin olabilir). */
+  const customerOptions = useMemo(() => {
+    const set = new Set<string>();
+    projectList.forEach((p) => { if (p.customer?.name) set.add(p.customer.name); });
+    tasks.forEach((t) => { if (t.client) set.add(t.client); });
+    return Array.from(set).sort();
+  }, [projectList, tasks]);
 
   /* Görevlerin açılış aylarından filtre seçenekleri (yeniden eskiye) */
   const availableMonths = useMemo(() => {
@@ -587,7 +674,11 @@ export default function TasksPage() {
         <div className="flex flex-wrap gap-2">
           <select value={fProject} onChange={(e) => setFProject(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
             <option value="all">Tum Projeler</option>
-            {projects.map((p) => <option key={p} value={p}>{p}</option>)}
+            {projectList.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+          </select>
+          <select value={fCustomer} onChange={(e) => setFCustomer(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tum Musteriler</option>
+            {customerOptions.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
             <option value="all">Tum Durumlar</option>
@@ -616,6 +707,12 @@ export default function TasksPage() {
             <Plus size={16} /> Yeni Gorev
           </button>
           <button
+            onClick={openProjectModal}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-sm font-medium transition"
+          >
+            <Plus size={16} /> Yeni Proje
+          </button>
+          <button
             onClick={() => { setLoading(true); fetchTasks(); }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition border border-white/10"
             title="Yenile"
@@ -629,9 +726,9 @@ export default function TasksPage() {
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
         <span>{filtered.length} gorev listeleniyor</span>
-        {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fMonth !== "all") && (
+        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fMonth !== "all") && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFMonth("all"); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFMonth("all"); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
@@ -668,8 +765,10 @@ export default function TasksPage() {
 
                 {/* main content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[11px] font-mono text-gray-500 shrink-0">#{t.id}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="shrink-0 px-2.5 py-1 rounded-lg font-mono font-extrabold text-base leading-none bg-gradient-to-br from-blue-600/25 to-purple-600/25 border border-blue-500/40 text-blue-300">
+                      #{t.id}
+                    </span>
                     <p className={`text-sm font-medium truncate ${t.status === "done" ? "text-gray-500 line-through" : "text-white group-hover:text-blue-100"} transition`}>
                       {t.title}
                     </p>
@@ -767,7 +866,7 @@ export default function TasksPage() {
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
                         {activeTask.project}
                       </span>
-                      <span className="text-[11px] text-gray-600">#{activeTask.id}</span>
+                      <span className="px-2 py-0.5 rounded-md font-mono font-extrabold text-sm leading-none bg-gradient-to-br from-blue-600/25 to-purple-600/25 border border-blue-500/40 text-blue-300">#{activeTask.id}</span>
                       <span className="text-[11px] text-gray-600">|</span>
                       <span className="text-[11px] text-gray-500">{activeTask.client}</span>
                     </div>
@@ -1237,13 +1336,13 @@ export default function TasksPage() {
                         onChange={(e) => setNewTask({ ...newTask, project: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
                       >
-                        {projects.map((p) => <option key={p} value={p}>{p}</option>)}
+                        {projectList.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri</label>
                       <input
-                        value={clientMap[newTask.project] ?? ""}
+                        value={clientOfProject(newTask.project)}
                         readOnly
                         className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-gray-400 text-sm cursor-not-allowed"
                       />
@@ -1298,6 +1397,89 @@ export default function TasksPage() {
                     className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
                   >
                     {creating && <Loader2 size={14} className="animate-spin" />}
+                    Olustur
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Create Project Modal */}
+      <AnimatePresence>
+        {showProjectModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowProjectModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md bg-[#0a0a12] border border-white/10 rounded-2xl p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Yeni Proje Olustur</h3>
+                  <button onClick={() => setShowProjectModal(false)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Proje Adi</label>
+                    <input
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                      placeholder="orn. Logo Entegrasyon"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-purple-500/50 focus:outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri</label>
+                    <select
+                      value={newProject.customerId}
+                      onChange={(e) => setNewProject({ ...newProject, customerId: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-purple-500/50 focus:outline-none cursor-pointer transition"
+                    >
+                      <option value="">— Musteri secilmedi —</option>
+                      {customersForSelect.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">GitHub Repo (opsiyonel)</label>
+                    <input
+                      value={newProject.repo}
+                      onChange={(e) => setNewProject({ ...newProject, repo: e.target.value })}
+                      placeholder="bos birakirsan proje adindan uretilir"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-purple-500/50 focus:outline-none transition"
+                    />
+                    <p className="text-[10px] text-gray-600 mt-1.5">Repo ERPIDE org&apos;unda yoksa otomatik acilir (private). Task&apos;lar issue olarak bu repoda tutulur.</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setShowProjectModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition"
+                  >
+                    Iptal
+                  </button>
+                  <button
+                    onClick={createProject}
+                    disabled={!newProject.name.trim() || creatingProject}
+                    className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition flex items-center gap-2"
+                  >
+                    {creatingProject && <Loader2 size={14} className="animate-spin" />}
                     Olustur
                   </button>
                 </div>
