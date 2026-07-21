@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -15,6 +15,8 @@ import {
   KeyRound,
   RotateCcw,
   Save,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import {
@@ -30,7 +32,37 @@ import {
 // ── helpers ──────────────────────────────────────────────────────────
 const genId = () => Math.random().toString(36).slice(2, 10);
 
+// Fallback — projeler DB'den (/api/projects) gelir; liste boşsa bu kullanılır.
 const projectOptions = ["CANIAS", "1C ERP"];
+
+// ── Müşteri altı kullanıcı (CustomerMember) tipleri ─────────────────
+type CustomerMemberRow = {
+  id: string;
+  customerId: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+};
+
+type ProjectRow = {
+  id: string;
+  name: string;
+  repo: string;
+  customer: { id: string; code: string; name: string } | null;
+};
+
+const memberRoles = [
+  { value: "yonetici", label: "Yönetici", desc: "Talep açma + yorum + dosya yükleme" },
+  { value: "uye",      label: "Üye",      desc: "Task görüntüleme + yorum" },
+  { value: "gozlemci", label: "Gözlemci", desc: "Sadece görüntüleme" },
+];
+
+const memberRoleBadge: Record<string, { label: string; cls: string }> = {
+  yonetici: { label: "Yönetici", cls: "bg-red-500/10 text-red-400" },
+  uye:      { label: "Üye",      cls: "bg-blue-500/10 text-blue-400" },
+  gozlemci: { label: "Gözlemci", cls: "bg-gray-500/10 text-gray-400" },
+};
 
 // ── Permissions Modal ────────────────────────────────────────────────
 function PermissionsModal({
@@ -265,6 +297,22 @@ export default function UsersPage() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // projeler — müşteri formu ve müşteri satırındaki proje rozetleri için
+  const [projectsList, setProjectsList] = useState<ProjectRow[]>([]);
+
+  // müşteri altı kullanıcılar
+  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  const [membersByCustomer, setMembersByCustomer] = useState<Record<string, CustomerMemberRow[]>>({});
+  const [membersLoading, setMembersLoading] = useState(false);
+
+  // üye modal
+  const [memberModal, setMemberModal] = useState<{ customerId: string; member: CustomerMemberRow | null } | null>(null);
+  const [memName, setMemName] = useState("");
+  const [memEmail, setMemEmail] = useState("");
+  const [memPassword, setMemPassword] = useState("");
+  const [memRole, setMemRole] = useState("uye");
+  const [memError, setMemError] = useState("");
+
   async function fetchUsers() {
     try {
       const res = await fetch("/api/users");
@@ -278,7 +326,81 @@ export default function UsersPage() {
     }
   }
 
-  useEffect(() => { fetchUsers(); }, []);
+  async function fetchProjects() {
+    try {
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        const data = await res.json();
+        setProjectsList(data.projects || []);
+      }
+    } catch {}
+  }
+
+  useEffect(() => { fetchUsers(); fetchProjects(); }, []);
+
+  // Müşteri formundaki proje seçenekleri: DB'deki projeler; boşsa fallback.
+  const projectNames = projectsList.length > 0 ? projectsList.map((p) => p.name) : projectOptions;
+
+  async function fetchMembers(customerId: string) {
+    try {
+      setMembersLoading(true);
+      const res = await fetch(`/api/customers/members?customerId=${encodeURIComponent(customerId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMembersByCustomer((prev) => ({ ...prev, [customerId]: data.members || [] }));
+      }
+    } catch {} finally {
+      setMembersLoading(false);
+    }
+  }
+
+  function toggleCustomerExpand(customerId: string) {
+    if (expandedCustomer === customerId) {
+      setExpandedCustomer(null);
+      return;
+    }
+    setExpandedCustomer(customerId);
+    if (!membersByCustomer[customerId]) fetchMembers(customerId);
+  }
+
+  function openMemberModal(customerId: string, member: CustomerMemberRow | null) {
+    setMemName(member?.name ?? "");
+    setMemEmail(member?.email ?? "");
+    setMemPassword("");
+    setMemRole(member?.role ?? "uye");
+    setMemError("");
+    setMemberModal({ customerId, member });
+  }
+
+  async function saveMember() {
+    if (!memberModal) return;
+    const isEdit = !!memberModal.member;
+    if (!memName.trim() || !memEmail.trim() || (!isEdit && !memPassword)) return;
+    setSaving(true);
+    setMemError("");
+    try {
+      const res = await fetch("/api/customers/members", {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isEdit
+            ? { id: memberModal.member!.id, name: memName.trim(), email: memEmail.trim(), role: memRole, password: memPassword || undefined }
+            : { customerId: memberModal.customerId, name: memName.trim(), email: memEmail.trim(), password: memPassword, role: memRole }
+        ),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMemError(data.error || "Kaydedilemedi");
+        return;
+      }
+      await fetchMembers(memberModal.customerId);
+      setMemberModal(null);
+    } catch {
+      setMemError("Kaydedilemedi");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -301,9 +423,11 @@ export default function UsersPage() {
 
   // confirm delete
   const [deleteTarget, setDeleteTarget] = useState<{
-    type: "customer" | "admin";
+    type: "customer" | "admin" | "member";
     id: string;
     name: string;
+    /** type="member" için: silme sonrası hangi müşterinin listesi yenilenecek */
+    customerId?: string;
   } | null>(null);
 
   // permissions editor
@@ -313,7 +437,7 @@ export default function UsersPage() {
   function resetCustomerForm() {
     setCustCode("");
     setCustName("");
-    setCustProject(projectOptions[0]);
+    setCustProject(projectNames[0] ?? "");
     setCustPassword("");
     setCustEmail("");
     setCustPhone("");
@@ -419,10 +543,15 @@ export default function UsersPage() {
     if (!deleteTarget) return;
     setSaving(true);
     try {
-      await fetch(`/api/users?id=${deleteTarget.id}&type=${deleteTarget.type}`, {
-        method: "DELETE",
-      });
-      await fetchUsers();
+      if (deleteTarget.type === "member") {
+        await fetch(`/api/customers/members?id=${deleteTarget.id}`, { method: "DELETE" });
+        if (deleteTarget.customerId) await fetchMembers(deleteTarget.customerId);
+      } else {
+        await fetch(`/api/users?id=${deleteTarget.id}&type=${deleteTarget.type}`, {
+          method: "DELETE",
+        });
+        await fetchUsers();
+      }
       setDeleteTarget(null);
     } catch {} finally { setSaving(false); }
   }
@@ -540,35 +669,55 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {customers.map((c, i) => (
+                {customers.map((c, i) => {
+                  const expanded = expandedCustomer === c.id;
+                  const members = membersByCustomer[c.id] || [];
+                  const custProjects = projectsList.filter((p) => p.customer?.id === c.id).map((p) => p.name);
+                  const shownProjects = custProjects.length > 0 ? custProjects : [c.project];
+                  return (
+                  <React.Fragment key={c.id}>
                   <motion.tr
-                    key={c.id}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + i * 0.04 }}
-                    className="hover:bg-white/[0.02] transition-colors"
+                    onClick={() => toggleCustomerExpand(c.id)}
+                    className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-bold">
-                        {c.code}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {expanded ? <ChevronDown size={14} className="text-blue-400 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-bold">
+                          {c.code}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-white font-medium">
                       {c.name}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-medium">
-                        {c.project}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {shownProjects.map((p) => (
+                          <span key={p} className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-medium">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-gray-400">
                       {c.contactEmail}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-400">
+                    <td className="px-5 py-3.5 text-gray-400" onClick={(e) => e.stopPropagation()}>
                       <PasswordCell value={c.password} />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => toggleCustomerExpand(c.id)}
+                          className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-blue-400 transition"
+                          title="Kullanıcılar"
+                        >
+                          <Users size={15} />
+                        </button>
                         <button
                           onClick={() => openEditCustomer(c)}
                           className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-yellow-400 transition"
@@ -592,7 +741,68 @@ export default function UsersPage() {
                       </div>
                     </td>
                   </motion.tr>
-                ))}
+                  {expanded && (
+                    <tr className="bg-white/[0.015]">
+                      <td colSpan={6} className="px-8 py-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <Users size={13} className="text-blue-400" />
+                            {c.name} — Kullanıcılar ({members.length})
+                          </p>
+                          <button
+                            onClick={() => openMemberModal(c.id, null)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/15 border border-blue-500/30 text-blue-300 text-xs font-medium hover:bg-blue-600/25 transition"
+                          >
+                            <UserPlus size={13} /> Kullanıcı Ekle
+                          </button>
+                        </div>
+                        {membersLoading && !membersByCustomer[c.id] ? (
+                          <div className="py-6 flex justify-center"><Loader2 size={18} className="text-blue-400 animate-spin" /></div>
+                        ) : members.length === 0 ? (
+                          <p className="text-xs text-gray-600 italic py-2">
+                            Bu müşterinin henüz kullanıcısı yok. Kullanıcılar /panel&apos;e e-posta + şifre ile giriş yapıp
+                            müşterinin tüm projelerindeki task&apos;ları rollerine göre görür.
+                          </p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {members.map((m) => (
+                              <div key={m.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#0d0d14] border border-white/5">
+                                <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                                  <Users size={12} className="text-gray-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-white font-medium truncate">{m.name}</p>
+                                  <p className="text-xs text-gray-500 truncate">{m.email}</p>
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${(memberRoleBadge[m.role] || memberRoleBadge.uye).cls}`}>
+                                  {(memberRoleBadge[m.role] || memberRoleBadge.uye).label}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => openMemberModal(c.id, m)}
+                                    className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-yellow-400 transition"
+                                    title="Düzenle"
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteTarget({ type: "member", id: m.id, name: m.name, customerId: c.id })}
+                                    className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-red-400 transition"
+                                    title="Sil"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
+                  );
+                })}
                 {customers.length === 0 && (
                   <tr>
                     <td
@@ -713,6 +923,82 @@ export default function UsersPage() {
         </motion.div>
       )}
 
+      {/* ── Üye (müşteri kullanıcısı) Modal ─────────────────────────── */}
+      <AnimatePresence>
+        {memberModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMemberModal(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-md rounded-2xl bg-[#111118] border border-white/10 p-6 shadow-2xl"
+            >
+              <button
+                onClick={() => setMemberModal(null)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition"
+              >
+                <X size={18} />
+              </button>
+              <h2 className="text-lg font-bold text-white mb-1">
+                {memberModal.member ? "Kullanıcıyı Düzenle" : "Yeni Kullanıcı"}
+              </h2>
+              <p className="text-xs text-gray-500 mb-5">
+                {customers.find((cc) => cc.id === memberModal.customerId)?.name} firmasının panel kullanıcısı.
+              </p>
+              <form onSubmit={(e) => { e.preventDefault(); saveMember(); }} className="space-y-3">
+                <input
+                  placeholder="Ad Soyad"
+                  value={memName}
+                  onChange={(e) => setMemName(e.target.value)}
+                  className={inputCls}
+                  required
+                />
+                <input
+                  placeholder="E-posta (panel girişi)"
+                  type="email"
+                  value={memEmail}
+                  onChange={(e) => setMemEmail(e.target.value)}
+                  className={inputCls}
+                  required
+                />
+                <input
+                  placeholder={memberModal.member ? "Yeni şifre (boş bırak = değişmez)" : "Şifre"}
+                  type="text"
+                  value={memPassword}
+                  onChange={(e) => setMemPassword(e.target.value)}
+                  className={inputCls}
+                  required={!memberModal.member}
+                />
+                <div>
+                  <select value={memRole} onChange={(e) => setMemRole(e.target.value)} className={selectCls}>
+                    {memberRoles.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
+                    ))}
+                  </select>
+                </div>
+                {memError && (
+                  <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{memError}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition mt-2 disabled:opacity-50"
+                >
+                  {memberModal.member ? "Kaydet" : "Oluştur"}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Create/Edit Modal ───────────────────────────────────────── */}
       <AnimatePresence>
         {modalOpen && (
@@ -790,7 +1076,12 @@ export default function UsersPage() {
                     onChange={(e) => setCustProject(e.target.value)}
                     className={selectCls}
                   >
-                    {projectOptions.map((p) => (
+                    {/* Proje elle yazılmaz — /api/projects listesinden seçilir.
+                        Düzenlenen müşterinin eski projesi listede yoksa kaybolmasın. */}
+                    {(projectNames.includes(custProject) || !custProject
+                      ? projectNames
+                      : [custProject, ...projectNames]
+                    ).map((p) => (
                       <option key={p} value={p}>
                         {p}
                       </option>
