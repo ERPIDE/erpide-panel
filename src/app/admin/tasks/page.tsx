@@ -81,8 +81,19 @@ function isOverdue(deadline?: string): boolean {
   return new Date(deadline) < new Date();
 }
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+function formatDate(d?: string): string {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  return dt.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** createdAt → "YYYY-MM" ay anahtarı; geçersiz tarihte null. */
+function monthKey(d?: string): string | null {
+  if (!d) return null;
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return null;
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function todayISO(): string {
@@ -104,6 +115,7 @@ export default function TasksPage() {
   const [fStatus, setFStatus] = useState("todo");
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
+  const [fMonth, setFMonth] = useState("all");
 
   // comment state
   const [commentText, setCommentText] = useState("");
@@ -470,15 +482,36 @@ export default function TasksPage() {
 
   /* ─── derived ─── */
   const filtered = useMemo(() => {
+    // Sayısal arama task numarasını hedefler: "82" → #82; "82 84" / "82,84"
+    // → #82 ve #84. "#82" formu da çalışır. Metin araması başlıkta kalır.
+    const q = search.trim().toLowerCase();
+    const numTokens = q.replace(/#/g, " ").split(/[\s,]+/).filter(Boolean);
+    const isNumericSearch = numTokens.length > 0 && numTokens.every((tok) => /^\d+$/.test(tok));
+
     return tasks.filter((t) => {
-      if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (q) {
+        if (isNumericSearch) {
+          if (!numTokens.includes(String(t.id))) return false;
+        } else if (!t.title.toLowerCase().includes(q)) return false;
+      }
       if (fProject !== "all" && t.project !== fProject) return false;
       if (fStatus !== "all" && t.status !== fStatus) return false;
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
+      if (fMonth !== "all" && monthKey(t.createdAt) !== fMonth) return false;
       return true;
     }).sort((a, b) => b.priorityScore - a.priorityScore);
-  }, [tasks, search, fProject, fStatus, fPriority, fLabel]);
+  }, [tasks, search, fProject, fStatus, fPriority, fLabel, fMonth]);
+
+  /* Görevlerin açılış aylarından filtre seçenekleri (yeniden eskiye) */
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => {
+      const key = monthKey(t.createdAt);
+      if (key) set.add(key);
+    });
+    return Array.from(set).sort().reverse();
+  }, [tasks]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -544,7 +577,7 @@ export default function TasksPage() {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
-            placeholder="Gorev ara..."
+            placeholder="Gorev ara... (baslik veya numara: 82 ya da 82 84)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
@@ -568,6 +601,14 @@ export default function TasksPage() {
             <option value="all">Tum Etiketler</option>
             {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
           </select>
+          <select value={fMonth} onChange={(e) => setFMonth(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tum Aylar</option>
+            {availableMonths.map((m) => (
+              <option key={m} value={m}>
+                {new Date(`${m}-01T00:00:00`).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition"
@@ -588,9 +629,9 @@ export default function TasksPage() {
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
         <span>{filtered.length} gorev listeleniyor</span>
-        {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all") && (
+        {(search || fProject !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fMonth !== "all") && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFMonth("all"); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
@@ -627,9 +668,12 @@ export default function TasksPage() {
 
                 {/* main content */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${t.status === "done" ? "text-gray-500 line-through" : "text-white group-hover:text-blue-100"} transition`}>
-                    {t.title}
-                  </p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[11px] font-mono text-gray-500 shrink-0">#{t.id}</span>
+                    <p className={`text-sm font-medium truncate ${t.status === "done" ? "text-gray-500 line-through" : "text-white group-hover:text-blue-100"} transition`}>
+                      {t.title}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* project */}
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium">
@@ -644,12 +688,18 @@ export default function TasksPage() {
                       <PriorityIcon size={10} />
                       {pc.label}
                     </span>
-                    {/* deadline */}
-                    {t.deadline && (
+                    {/* deadline — geçersiz tarih verisinde ("Invalid Date") hiç gösterme */}
+                    {t.deadline && formatDate(t.deadline) && (
                       <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-red-400 font-medium" : "text-gray-500"}`}>
                         <CalendarDays size={10} />
                         {formatDate(t.deadline)}
                         {overdue && <AlertTriangle size={10} className="text-red-400" />}
+                      </span>
+                    )}
+                    {/* açılış tarihi */}
+                    {formatDate(t.createdAt) && (
+                      <span className="text-[11px] text-gray-600">
+                        Açılış: {formatDate(t.createdAt)}
                       </span>
                     )}
                   </div>
@@ -842,7 +892,7 @@ export default function TasksPage() {
                         <button onClick={() => setEditingDate(false)} className="px-2 py-1 rounded-lg bg-white/5 text-gray-400 text-[10px]">X</button>
                       </div>
                     ) : (
-                      <span className="text-sm text-white">{formatDate(activeTask.createdAt)}</span>
+                      <span className="text-sm text-white">{formatDate(activeTask.createdAt) || "—"}</span>
                     )}
                   </div>
                   {/* created by */}
