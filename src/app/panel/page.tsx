@@ -95,6 +95,16 @@ export default function PanelPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
+  // Üye girişi (CustomerMember, e-posta+şifre) bilgisi. Firma girişinde
+  // (kod+şifre) role "yonetici" kabul edilir — legacy tam yetki.
+  const [sessionUser, setSessionUser] = useState<{
+    name: string;
+    role: string; // "yonetici" | "uye" | "gozlemci"
+    code: string;
+    customerName: string;
+    project: string;
+  } | null>(null);
+
   // Dashboard state
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -120,7 +130,21 @@ export default function PanelPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, { url: string; name: string; type: string; date: string }[]>>({});
 
-  const customerData = loggedIn ? customers[loggedIn] : null;
+  // Üye girişinde firma bilgisi login cevabından gelir (localStorage haritasında
+  // olmayabilir); firma girişinde eski harita kullanılır.
+  const customerData = sessionUser
+    ? { name: sessionUser.customerName, project: sessionUser.project, password: "" }
+    : loggedIn
+    ? customers[loggedIn]
+    : null;
+
+  // Rol bazlı yetkiler
+  const panelRole = sessionUser?.role ?? "yonetici";
+  const canComment = panelRole !== "gozlemci";
+  const canCreate = panelRole === "yonetici";
+  const canUpload = panelRole === "yonetici";
+  // Yorumlarda görünen ad: üye girişinde üyenin adı, firma girişinde firma adı
+  const authorName = sessionUser?.name || customerData?.name || "";
 
   // Fetch tasks after login
   useEffect(() => {
@@ -146,15 +170,36 @@ export default function PanelPage() {
     e.preventDefault();
     setLoginLoading(true);
     setError("");
+    const id = code.trim();
+    const isEmail = id.includes("@");
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.toUpperCase(), password, type: "customer" }),
+        body: JSON.stringify(
+          isEmail
+            ? { email: id, password, type: "customer" }
+            : { code: id.toUpperCase(), password, type: "customer" }
+        ),
       });
       if (res.ok) {
-        setLoggedIn(code.toUpperCase());
+        const data = await res.json().catch(() => null);
+        const u = data?.user;
+        if (u) {
+          setSessionUser({
+            name: u.name,
+            role: u.role || "yonetici",
+            code: u.code,
+            customerName: u.customerName || u.name,
+            project: u.project || "",
+          });
+          setLoggedIn(u.code || id.toUpperCase());
+        } else {
+          setLoggedIn(id.toUpperCase());
+        }
         setError("");
+      } else if (isEmail) {
+        setError("Hatali e-posta veya sifre!");
       } else {
         // Fallback to local check for backwards compatibility
         const customer = customers[code.toUpperCase()];
@@ -282,13 +327,13 @@ export default function PanelPage() {
           repo: selectedTask.repo,
           issueNumber: selectedTask.id,
           comment: newComment.trim(),
-          author: customerData.name,
+          author: authorName,
         }),
       });
       if (res.ok) {
         const comment: Comment = {
           id: `c-${Date.now()}`,
-          author: customerData.name,
+          author: authorName,
           authorRole: "customer",
           text: newComment.trim(),
           date: new Date().toISOString().split("T")[0],
@@ -528,7 +573,7 @@ export default function PanelPage() {
 
           <form onSubmit={handleLogin} className="space-y-3">
             <input
-              placeholder="Musteri Kodu"
+              placeholder="Musteri Kodu veya E-posta"
               value={code}
               onChange={(e) => {
                 setCode(e.target.value);
@@ -725,12 +770,14 @@ export default function PanelPage() {
           >
             <Download size={16} /> PDF İndir
           </button>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition whitespace-nowrap"
-          >
-            <Plus size={16} /> Yeni Talep
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition whitespace-nowrap"
+            >
+              <Plus size={16} /> Yeni Talep
+            </button>
+          )}
         </motion.div>
 
         {/* Task List */}
@@ -960,15 +1007,19 @@ export default function PanelPage() {
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => handleFileSelect(selectedTask)}
-                    disabled={uploading}
-                    className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-blue-500/30 text-gray-400 hover:text-white text-sm transition disabled:opacity-50 w-full justify-center"
-                  >
-                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
-                    {uploading ? "Yukleniyor..." : "Dosya Yukle"}
-                  </button>
-                  <p className="text-[10px] text-gray-600 mt-1 text-center">PNG, JPEG, PDF, Word, Excel - Maks. 10MB</p>
+                  {canUpload && (
+                    <>
+                      <button
+                        onClick={() => handleFileSelect(selectedTask)}
+                        disabled={uploading}
+                        className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-blue-500/30 text-gray-400 hover:text-white text-sm transition disabled:opacity-50 w-full justify-center"
+                      >
+                        {uploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+                        {uploading ? "Yukleniyor..." : "Dosya Yukle"}
+                      </button>
+                      <p className="text-[10px] text-gray-600 mt-1 text-center">PNG, JPEG, PDF, Word, Excel - Maks. 10MB</p>
+                    </>
+                  )}
                 </div>
 
                 {/* Comments */}
@@ -1006,23 +1057,27 @@ export default function PanelPage() {
                     <div className="mb-4" />
                   )}
 
-                  {/* Add comment */}
-                  <div className="flex gap-2">
-                    <input
-                      placeholder="Yorum yazin..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition"
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim() || submittingComment}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition disabled:opacity-30"
-                    >
-                      {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    </button>
-                  </div>
+                  {/* Add comment — gözlemci rolü yorum yazamaz */}
+                  {canComment ? (
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="Yorum yazin..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition"
+                      />
+                      <button
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() || submittingComment}
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 transition disabled:opacity-30"
+                      >
+                        {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 italic">Gözlemci rolündesiniz — yorum yazma yetkiniz yok.</p>
+                  )}
                 </div>
               </div>
             </motion.div>
