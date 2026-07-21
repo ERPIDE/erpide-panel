@@ -208,9 +208,44 @@ model Customer {
   code         String  @unique
   name         String
   password     String
+  /// Legacy tek-proje alanı. Yeni model: Project.customerId → müşterinin
+  /// birden çok projesi olabilir. Bu alan geriye uyumluluk için duruyor.
   project      String
   contactEmail String
   contactPhone String?
+
+  members  CustomerMember[]
+  projects Project[]
+}
+
+/// Proje — task'ların yaşadığı GitHub repo'suna ve sahibi müşteriye bağlanır.
+/// repoMap/clientMap hardcode'larının DB karşılığı; tüm proje dropdown'ları
+/// buradan beslenir.
+model Project {
+  id         String    @id
+  name       String    @unique // "CANIAS", "1C ERP"
+  repo       String    @unique // GitHub repo adı (org: ERPIDE)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+}
+
+/// Müşteri (firma) altındaki bireysel kullanıcılar. Firma hesabı (Customer,
+/// kod+şifre) legacy giriş olarak yaşamaya devam eder; members e-posta+şifre
+/// ile girer ve rolüne göre paneli kısıtlı görür.
+model CustomerMember {
+  id         String   @id
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  email      String   @unique
+  password   String // bcrypt hash
+  /// "yonetici" → talep açma + yorum + dosya; "uye" → görme + yorum;
+  /// "gozlemci" → sadece görüntüleme.
+  role       String   @default("uye")
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
 }
 
 model PocketToken {

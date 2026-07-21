@@ -1,22 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getPrisma, HAS_DB } from "@/lib/db";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const ORG = "ERPIDE";
 
-const repoMap: Record<string, string> = {
-  CANIAS: "erpide-canias-erp",
-  "1C ERP": "erpide-1c-erp",
-};
+// DB'ye erişilemezse (lokal dev, migration öncesi) kullanılacak yedek harita.
+const FALLBACK_PROJECTS = [
+  { name: "CANIAS", repo: "erpide-canias-erp", client: "Sirmersan" },
+  { name: "1C ERP", repo: "erpide-1c-erp", client: "ATM Constructor" },
+];
 
-const reverseRepoMap: Record<string, string> = {
-  "erpide-canias-erp": "CANIAS",
-  "erpide-1c-erp": "1C ERP",
-};
-
-const clientMap: Record<string, string> = {
-  CANIAS: "Sirmersan",
-  "1C ERP": "ATM Constructor",
-};
+/** Proje tanımlarını DB'den okur: name→repo ve name→müşteri adı haritaları.
+ *  Project tablosu boşsa/erişilemezse hardcoded fallback'e düşer. */
+async function loadProjectMaps(): Promise<{
+  repoMap: Record<string, string>;
+  clientMap: Record<string, string>;
+}> {
+  let rows = FALLBACK_PROJECTS;
+  if (HAS_DB) {
+    try {
+      const projects = await getPrisma().project.findMany({
+        include: { customer: { select: { name: true } } },
+      });
+      if (projects.length > 0) {
+        rows = projects.map((p) => ({ name: p.name, repo: p.repo, client: p.customer?.name || "" }));
+      }
+    } catch {
+      // DB hatasında fallback ile devam — task listesi boş dönmesin.
+    }
+  }
+  const repoMap: Record<string, string> = {};
+  const clientMap: Record<string, string> = {};
+  for (const r of rows) {
+    repoMap[r.name] = r.repo;
+    clientMap[r.name] = r.client;
+  }
+  return { repoMap, clientMap };
+}
 
 const userDisplayNames: Record<string, string> = {
   alimuratel: "Ali Murat EL",
@@ -91,6 +111,7 @@ export async function GET() {
   try {
     const allTasks = [];
     const debugInfo: string[] = [];
+    const { repoMap, clientMap } = await loadProjectMaps();
 
     for (const [project, repo] of Object.entries(repoMap)) {
       const res = await ghFetch(
@@ -203,6 +224,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, description, project, label, priority, priorityScore, client, createdBy } = body;
 
+    const { repoMap, clientMap } = await loadProjectMaps();
     const repo = repoMap[project];
     if (!repo) {
       return NextResponse.json({ error: "Invalid project" }, { status: 400 });

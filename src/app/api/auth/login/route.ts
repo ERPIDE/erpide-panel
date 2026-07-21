@@ -90,7 +90,58 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === "customer") {
-      const { code } = body;
+      const { code, email: memberEmail } = body;
+
+      // ── Üye girişi: e-posta + şifre (CustomerMember) ────────────────
+      // Firma hesabı (kod+şifre) legacy olarak aşağıda yaşamaya devam eder.
+      if (memberEmail) {
+        if (!password) {
+          return NextResponse.json({ error: "E-posta ve parola gerekli" }, { status: 400 });
+        }
+        const { getPrisma } = await import("@/lib/db");
+        const prisma = getPrisma();
+        const member = await prisma.customerMember.findUnique({
+          where: { email: String(memberEmail).trim().toLowerCase() },
+          include: { customer: { include: { projects: { select: { name: true } } } } },
+        });
+        const ok = member && (await verifyPassword(password, member.password));
+        if (!ok || !member) {
+          return NextResponse.json({ error: "Geçersiz e-posta veya parola" }, { status: 401 });
+        }
+
+        const token = await createSession({
+          userId: member.id,
+          userType: "customer",
+          userName: member.name,
+          userEmail: member.email,
+          userRole: member.role, // "yonetici" | "uye" | "gozlemci"
+          customerCode: member.customer.code,
+        });
+
+        const res = NextResponse.json({
+          success: true,
+          user: {
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            role: member.role,
+            code: member.customer.code,
+            customerName: member.customer.name,
+            project: member.customer.project,
+            projects: member.customer.projects.map((p) => p.name),
+            type: "customer",
+          },
+        });
+        res.cookies.set(SESSION_COOKIE, token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 7 * 24 * 60 * 60,
+        });
+        return res;
+      }
+
       if (!code || !password) {
         return NextResponse.json(
           { error: "Müşteri kodu ve parola gerekli" },
