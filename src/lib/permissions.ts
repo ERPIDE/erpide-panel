@@ -32,6 +32,8 @@ export const ALL_MODULES = [
   { key: "support-requests", label: "Destek Talepleri" },
   { key: "vapi",             label: "Vapi Prompt" },
   { key: "users",            label: "Kullanıcılar" },
+  { key: "musteriler",       label: "Müşteriler" },
+  { key: "projeler",         label: "Projeler" },
   { key: "finanserpide",     label: "FinansERPIDE" },
   { key: "pocketerpide",     label: "PocketERPIDE" },
   { key: "tickets",          label: "Tickets" },

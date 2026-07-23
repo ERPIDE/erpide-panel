@@ -292,7 +292,10 @@ function PasswordCell({ value }: { value: string }) {
 // ── main component ───────────────────────────────────────────────────
 export default function UsersPage() {
   // ── state ────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<"customers" | "admins">("customers");
+  // Müşteri yönetimi /admin/musteriler katalog sayfasına taşındı (2026-07);
+  // bu sayfa artık yalnız admin hesaplarını yönetir. Customers kodu geriye
+  // dönük dursun diye kaldırılmadı ama tab hep "admins".
+  const [tab, setTab] = useState<"customers" | "admins">("admins");
   const [customers, setCustomers] = useState<CustomerUser[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -578,12 +581,6 @@ export default function UsersPage() {
   // ── tabs config ──────────────────────────────────────────────────
   const tabs = [
     {
-      key: "customers" as const,
-      label: "Müşteri Hesapları",
-      icon: Building2,
-      count: customers.length,
-    },
-    {
       key: "admins" as const,
       label: "Admin Kullanıcıları",
       icon: Shield,
@@ -613,17 +610,17 @@ export default function UsersPage() {
               Kullanıcı Yönetimi
             </h1>
             <p className="text-xs text-gray-500">
-              Müşteri ve admin hesaplarını yönetin
+              Admin hesaplarını yönetin — müşteriler ve kullanıcıları &quot;Müşteriler&quot; sayfasında
             </p>
           </div>
         </div>
 
         <button
-          onClick={tab === "customers" ? openNewCustomer : openNewAdmin}
+          onClick={openNewAdmin}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition"
         >
           <UserPlus size={16} />
-          {tab === "customers" ? "Yeni Müşteri" : "Yeni Admin"}
+          Yeni Admin
         </button>
       </motion.div>
 

@@ -113,6 +113,8 @@ export default function PanelPage() {
     code: string;
     customerName: string;
     project: string;
+    /** Müşterinin tüm projeleri (Proje Kataloğu'ndan, login cevabıyla gelir). */
+    projects: string[];
   } | null>(null);
 
   // Dashboard state
@@ -135,6 +137,13 @@ export default function PanelPage() {
 
   // New ticket form
   const [newTitle, setNewTitle] = useState("");
+  const [newTicketProject, setNewTicketProject] = useState("");
+  const [newScore, setNewScore] = useState(5);
+  // Yeni Proje modal (yalnız yönetici rolü)
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [projectError, setProjectError] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
   const [newLabel, setNewLabel] = useState<Label>("feature");
@@ -213,6 +222,7 @@ export default function PanelPage() {
             code: u.code,
             customerName: u.customerName || u.name,
             project: u.project || "",
+            projects: u.projects?.length ? u.projects : (u.project ? [u.project] : []),
           });
           setLoggedIn(u.code || id.toUpperCase());
         } else {
@@ -403,11 +413,12 @@ export default function PanelPage() {
         body: JSON.stringify({
           title: newTitle.trim(),
           description: newDescription.trim(),
-          project: customerData.project,
+          project: newTicketProject || customerData.project,
           client: customerData.name,
           label: newLabel,
-          priority: newPriority,
-          createdBy: customerData.name,
+          priority: scoreToPriority(newScore),
+          priorityScore: newScore,
+          createdBy: authorName,
         }),
       });
       if (res.ok) {
@@ -421,6 +432,7 @@ export default function PanelPage() {
         setNewDescription("");
         setNewPriority("medium");
         setNewLabel("feature");
+        setNewScore(5);
         setShowCreateForm(false);
       }
     } catch {
@@ -858,6 +870,14 @@ export default function PanelPage() {
               <Plus size={16} /> Yeni Talep
             </button>
           )}
+          {canCreate && (
+            <button
+              onClick={() => { setShowProjectForm(true); setProjectError(""); setNewProjectName(""); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 text-sm font-medium hover:bg-purple-600/30 transition whitespace-nowrap"
+            >
+              <Plus size={16} /> Yeni Proje
+            </button>
+          )}
         </motion.div>
 
         {/* Task List */}
@@ -1241,37 +1261,56 @@ export default function PanelPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:outline-none text-sm resize-none transition"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Oncelik</label>
-                    <select
-                      value={newPriority}
-                      onChange={(e) => setNewPriority(e.target.value as Priority)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
-                    >
-                      {(Object.entries(priorityConfig) as [Priority, { label: string }][]).map(([key, val]) => (
-                        <option key={key} value={key}>{val.label}</option>
-                      ))}
-                    </select>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Etiket</label>
+                  <select
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value as Label)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
+                  >
+                    {(Object.entries(labelConfig) as [Label, { label: string }][]).map(([key, val]) => (
+                      <option key={key} value={key}>{val.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Öncelik puanı 1-10 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-500">Oncelik Puani</label>
+                    <span className={`text-sm font-bold ${scoreColor(newScore).color}`}>{newScore}/10</span>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Etiket</label>
-                    <select
-                      value={newLabel}
-                      onChange={(e) => setNewLabel(e.target.value as Label)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
-                    >
-                      {(Object.entries(labelConfig) as [Label, { label: string }][]).map(([key, val]) => (
-                        <option key={key} value={key}>{val.label}</option>
-                      ))}
-                    </select>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setNewScore(score)}
+                        className={`flex-1 h-8 rounded text-[11px] font-bold transition ${
+                          score <= newScore
+                            ? score >= 9 ? "bg-red-500/80 text-white" : score >= 7 ? "bg-orange-500/80 text-white" : score >= 4 ? "bg-yellow-500/80 text-white" : "bg-gray-500/80 text-white"
+                            : "bg-white/5 text-gray-600 hover:bg-white/10"
+                        }`}
+                      >
+                        {score}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                    <div className="text-[10px] text-gray-500 mb-1">Proje</div>
-                    <div className="text-sm font-medium">{customerData!.project}</div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Proje</label>
+                    {/* Müşterinin birden çok projesi olabilir — katalogdan gelen liste */}
+                    <select
+                      value={newTicketProject || customerData!.project}
+                      onChange={(e) => setNewTicketProject(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-gray-300 focus:outline-none focus:border-blue-500/50 cursor-pointer transition"
+                    >
+                      {(sessionUser?.projects?.length ? sessionUser.projects : [customerData!.project]).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5">
                     <div className="text-[10px] text-gray-500 mb-1">Musteri</div>
@@ -1292,6 +1331,90 @@ export default function PanelPage() {
                   {submittingTicket ? "Olusturuluyor..." : "Talep Olustur"}
                 </button>
               </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Yeni Proje Modal — yalnız yönetici; proje merkezi kataloğa düşer */}
+      <AnimatePresence>
+        {showProjectForm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowProjectForm(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div className="w-full max-w-md bg-[#0c0c12] border border-white/10 rounded-2xl p-6 space-y-4 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-white">Yeni Proje Olustur</h2>
+                  <button onClick={() => setShowProjectForm(false)} className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition">
+                    <X size={18} />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {customerData?.name} firması için yeni proje açılır; ERPIDE proje kataloğuna eklenir ve
+                  talepleri bu proje altında takip edilir.
+                </p>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newProjectName.trim()) return;
+                    setCreatingProject(true);
+                    setProjectError("");
+                    try {
+                      const res = await fetch("/api/projects", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: newProjectName.trim() }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setProjectError(data.error || "Proje oluşturulamadı");
+                        return;
+                      }
+                      setSessionUser((prev) =>
+                        prev ? { ...prev, projects: [...prev.projects, data.project.name] } : prev
+                      );
+                      setNewTicketProject(data.project.name);
+                      setShowProjectForm(false);
+                    } catch {
+                      setProjectError("Proje oluşturulamadı");
+                    } finally {
+                      setCreatingProject(false);
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <input
+                    placeholder="Proje adı (örn. Logo Entegrasyon)"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-white placeholder-gray-500 focus:border-purple-500/50 focus:outline-none text-sm transition"
+                    required
+                  />
+                  {projectError && (
+                    <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{projectError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={!newProjectName.trim() || creatingProject}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {creatingProject ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                    {creatingProject ? "Olusturuluyor..." : "Proje Olustur"}
+                  </button>
+                </form>
+              </div>
             </motion.div>
           </>
         )}

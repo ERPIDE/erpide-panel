@@ -172,8 +172,10 @@ export default function TasksPage() {
     title: "",
     description: "",
     project: "CANIAS" as string,
+    customer: "" as string, // boş = projeden otomatik
     label: "feature" as Label,
     priority: "medium" as Priority,
+    priorityScore: 5,
     deadline: "",
   });
 
@@ -346,9 +348,10 @@ export default function TasksPage() {
         title: newTask.title.trim(),
         description: newTask.description.trim(),
         project: newTask.project,
-        client: clientOfProject(newTask.project),
+        client: newTask.customer || clientOfProject(newTask.project),
         label: newTask.label,
-        priority: newTask.priority,
+        priority: scoreToPriority(newTask.priorityScore),
+        priorityScore: newTask.priorityScore,
         deadline: newTask.deadline || undefined,
         createdBy: currentUserName,
       };
@@ -358,7 +361,7 @@ export default function TasksPage() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to create task");
-      setNewTask({ title: "", description: "", project: "CANIAS", label: "feature", priority: "medium", deadline: "" });
+      setNewTask({ title: "", description: "", project: projectList[0]?.name ?? "CANIAS", customer: "", label: "feature", priority: "medium", priorityScore: 5, deadline: "" });
       setShowCreateModal(false);
       toast("success", "Gorev olusturuldu");
       await fetchTasks();
@@ -1359,27 +1362,43 @@ export default function TasksPage() {
                   {/* project + client */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri</label>
+                      <select
+                        value={newTask.customer || clientOfProject(newTask.project)}
+                        onChange={(e) => {
+                          const cust = e.target.value;
+                          // Müşteri değişince proje o müşterinin ilk projesine geçer
+                          const firstProj = projectList.find((p) => p.customer?.name === cust);
+                          setNewTask({ ...newTask, customer: cust, project: firstProj?.name ?? newTask.project });
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
+                      >
+                        <option value="">— Musteri sec —</option>
+                        {[...new Set(projectList.map((p) => p.customer?.name).filter(Boolean))].map((c) => (
+                          <option key={c as string} value={c as string}>{c as string}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
                       <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Proje</label>
                       <select
                         value={newTask.project}
                         onChange={(e) => setNewTask({ ...newTask, project: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
                       >
-                        {projectList.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                        {/* Müşteri seçiliyse sadece onun projeleri */}
+                        {projectList
+                          .filter((p) => {
+                            const cust = newTask.customer || clientOfProject(newTask.project);
+                            return !newTask.customer || p.customer?.name === cust;
+                          })
+                          .map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
                       </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri</label>
-                      <input
-                        value={clientOfProject(newTask.project)}
-                        readOnly
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-gray-400 text-sm cursor-not-allowed"
-                      />
                     </div>
                   </div>
 
-                  {/* label + priority + deadline */}
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* label + deadline */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Etiket</label>
                       <select
@@ -1391,16 +1410,6 @@ export default function TasksPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Oncelik</label>
-                      <select
-                        value={newTask.priority}
-                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Priority })}
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
-                      >
-                        {priorities.map((p) => <option key={p} value={p}>{priorityConfig[p].label}</option>)}
-                      </select>
-                    </div>
-                    <div>
                       <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Son Tarih</label>
                       <input
                         type="date"
@@ -1408,6 +1417,30 @@ export default function TasksPage() {
                         onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
                         className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition [color-scheme:dark]"
                       />
+                    </div>
+                  </div>
+
+                  {/* öncelik puanı 1-10 */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500">Oncelik Puani</label>
+                      <span className={`text-sm font-bold ${scoreColor(newTask.priorityScore).color}`}>{newTask.priorityScore}/10</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                        <button
+                          key={score}
+                          type="button"
+                          onClick={() => setNewTask({ ...newTask, priorityScore: score })}
+                          className={`flex-1 h-8 rounded text-[11px] font-bold transition ${
+                            score <= newTask.priorityScore
+                              ? score >= 9 ? "bg-red-500/80 text-white" : score >= 7 ? "bg-orange-500/80 text-white" : score >= 4 ? "bg-yellow-500/80 text-white" : "bg-gray-500/80 text-white"
+                              : "bg-white/5 text-gray-600 hover:bg-white/10"
+                          }`}
+                        >
+                          {score}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>

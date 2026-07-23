@@ -40,12 +40,26 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getElevatedSession(await sessionToken());
-  if (!session) return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
+  const token = await sessionToken();
+  const elevated = await getElevatedSession(token);
+
+  // Müşteri yöneticisi (role=yonetici) kendi firmasına proje açabilir —
+  // panel "Yeni Proje" butonu buradan geçer; proje merkezi kataloğa düşer.
+  let forcedCustomerId: string | null = null;
+  if (!elevated) {
+    const session = await getSession(token || "");
+    if (session?.userType === "customer" && session.userRole === "yonetici" && session.customerCode) {
+      const cust = await getPrisma().customer.findUnique({ where: { code: session.customerCode } });
+      if (!cust) return NextResponse.json({ error: "Müşteri bulunamadı" }, { status: 404 });
+      forcedCustomerId = cust.id;
+    } else {
+      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
+    }
+  }
 
   const body = await req.json().catch(() => null);
   const name: string = (body?.name || "").trim();
-  const customerId: string | null = body?.customerId || null;
+  const customerId: string | null = forcedCustomerId ?? (body?.customerId || null);
   // Repo adı verilmezse proje adından türet: "Logo Entegrasyon" → erpide-logo-entegrasyon
   const repo: string = (body?.repo || "").trim() ||
     "erpide-" + name.toLowerCase()

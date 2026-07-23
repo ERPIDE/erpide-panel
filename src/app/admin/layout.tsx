@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, ChevronRight, Loader2, Shield, Banknote, UserCircle,
-  Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3, Monitor
+  Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3, Monitor,
+  Building2, FolderKanban
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
@@ -46,6 +47,8 @@ const navItems: NavItem[] = [
   { href: "/admin/support-requests", label: "Destek Talepleri", icon: Headphones,      permissionKey: "support-requests" },
   { href: "/admin/vapi",             label: "Vapi Prompt",      icon: Phone,           permissionKey: "vapi" },
   { href: "/admin/users",            label: "Kullanıcılar",     icon: Users,           permissionKey: "users" },
+  { href: "/admin/musteriler",       label: "Müşteriler",       icon: Building2,       permissionKey: "musteriler" },
+  { href: "/admin/projeler",         label: "Projeler",         icon: FolderKanban,    permissionKey: "projeler" },
   { href: "/admin/finanserpide",     label: "FinansERPIDE",     icon: BarChart3,       permissionKey: "finanserpide" },
   { href: "/admin/pocketerpide",     label: "Pocket",     icon: Smartphone,      permissionKey: "pocketerpide" },
   { href: "/admin/tickets",          label: "Tickets",          icon: Ticket,          permissionKey: "tickets" },
@@ -79,6 +82,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
+          // Müşteri (panel) session'ı admin paneline giremez — /panel'e üye
+          // girişi yapınca cookie müşteri session'ı olur; admin sayfaları
+          // yüklenir gibi görünür ama admin API'leri 401 döner (boş listeler).
+          if (data.userType !== "admin") {
+            router.replace("/admin");
+            return;
+          }
           setUserName(data.userName || "");
           setPermissions(data.permissions || null);
           setAuthChecked(true);
