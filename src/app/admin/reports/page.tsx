@@ -65,10 +65,17 @@ export default function ReportsPage() {
   const [showReport, setShowReport] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState("");
+  const [customEmail, setCustomEmail] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [activeReportTask, setActiveReportTask] = useState<Task | null>(null);
   const { toast } = useToast();
+
+  // Müşteriler + panel kullanıcıları DB'den — email listeden seçilir, elle yazılmaz
+  const [customersDb, setCustomersDb] = useState<
+    { id: string; code: string; name: string; project: string; contactEmail: string }[]
+  >([]);
+  const [membersDb, setMembersDb] = useState<{ customerId: string; name: string; email: string }[]>([]);
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -78,7 +85,40 @@ export default function ReportsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+    fetch("/api/users")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.customers) setCustomersDb(d.customers); })
+      .catch(() => {});
+    fetch("/api/customers/members")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.members) setMembersDb(d.members); })
+      .catch(() => {});
   }, []);
+
+  // Rapor müşteri filtresi de DB'den; DB boş/erişilemezse hardcoded fallback
+  const clientOptionsDyn = useMemo(() => {
+    if (customersDb.length === 0) return clientOptions;
+    return [
+      { value: "all", label: "Tüm Müşteriler", project: "" },
+      ...customersDb.map((c) => ({ value: c.name, label: `${c.name} — ${c.project}`, project: c.project })),
+    ];
+  }, [customersDb]);
+
+  // Email seçenekleri: seçili müşterinin firma iletişim e-postası + panel kullanıcıları
+  const emailOptions = useMemo(() => {
+    const opts: { email: string; label: string }[] = [];
+    const add = (email: string | undefined, label: string) => {
+      if (email && !opts.some((o) => o.email === email)) opts.push({ email, label });
+    };
+    const relevant = selectedClient === "all" ? customersDb : customersDb.filter((c) => c.name === selectedClient);
+    for (const c of relevant) {
+      add(c.contactEmail, `${c.name} — ${c.contactEmail} (firma)`);
+      for (const m of membersDb.filter((m) => m.customerId === c.id)) {
+        add(m.email, `${c.name} / ${m.name} — ${m.email}`);
+      }
+    }
+    return opts;
+  }, [customersDb, membersDb, selectedClient]);
 
   const filteredTasks = useMemo(() => {
     return allTasks.filter((task) => {
@@ -106,7 +146,7 @@ export default function ReportsPage() {
     return { total, completed, inProgress, waiting };
   }, [filteredTasks]);
 
-  const clientLabel = clientOptions.find((c) => c.value === selectedClient)?.label ?? "Tüm Müşteriler";
+  const clientLabel = clientOptionsDyn.find((c) => c.value === selectedClient)?.label ?? "Tüm Müşteriler";
 
   const formatDateTR = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -119,15 +159,10 @@ export default function ReportsPage() {
   };
 
   const openEmailModal = () => {
-    // Auto-fill email from customer management localStorage
-    try {
-      const saved = localStorage.getItem("erpide_customers");
-      if (saved && selectedClient !== "all") {
-        const customers = JSON.parse(saved);
-        const match = customers.find((c: { name: string }) => c.name === selectedClient);
-        if (match?.contactEmail) { setEmailTo(match.contactEmail); }
-      }
-    } catch {}
+    // Seçili müşterinin firma iletişim e-postası ön-seçili gelsin
+    setCustomEmail(false);
+    const match = selectedClient !== "all" ? customersDb.find((c) => c.name === selectedClient) : undefined;
+    setEmailTo(match?.contactEmail || emailOptions[0]?.email || "");
     setShowEmailModal(true);
   };
 
@@ -139,7 +174,7 @@ export default function ReportsPage() {
       setEmailSending(true);
       toast("info", "Email gonderiliyor...");
 
-      const clientInfo = clientOptions.find(c => c.value === selectedClient);
+      const clientInfo = clientOptionsDyn.find(c => c.value === selectedClient);
       const dateRange = `${formatDateTR(startDate)} - ${formatDateTR(endDate)}`;
 
       // Read the uploaded PDF as base64
@@ -262,7 +297,7 @@ export default function ReportsPage() {
                 onChange={(e) => setSelectedClient(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 transition appearance-none [color-scheme:dark]"
               >
-                {clientOptions.map((opt) => (
+                {clientOptionsDyn.map((opt) => (
                   <option key={opt.value} value={opt.value} className="bg-[#111118] text-white">
                     {opt.label}
                   </option>
@@ -726,13 +761,35 @@ export default function ReportsPage() {
 
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-gray-500 block mb-1.5">Musteri Email</label>
-                  <input
-                    type="email"
-                    value={emailTo}
-                    onChange={(e) => setEmailTo(e.target.value)}
-                    placeholder="ornek@firma.com"
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
-                  />
+                  <select
+                    value={customEmail ? "__custom" : emailTo}
+                    onChange={(e) => {
+                      if (e.target.value === "__custom") {
+                        setCustomEmail(true);
+                        setEmailTo("");
+                      } else {
+                        setCustomEmail(false);
+                        setEmailTo(e.target.value);
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none cursor-pointer transition"
+                  >
+                    <option value="">— E-posta secin —</option>
+                    {emailOptions.map((o) => (
+                      <option key={o.email} value={o.email}>{o.label}</option>
+                    ))}
+                    <option value="__custom">Ozel e-posta gir...</option>
+                  </select>
+                  {customEmail && (
+                    <input
+                      type="email"
+                      value={emailTo}
+                      onChange={(e) => setEmailTo(e.target.value)}
+                      placeholder="ornek@firma.com"
+                      autoFocus
+                      className="w-full mt-2 px-4 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
+                    />
+                  )}
                   <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de kopya gonderilir</p>
                 </div>
 
