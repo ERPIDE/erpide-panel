@@ -561,6 +561,7 @@ export default function PanelPage() {
             <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
             &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span> (${task.priorityScore}/10)
             &nbsp;&nbsp;<span class="label">Açılış:</span> ${formatDateTR(task.createdAt)}
+            ${task.closedAt ? `&nbsp;&nbsp;<span class="label">Kapanış:</span> <span style="color:#16a34a">${formatDateTR(task.closedAt)}</span>` : ""}
             ${task.deadline ? `&nbsp;&nbsp;<span class="label">Deadline:</span> ${formatDateTR(task.deadline)}` : ""}
           </div>
           ${attachmentHtml}
@@ -905,6 +906,11 @@ export default function PanelPage() {
                     {formatDate(task.createdAt) && (
                       <span className="text-[10px] text-gray-600">
                         Açılış: {formatDate(task.createdAt)}
+                      </span>
+                    )}
+                    {task.closedAt && formatDate(task.closedAt) && (
+                      <span className="text-[10px] text-green-500/80">
+                        Kapanış: {formatDate(task.closedAt)}
                       </span>
                     )}
                   </div>

@@ -423,6 +423,7 @@ export default function ReportsPage() {
                           <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
                           &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
                           &nbsp;&nbsp;<span class="label">Açılış:</span> ${formatDateTR(task.createdAt)}
+                          ${task.closedAt ? `&nbsp;&nbsp;<span class="label">Kapanış:</span> <span style="color:#16a34a">${formatDateTR(task.closedAt)}</span>` : ""}
                         </div>
                         ${devComment ? `<div class="dev-note"><strong>Geliştirmeci Notu:</strong> ${devComment.text}</div>` : ""}
                         ${attachmentHtml}
@@ -595,6 +596,12 @@ export default function ReportsPage() {
                             <span className="text-xs text-gray-500">Açılış:</span>
                             <span className="text-xs text-gray-300">{formatDateTR(task.createdAt)}</span>
                           </div>
+                          {task.closedAt && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-500">Kapanış:</span>
+                              <span className="text-xs text-green-400">{formatDateTR(task.closedAt)}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Developer Comment */}

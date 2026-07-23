@@ -63,6 +63,8 @@ export interface Task {
   priorityScore: number; // 1-10, müşteri ve admin değiştirebilir
   deadline?: string;
   createdAt: string;
+  /** GitHub issue closed_at — task kapatıldığında (status=done) dolu. */
+  closedAt?: string;
   createdBy: string;
   devNote?: string;
   url?: string;

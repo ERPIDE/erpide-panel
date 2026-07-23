@@ -195,6 +195,7 @@ export async function GET() {
           priorityScore: parsed.priorityScore || (defaultPriority === "high" ? 7 : 5),
           deadline: parsed.deadline || undefined,
           createdAt: parsed.customDate || issue.created_at.split("T")[0],
+          closedAt: issue.closed_at ? issue.closed_at.split("T")[0] : undefined,
           createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
           url: issue.html_url,
           commentsCount: issue.comments,

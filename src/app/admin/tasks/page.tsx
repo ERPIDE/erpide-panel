@@ -817,6 +817,12 @@ export default function TasksPage() {
                         Açılış: {formatDate(t.createdAt)}
                       </span>
                     )}
+                    {/* kapanış tarihi (kapatılan task'larda) */}
+                    {t.closedAt && formatDate(t.closedAt) && (
+                      <span className="text-[11px] text-green-500/80">
+                        Kapanış: {formatDate(t.closedAt)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1010,6 +1016,13 @@ export default function TasksPage() {
                       <span className="text-sm text-white">{formatDate(activeTask.createdAt) || "—"}</span>
                     )}
                   </div>
+                  {/* kapanış tarihi (kapatılmış task'larda) */}
+                  {activeTask.closedAt && (
+                    <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Kapanis</p>
+                      <span className="text-sm text-green-400">{formatDate(activeTask.closedAt) || "—"}</span>
+                    </div>
+                  )}
                   {/* created by */}
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
                     <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Olusturan</p>
