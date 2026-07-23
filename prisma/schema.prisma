@@ -238,6 +238,8 @@ model CustomerMember {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   name       String
+  /// Panel giriş kimliği — küçük harfe normalize edilir, sistem genelinde unique.
+  username   String   @unique
   email      String   @unique
   password   String // bcrypt hash
   /// "yonetici" → talep açma + yorum + dosya; "uye" → görme + yorum;

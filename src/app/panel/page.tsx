@@ -186,7 +186,7 @@ export default function PanelPage() {
     const id = code.trim();
     const isEmail = id.includes("@");
     try {
-      const res = await fetch("/api/auth/login", {
+      let res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
@@ -195,6 +195,14 @@ export default function PanelPage() {
             : { code: id.toUpperCase(), password, type: "customer" }
         ),
       });
+      // "@" içermeyen kimlik müşteri kodu olmayabilir — kullanıcı adı dene
+      if (!res.ok && !isEmail) {
+        res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: id.toLowerCase(), password, type: "customer" }),
+        });
+      }
       if (res.ok) {
         const data = await res.json().catch(() => null);
         const u = data?.user;
@@ -623,7 +631,7 @@ export default function PanelPage() {
 
           <form onSubmit={handleLogin} className="space-y-3">
             <input
-              placeholder="Musteri Kodu veya E-posta"
+              placeholder="Kullanici Adi, E-posta veya Musteri Kodu"
               value={code}
               onChange={(e) => {
                 setCode(e.target.value);

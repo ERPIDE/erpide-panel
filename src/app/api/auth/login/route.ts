@@ -90,23 +90,25 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === "customer") {
-      const { code, email: memberEmail } = body;
+      const { code, email: memberEmail, username: memberUsername } = body;
 
-      // ── Üye girişi: e-posta + şifre (CustomerMember) ────────────────
+      // ── Üye girişi: e-posta VEYA kullanıcı adı + şifre (CustomerMember) ──
       // Firma hesabı (kod+şifre) legacy olarak aşağıda yaşamaya devam eder.
-      if (memberEmail) {
+      if (memberEmail || memberUsername) {
         if (!password) {
-          return NextResponse.json({ error: "E-posta ve parola gerekli" }, { status: 400 });
+          return NextResponse.json({ error: "Kimlik ve parola gerekli" }, { status: 400 });
         }
         const { getPrisma } = await import("@/lib/db");
         const prisma = getPrisma();
         const member = await prisma.customerMember.findUnique({
-          where: { email: String(memberEmail).trim().toLowerCase() },
+          where: memberEmail
+            ? { email: String(memberEmail).trim().toLowerCase() }
+            : { username: String(memberUsername).trim().toLowerCase() },
           include: { customer: { include: { projects: { select: { name: true } } } } },
         });
         const ok = member && (await verifyPassword(password, member.password));
         if (!ok || !member) {
-          return NextResponse.json({ error: "Geçersiz e-posta veya parola" }, { status: 401 });
+          return NextResponse.json({ error: "Geçersiz kimlik veya parola" }, { status: 401 });
         }
 
         const token = await createSession({
@@ -123,6 +125,7 @@ export async function POST(req: NextRequest) {
           user: {
             id: member.id,
             name: member.name,
+            username: member.username,
             email: member.email,
             role: member.role,
             code: member.customer.code,

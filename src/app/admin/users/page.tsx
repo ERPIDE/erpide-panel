@@ -40,6 +40,7 @@ type CustomerMemberRow = {
   id: string;
   customerId: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   createdAt: string;
@@ -300,14 +301,15 @@ export default function UsersPage() {
   // projeler — müşteri formu ve müşteri satırındaki proje rozetleri için
   const [projectsList, setProjectsList] = useState<ProjectRow[]>([]);
 
-  // müşteri altı kullanıcılar
-  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  // müşteri altı kullanıcılar — ağaç yapısı: birden çok müşteri aynı anda açık kalabilir
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [membersByCustomer, setMembersByCustomer] = useState<Record<string, CustomerMemberRow[]>>({});
   const [membersLoading, setMembersLoading] = useState(false);
 
   // üye modal
   const [memberModal, setMemberModal] = useState<{ customerId: string; member: CustomerMemberRow | null } | null>(null);
   const [memName, setMemName] = useState("");
+  const [memUsername, setMemUsername] = useState("");
   const [memEmail, setMemEmail] = useState("");
   const [memPassword, setMemPassword] = useState("");
   const [memRole, setMemRole] = useState("uye");
@@ -336,7 +338,23 @@ export default function UsersPage() {
     } catch {}
   }
 
-  useEffect(() => { fetchUsers(); fetchProjects(); }, []);
+  async function fetchAllMembers() {
+    // Tüm üyeleri tek istekte çek, müşteriye göre grupla — satırdaki
+    // "N kullanıcı" sayacı ve ağaç görünümü ilk yüklemede hazır olsun.
+    try {
+      const res = await fetch("/api/customers/members");
+      if (res.ok) {
+        const data = await res.json();
+        const grouped: Record<string, CustomerMemberRow[]> = {};
+        for (const m of (data.members || []) as CustomerMemberRow[]) {
+          (grouped[m.customerId] ||= []).push(m);
+        }
+        setMembersByCustomer(grouped);
+      }
+    } catch {}
+  }
+
+  useEffect(() => { fetchUsers(); fetchProjects(); fetchAllMembers(); }, []);
 
   // Müşteri formundaki proje seçenekleri: DB'deki projeler; boşsa fallback.
   const projectNames = projectsList.length > 0 ? projectsList.map((p) => p.name) : projectOptions;
@@ -355,16 +373,14 @@ export default function UsersPage() {
   }
 
   function toggleCustomerExpand(customerId: string) {
-    if (expandedCustomer === customerId) {
-      setExpandedCustomer(null);
-      return;
-    }
-    setExpandedCustomer(customerId);
-    if (!membersByCustomer[customerId]) fetchMembers(customerId);
+    setExpandedIds((prev) =>
+      prev.includes(customerId) ? prev.filter((id) => id !== customerId) : [...prev, customerId]
+    );
   }
 
   function openMemberModal(customerId: string, member: CustomerMemberRow | null) {
     setMemName(member?.name ?? "");
+    setMemUsername(member?.username ?? "");
     setMemEmail(member?.email ?? "");
     setMemPassword("");
     setMemRole(member?.role ?? "uye");
@@ -375,7 +391,7 @@ export default function UsersPage() {
   async function saveMember() {
     if (!memberModal) return;
     const isEdit = !!memberModal.member;
-    if (!memName.trim() || !memEmail.trim() || (!isEdit && !memPassword)) return;
+    if (!memName.trim() || !memUsername.trim() || !memEmail.trim() || (!isEdit && !memPassword)) return;
     setSaving(true);
     setMemError("");
     try {
@@ -384,8 +400,8 @@ export default function UsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           isEdit
-            ? { id: memberModal.member!.id, name: memName.trim(), email: memEmail.trim(), role: memRole, password: memPassword || undefined }
-            : { customerId: memberModal.customerId, name: memName.trim(), email: memEmail.trim(), password: memPassword, role: memRole }
+            ? { id: memberModal.member!.id, name: memName.trim(), username: memUsername.trim(), email: memEmail.trim(), role: memRole, password: memPassword || undefined }
+            : { customerId: memberModal.customerId, name: memName.trim(), username: memUsername.trim(), email: memEmail.trim(), password: memPassword, role: memRole }
         ),
       });
       const data = await res.json();
@@ -493,7 +509,7 @@ export default function UsersPage() {
 
   // ── save handlers ────────────────────────────────────────────────
   async function saveCustomer() {
-    if (!custCode.trim() || !custName.trim() || !custPassword.trim()) return;
+    if (!custCode.trim() || !custName.trim()) return;
     setSaving(true);
     try {
       const userData = {
@@ -502,7 +518,10 @@ export default function UsersPage() {
         code: custCode.trim(),
         name: custName.trim(),
         project: custProject,
-        password: custPassword,
+        // Müşteri login varlığı değil — şifre UI'dan kalktı. Düzenlemede mevcut
+        // hash korunur; yeni müşteride rastgele değer (firma girişi fiilen kapalı,
+        // giriş yalnız kullanıcılar üzerinden).
+        password: custPassword || crypto.randomUUID(),
         contactEmail: custEmail.trim(),
         contactPhone: custPhone.trim() || undefined,
       };
@@ -661,7 +680,7 @@ export default function UsersPage() {
                     İletişim Email
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Şifre
+                    Kullanıcılar
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">
                     İşlemler
@@ -670,7 +689,7 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {customers.map((c, i) => {
-                  const expanded = expandedCustomer === c.id;
+                  const expanded = expandedIds.includes(c.id);
                   const members = membersByCustomer[c.id] || [];
                   const custProjects = projectsList.filter((p) => p.customer?.id === c.id).map((p) => p.name);
                   const shownProjects = custProjects.length > 0 ? custProjects : [c.project];
@@ -706,8 +725,11 @@ export default function UsersPage() {
                     <td className="px-5 py-3.5 text-gray-400">
                       {c.contactEmail}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-400" onClick={(e) => e.stopPropagation()}>
-                      <PasswordCell value={c.password} />
+                    <td className="px-5 py-3.5">
+                      {/* Müşteri login varlığı değil — şifre yok; kullanıcı sayısı gösterilir */}
+                      <span className="px-2.5 py-1 rounded-full bg-white/5 text-gray-400 text-xs font-medium">
+                        {(membersByCustomer[c.id]?.length ?? 0)} kullanıcı
+                      </span>
                     </td>
                     <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
@@ -771,7 +793,9 @@ export default function UsersPage() {
                                   <Users size={12} className="text-gray-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-white font-medium truncate">{m.name}</p>
+                                  <p className="text-sm text-white font-medium truncate">
+                                    {m.name} <span className="text-blue-400/80 font-mono text-xs">@{m.username}</span>
+                                  </p>
                                   <p className="text-xs text-gray-500 truncate">{m.email}</p>
                                 </div>
                                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${(memberRoleBadge[m.role] || memberRoleBadge.uye).cls}`}>
@@ -960,8 +984,18 @@ export default function UsersPage() {
                   className={inputCls}
                   required
                 />
+                <div>
+                  <input
+                    placeholder="Kullanıcı adı (panel girişi — unique)"
+                    value={memUsername}
+                    onChange={(e) => setMemUsername(e.target.value.toLowerCase())}
+                    className={inputCls}
+                    required
+                  />
+                  <p className="text-[10px] text-gray-600 mt-1">En az 3 karakter; harf, rakam, nokta, alt çizgi, tire</p>
+                </div>
                 <input
-                  placeholder="E-posta (panel girişi)"
+                  placeholder="E-posta (panel girişi — unique)"
                   type="email"
                   value={memEmail}
                   onChange={(e) => setMemEmail(e.target.value)}
@@ -1087,17 +1121,9 @@ export default function UsersPage() {
                       </option>
                     ))}
                   </select>
-                  <input
-                    placeholder="Şifre"
-                    type="text"
-                    value={custPassword}
-                    onChange={(e) => setCustPassword(e.target.value)}
-                    className={inputCls}
-                    required
-                  />
                   <div className="grid grid-cols-2 gap-3">
                     <input
-                      placeholder="İletişim Email"
+                      placeholder="İletişim Email (info@firma.com)"
                       type="email"
                       value={custEmail}
                       onChange={(e) => setCustEmail(e.target.value)}

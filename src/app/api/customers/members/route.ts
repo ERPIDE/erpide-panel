@@ -23,9 +23,17 @@ async function requireElevated() {
   return getElevatedSession(store.get(SESSION_COOKIE)?.value);
 }
 
-function sanitize(m: { id: string; customerId: string; name: string; email: string; role: string; createdAt: Date }) {
+function sanitize(m: { id: string; customerId: string; name: string; username: string; email: string; role: string; createdAt: Date }) {
   // password hash'i asla client'a gitmez
-  return { id: m.id, customerId: m.customerId, name: m.name, email: m.email, role: m.role, createdAt: m.createdAt };
+  return { id: m.id, customerId: m.customerId, name: m.name, username: m.username, email: m.email, role: m.role, createdAt: m.createdAt };
+}
+
+/** Kullanıcı adı normalizasyonu + doğrulama: küçük harf, 3+ karakter,
+ *  yalnız harf/rakam/nokta/alt çizgi/tire. Geçersizse null döner. */
+function normalizeUsername(raw: unknown): string | null {
+  const u = String(raw ?? "").trim().toLowerCase();
+  if (!/^[a-z0-9._-]{3,32}$/.test(u)) return null;
+  return u;
 }
 
 export async function GET(req: NextRequest) {
@@ -43,12 +51,16 @@ export async function POST(req: NextRequest) {
   if (!(await requireElevated())) return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const { customerId, name, email, password, role } = body || {};
-  if (!customerId || !name || !email || !password) {
-    return NextResponse.json({ error: "customerId, ad, e-posta ve şifre gerekli" }, { status: 400 });
+  const { customerId, name, username, email, password, role } = body || {};
+  if (!customerId || !name || !username || !email || !password) {
+    return NextResponse.json({ error: "customerId, ad, kullanıcı adı, e-posta ve şifre gerekli" }, { status: 400 });
   }
   if (role && !MEMBER_ROLES.includes(role)) {
     return NextResponse.json({ error: "Geçersiz rol" }, { status: 400 });
+  }
+  const usernameNorm = normalizeUsername(username);
+  if (!usernameNorm) {
+    return NextResponse.json({ error: "Kullanıcı adı en az 3 karakter olmalı; yalnız harf, rakam, nokta, alt çizgi, tire" }, { status: 400 });
   }
 
   const prisma = getPrisma();
@@ -56,14 +68,17 @@ export async function POST(req: NextRequest) {
   if (!customer) return NextResponse.json({ error: "Müşteri bulunamadı" }, { status: 404 });
 
   const emailNorm = String(email).trim().toLowerCase();
-  const dup = await prisma.customerMember.findUnique({ where: { email: emailNorm } });
-  if (dup) return NextResponse.json({ error: "Bu e-posta ile kayıtlı kullanıcı zaten var" }, { status: 409 });
+  const dupEmail = await prisma.customerMember.findUnique({ where: { email: emailNorm } });
+  if (dupEmail) return NextResponse.json({ error: "Bu e-posta ile kayıtlı kullanıcı zaten var" }, { status: 409 });
+  const dupUsername = await prisma.customerMember.findUnique({ where: { username: usernameNorm } });
+  if (dupUsername) return NextResponse.json({ error: "Bu kullanıcı adı zaten alınmış" }, { status: 409 });
 
   const member = await prisma.customerMember.create({
     data: {
       id: randomUUID(),
       customerId,
       name: String(name).trim(),
+      username: usernameNorm,
       email: emailNorm,
       password: await hashPassword(String(password)),
       role: role || "uye",
@@ -76,7 +91,7 @@ export async function PATCH(req: NextRequest) {
   if (!(await requireElevated())) return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const { id, name, email, password, role } = body || {};
+  const { id, name, username, email, password, role } = body || {};
   if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
   if (role && !MEMBER_ROLES.includes(role)) {
     return NextResponse.json({ error: "Geçersiz rol" }, { status: 400 });
@@ -84,7 +99,21 @@ export async function PATCH(req: NextRequest) {
 
   const data: Record<string, string> = {};
   if (name) data.name = String(name).trim();
-  if (email) data.email = String(email).trim().toLowerCase();
+  if (username) {
+    const usernameNorm = normalizeUsername(username);
+    if (!usernameNorm) {
+      return NextResponse.json({ error: "Kullanıcı adı en az 3 karakter olmalı; yalnız harf, rakam, nokta, alt çizgi, tire" }, { status: 400 });
+    }
+    const dup = await getPrisma().customerMember.findUnique({ where: { username: usernameNorm } });
+    if (dup && dup.id !== id) return NextResponse.json({ error: "Bu kullanıcı adı zaten alınmış" }, { status: 409 });
+    data.username = usernameNorm;
+  }
+  if (email) {
+    const emailNorm = String(email).trim().toLowerCase();
+    const dup = await getPrisma().customerMember.findUnique({ where: { email: emailNorm } });
+    if (dup && dup.id !== id) return NextResponse.json({ error: "Bu e-posta ile kayıtlı başka kullanıcı var" }, { status: 409 });
+    data.email = emailNorm;
+  }
   if (role) data.role = role;
   if (password) data.password = await hashPassword(String(password));
 
