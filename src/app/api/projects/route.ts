@@ -111,13 +111,13 @@ export async function POST(req: NextRequest) {
               `${err.message || "bilinmeyen hata"}. Repo'yu GitHub'da elle açıp tekrar deneyin ` +
               `veya mevcut bir repo adı girin.`,
           },
-          { status: 502 },
+          { status: 422 },
         );
       }
     } else if (!check.ok) {
       return NextResponse.json(
         { error: `GitHub repo kontrolü başarısız (${check.status}) — token yetkisini kontrol edin` },
-        { status: 502 },
+        { status: 422 },
       );
     }
   }
