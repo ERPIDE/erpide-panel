@@ -453,6 +453,7 @@ export default function PanelPage() {
 
     const formatDateTR = (dateStr: string) => {
       const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "—"; // bozuk tarihte "Invalid Date" basma
       return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
     };
     const today = formatDateTR(new Date().toISOString().split("T")[0]);
@@ -553,12 +554,13 @@ export default function PanelPage() {
 
       win.document.write(`
         <div class="task-item">
-          <h3><span class="score-badge ${scoreCls}">${task.priorityScore}</span> ${task.title}</h3>
+          <h3><span class="score-badge ${scoreCls}">${task.priorityScore}</span> <span style="font-family:monospace;font-weight:800;color:#2563eb;border:1px solid #2563eb;border-radius:6px;padding:1px 7px;margin-right:4px">#${task.id}</span> ${task.title}</h3>
           <div class="field"><span class="label">Açıklama:</span> ${task.description || "<em style='color:#999'>Açıklama eklenmemiş</em>"}</div>
           <div class="field"><span class="label">Çözüm:</span> ${task.devNote ? task.devNote.replace(/\*\*ERPIDE Dev Notu:\*\*/gi, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/`(.+?)`/g, "$1").trim() : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
           <div class="field">
             <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
             &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span> (${task.priorityScore}/10)
+            &nbsp;&nbsp;<span class="label">Açılış:</span> ${formatDateTR(task.createdAt)}
             ${task.deadline ? `&nbsp;&nbsp;<span class="label">Deadline:</span> ${formatDateTR(task.deadline)}` : ""}
           </div>
           ${attachmentHtml}

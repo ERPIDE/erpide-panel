@@ -110,6 +110,7 @@ export default function ReportsPage() {
 
   const formatDateTR = (dateStr: string) => {
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—"; // bozuk tarihte "Invalid Date" basma
     return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
@@ -415,12 +416,13 @@ export default function ReportsPage() {
 
                     win.document.write(`
                       <div class="task-item">
-                        <h3>Sorun ${i + 1}: ${task.title}</h3>
+                        <h3><span style="font-family:monospace;font-weight:800;color:#2563eb;border:1px solid #2563eb;border-radius:6px;padding:1px 7px;margin-right:6px">#${task.id}</span> ${task.title}</h3>
                         <div class="field"><span class="label">Açıklama:</span> ${task.description}</div>
                         <div class="field"><span class="label">Çözüm:</span> ${task.devNote ? cleanMarkdown(task.devNote) : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
                         <div class="field">
                           <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
                           &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
+                          &nbsp;&nbsp;<span class="label">Açılış:</span> ${formatDateTR(task.createdAt)}
                         </div>
                         ${devComment ? `<div class="dev-note"><strong>Geliştirmeci Notu:</strong> ${devComment.text}</div>` : ""}
                         ${attachmentHtml}
@@ -542,8 +544,11 @@ export default function ReportsPage() {
                         className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3 cursor-pointer hover:border-blue-500/30 hover:bg-white/[0.04] transition"
                       >
                         {/* Task Title */}
-                        <h3 className="text-sm font-semibold text-white">
-                          Sorun {index + 1}: {task.title}
+                        <h3 className="text-sm font-semibold text-white flex items-center gap-2.5">
+                          <span className="shrink-0 px-2.5 py-1 rounded-lg font-mono font-extrabold text-base leading-none bg-gradient-to-br from-blue-600/25 to-purple-600/25 border border-blue-500/40 text-blue-300">
+                            #{task.id}
+                          </span>
+                          <span>{task.title}</span>
                         </h3>
 
                         {/* Description */}
@@ -585,6 +590,10 @@ export default function ReportsPage() {
                             >
                               {labelConfig[task.label].label}
                             </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-500">Açılış:</span>
+                            <span className="text-xs text-gray-300">{formatDateTR(task.createdAt)}</span>
                           </div>
                         </div>
 
