@@ -985,6 +985,11 @@ export default function PanelPage() {
                       <CalendarDays size={11} /> Açılış: {formatDate(selectedTask.createdAt)}
                     </span>
                   )}
+                  {selectedTask.closedAt && formatDate(selectedTask.closedAt) && (
+                    <span className="text-xs px-3 py-1 rounded-full font-medium bg-green-500/10 text-green-400 flex items-center gap-1">
+                      <CalendarDays size={11} /> Kapanış: {formatDate(selectedTask.closedAt)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Priority Score Editor */}
