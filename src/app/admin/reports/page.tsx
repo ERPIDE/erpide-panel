@@ -354,6 +354,11 @@ export default function ReportsPage() {
                     .task-item h3 { font-size: 11pt; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
                     .task-item .field { margin-bottom: 4px; font-size: 10pt; }
                     .task-item .field .label { font-weight: 600; color: #444; }
+                    /* Açıklama ve Çözüm ayrı, hafif renkli bloklar — başlık kendi satırında */
+                    .task-item .desc-block { background: #f8fafc; border-left: 3px solid #64748b; padding: 8px 10px; margin: 8px 0 6px; font-size: 10pt; border-radius: 3px; page-break-inside: avoid; }
+                    .task-item .desc-block .block-title { display: block; font-weight: 700; color: #475569; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+                    .task-item .solution-block { background: #f0fdf4; border-left: 3px solid #16a34a; padding: 8px 10px; margin: 0 0 6px; font-size: 10pt; border-radius: 3px; page-break-inside: avoid; }
+                    .task-item .solution-block .block-title { display: block; font-weight: 700; color: #15803d; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
                     .task-item .dev-note { background: #f0f7ff; border-left: 3px solid #3b82f6; padding: 8px 10px; margin-top: 6px; font-size: 9pt; border-radius: 3px; }
                     .badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 8pt; font-weight: 600; }
                     .badge-done { background: #dcfce7; color: #166534; }
@@ -417,8 +422,8 @@ export default function ReportsPage() {
                     win.document.write(`
                       <div class="task-item">
                         <h3><span style="font-family:monospace;font-weight:800;color:#2563eb;border:1px solid #2563eb;border-radius:6px;padding:1px 7px;margin-right:6px">#${task.id}</span> ${task.title}</h3>
-                        <div class="field"><span class="label">Açıklama:</span> ${task.description}</div>
-                        <div class="field"><span class="label">Çözüm:</span> ${task.devNote ? cleanMarkdown(task.devNote) : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
+                        <div class="desc-block"><span class="block-title">📝 Açıklama</span>${task.description || "<em style='color:#999'>Açıklama eklenmemiş</em>"}</div>
+                        <div class="solution-block"><span class="block-title">✅ Çözüm</span>${task.devNote ? cleanMarkdown(task.devNote) : "<em style='color:#999'>Çözüm bekleniyor</em>"}</div>
                         <div class="field">
                           <span class="label">Durum:</span> <span class="badge ${statusBadge}">${statusLabels[task.status] || task.status}</span>
                           &nbsp;&nbsp;<span class="label">Öncelik:</span> <span class="badge ${priorityBadge}">${priorityLabels[task.priority] || task.priority}</span>
