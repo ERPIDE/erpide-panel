@@ -714,10 +714,10 @@ export default function TasksPage() {
             ))}
           </select>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="num-desc">Sirala: No (yeni → eski)</option>
-            <option value="num-asc">Sirala: No (eski → yeni)</option>
-            <option value="score">Sirala: Oncelik Puani</option>
-            <option value="date-desc">Sirala: Acilis Tarihi</option>
+            <option value="num-desc">No ↓ (yeni)</option>
+            <option value="num-asc">No ↑ (eski)</option>
+            <option value="score">Öncelik Puanı</option>
+            <option value="date-desc">Açılış Tarihi</option>
           </select>
           <button
             onClick={() => setShowCreateModal(true)}
