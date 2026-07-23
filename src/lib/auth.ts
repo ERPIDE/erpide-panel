@@ -71,7 +71,13 @@ const SESSION_EXPIRY_DAYS = 7;
 // First request on a fresh DB seeds initialAdmins so the bootstrap login
 // works without a separate migration step.
 
+// Seed kontrolü instance başına bir kez yeter — her getAdmins/getCustomers
+// çağrısında fazladan bir count sorgusu (Neon'a +1 HTTP roundtrip) atmayalım.
+let adminSeedChecked = false;
+let customerSeedChecked = false;
+
 async function ensureAdminSeed(): Promise<void> {
+  if (adminSeedChecked) return;
   const prisma = getPrisma();
   const count = await prisma.admin.count();
   if (count === 0) {
@@ -79,6 +85,7 @@ async function ensureAdminSeed(): Promise<void> {
       data: initialAdmins.map(({ permissions: _p, ...rest }) => rest),
     });
   }
+  adminSeedChecked = true;
 }
 
 export async function getAdmins(): Promise<AdminUser[]> {
@@ -123,11 +130,13 @@ export async function updateAdminPermissions(
 // ── Customer CRUD ─────────────────────────────────────────────────
 
 async function ensureCustomerSeed(): Promise<void> {
+  if (customerSeedChecked) return;
   const prisma = getPrisma();
   const count = await prisma.customer.count();
   if (count === 0) {
     await prisma.customer.createMany({ data: initialCustomers });
   }
+  customerSeedChecked = true;
 }
 
 export async function getCustomers(): Promise<CustomerUser[]> {

@@ -793,17 +793,9 @@ export default function PanelPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-wrap items-center gap-2 mb-6"
+          className="space-y-3 mb-6"
         >
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              placeholder="Ara: baslik veya #numara"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-white placeholder-gray-500 focus:border-blue-500/50 focus:outline-none text-sm transition"
-            />
-          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as Status | "all")}
@@ -858,27 +850,38 @@ export default function PanelPage() {
           </select>
           <button
             onClick={handleDownloadPDF}
-            title="PDF İndir / Yazdır"
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium transition whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium transition whitespace-nowrap"
           >
-            <Download size={16} /> PDF
+            <Download size={16} /> PDF İndir
           </button>
           {canCreate && (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition whitespace-nowrap"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold hover:opacity-90 transition whitespace-nowrap"
             >
-              <Plus size={16} /> Talep
+              <Plus size={16} /> Yeni Talep
             </button>
           )}
           {canCreate && (
             <button
               onClick={() => { setShowProjectForm(true); setProjectError(""); setNewProjectName(""); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 text-sm font-medium hover:bg-purple-600/30 transition whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 text-sm font-medium hover:bg-purple-600/30 transition whitespace-nowrap"
             >
-              <Plus size={16} /> Proje
+              <Plus size={16} /> Yeni Proje
             </button>
           )}
+          </div>
+
+          {/* Arama — kendi satırında, üstteki kartlarla aynı tam genişlikte */}
+          <div className="relative w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              placeholder="Task ara... (baslik, aciklama veya numara: 82 ya da 82 84)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111118] border border-white/5 text-white placeholder-gray-500 focus:border-blue-500/50 focus:outline-none text-sm transition"
+            />
+          </div>
         </motion.div>
 
         {/* Task List */}

@@ -109,102 +109,112 @@ export async function GET() {
   }
 
   try {
-    const allTasks = [];
     const debugInfo: string[] = [];
     const { repoMap, clientMap } = await loadProjectMaps();
 
-    for (const [project, repo] of Object.entries(repoMap)) {
-      const res = await ghFetch(
-        `https://api.github.com/repos/${ORG}/${repo}/issues?state=all&per_page=100`
-      );
-      if (!res.ok) {
-        debugInfo.push(`${repo}: ${res.status} ${res.statusText}`);
-        continue;
-      }
-
-      const issues = await res.json();
-      for (const issue of issues) {
-        if (issue.pull_request) continue;
-        const issueLabels = issue.labels.map((l: { name: string }) => l.name);
-        if (issueLabels.includes("silindi")) continue;
-
-        const labels = issue.labels.map((l: { name: string }) => l.name);
-        const label = labels.find((l: string) =>
-          ["bug", "feature", "improvement", "docs", "urgent"].includes(l)
-        ) || "feature";
-        const defaultPriority = labels.includes("urgent") ? "high" : "medium";
-        const status = issue.state === "closed"
-          ? "done"
-          : labels.includes("in-progress")
-          ? "in_progress"
-          : labels.includes("review")
-          ? "review"
-          : "todo";
-
-        const parsed = parseBody(issue.body || "");
-        const client = parsed.client || clientMap[project] || "";
-
-        // Fetch comments to extract devNote and attachments
-        let devNote = "";
-        const attachments: { id: string; name: string; type: "image" | "document" | "screenshot"; url: string; date: string }[] = [];
-
-        if (issue.comments > 0) {
-          try {
-            const commentsRes = await ghFetch(
-              `https://api.github.com/repos/${ORG}/${repo}/issues/${issue.number}/comments?per_page=100`
-            );
-            if (commentsRes.ok) {
-              const comments = await commentsRes.json();
-              for (const c of comments) {
-                const body: string = c.body || "";
-                // Extract dev notes
-                if (body.startsWith("**ERPIDE Dev Notu:**")) {
-                  devNote = body.replace("**ERPIDE Dev Notu:**", "").trim();
-                }
-                // Extract file attachments
-                const attachMatch = body.match(/^\*\*Ek Dosya:\*\*\s*(?:\[(.+?)\]\((.+?)\)|(.+?)\n\n!\[(.+?)\]\((.+?)\))/);
-                if (attachMatch) {
-                  const name = attachMatch[1] || attachMatch[4] || "dosya";
-                  const url = attachMatch[2] || attachMatch[5] || "";
-                  const isImage = body.includes("![");
-                  attachments.push({
-                    id: String(c.id),
-                    name,
-                    type: isImage ? "image" : "document",
-                    url,
-                    date: c.created_at.split("T")[0],
-                  });
-                }
-              }
-            }
-          } catch {}
+    // Tüm repolar PARALEL çekilir; her issue'nun yorumları da paralel.
+    // Eski seri döngü 40-50 ardışık GitHub isteğiyle ~17sn sürüyordu.
+    const perRepo = await Promise.all(
+      Object.entries(repoMap).map(async ([project, repo]) => {
+        const res = await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues?state=all&per_page=100`
+        );
+        if (!res.ok) {
+          debugInfo.push(`${repo}: ${res.status} ${res.statusText}`);
+          return [];
         }
 
-        allTasks.push({
-          id: issue.number,
-          repo,
-          project,
-          client,
-          title: issue.title,
-          description: parsed.description,
-          label,
-          status,
-          priority: parsed.priorityScore > 0
-            ? (parsed.priorityScore >= 9 ? "critical" : parsed.priorityScore >= 7 ? "high" : parsed.priorityScore >= 4 ? "medium" : "low")
-            : defaultPriority,
-          priorityScore: parsed.priorityScore || (defaultPriority === "high" ? 7 : 5),
-          deadline: parsed.deadline || undefined,
-          createdAt: parsed.customDate || issue.created_at.split("T")[0],
-          closedAt: issue.closed_at ? issue.closed_at.split("T")[0] : undefined,
-          createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
-          url: issue.html_url,
-          commentsCount: issue.comments,
-          comments: [],
-          attachments,
-          devNote,
+        const issues = await res.json();
+        const visible = issues.filter((issue: { pull_request?: unknown; labels: { name: string }[] }) => {
+          if (issue.pull_request) return false;
+          return !issue.labels.some((l) => l.name === "silindi");
         });
-      }
-    }
+
+        return Promise.all(
+          visible.map(async (issue: {
+            number: number; title: string; body?: string; state: string;
+            labels: { name: string }[]; comments: number;
+            created_at: string; closed_at?: string; html_url: string;
+            user?: { login?: string };
+          }) => {
+            const labels = issue.labels.map((l) => l.name);
+            const label = labels.find((l) =>
+              ["bug", "feature", "improvement", "docs", "urgent"].includes(l)
+            ) || "feature";
+            const defaultPriority = labels.includes("urgent") ? "high" : "medium";
+            const status = issue.state === "closed"
+              ? "done"
+              : labels.includes("in-progress")
+              ? "in_progress"
+              : labels.includes("review")
+              ? "review"
+              : "todo";
+
+            const parsed = parseBody(issue.body || "");
+            const client = parsed.client || clientMap[project] || "";
+
+            // Yorumlardan devNote + ek dosyaları çıkar (paralel)
+            let devNote = "";
+            const attachments: { id: string; name: string; type: "image" | "document" | "screenshot"; url: string; date: string }[] = [];
+
+            if (issue.comments > 0) {
+              try {
+                const commentsRes = await ghFetch(
+                  `https://api.github.com/repos/${ORG}/${repo}/issues/${issue.number}/comments?per_page=100`
+                );
+                if (commentsRes.ok) {
+                  const comments = await commentsRes.json();
+                  for (const c of comments) {
+                    const body: string = c.body || "";
+                    if (body.startsWith("**ERPIDE Dev Notu:**")) {
+                      devNote = body.replace("**ERPIDE Dev Notu:**", "").trim();
+                    }
+                    const attachMatch = body.match(/^\*\*Ek Dosya:\*\*\s*(?:\[(.+?)\]\((.+?)\)|(.+?)\n\n!\[(.+?)\]\((.+?)\))/);
+                    if (attachMatch) {
+                      const name = attachMatch[1] || attachMatch[4] || "dosya";
+                      const url = attachMatch[2] || attachMatch[5] || "";
+                      const isImage = body.includes("![");
+                      attachments.push({
+                        id: String(c.id),
+                        name,
+                        type: isImage ? "image" : "document",
+                        url,
+                        date: c.created_at.split("T")[0],
+                      });
+                    }
+                  }
+                }
+              } catch {}
+            }
+
+            return {
+              id: issue.number,
+              repo,
+              project,
+              client,
+              title: issue.title,
+              description: parsed.description,
+              label,
+              status,
+              priority: parsed.priorityScore > 0
+                ? (parsed.priorityScore >= 9 ? "critical" : parsed.priorityScore >= 7 ? "high" : parsed.priorityScore >= 4 ? "medium" : "low")
+                : defaultPriority,
+              priorityScore: parsed.priorityScore || (defaultPriority === "high" ? 7 : 5),
+              deadline: parsed.deadline || undefined,
+              createdAt: parsed.customDate || issue.created_at.split("T")[0],
+              closedAt: issue.closed_at ? issue.closed_at.split("T")[0] : undefined,
+              createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
+              url: issue.html_url,
+              commentsCount: issue.comments,
+              comments: [],
+              attachments,
+              devNote,
+            };
+          })
+        );
+      })
+    );
+    const allTasks = perRepo.flat();
 
     if (allTasks.length === 0 && debugInfo.length > 0) {
       return NextResponse.json({ error: "GitHub API errors", debug: debugInfo, hasToken: !!GITHUB_TOKEN }, { status: 200 });
