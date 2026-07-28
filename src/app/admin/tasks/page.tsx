@@ -1289,7 +1289,8 @@ export default function TasksPage() {
                     <button
                       onClick={() => sendNotification("task_completed", activeTask)}
                       disabled={notifying || !notifyEmail.trim()}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50"
+                      title={!notifyEmail.trim() ? "Once musteri email girin" : undefined}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {notifying ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
                       Tamamlandi Bildirimi
@@ -1297,12 +1298,16 @@ export default function TasksPage() {
                     <button
                       onClick={() => sendNotification("status_change", activeTask, { status: activeTask.status })}
                       disabled={notifying || !notifyEmail.trim()}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-600/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-600/20 text-xs font-medium transition disabled:opacity-50"
+                      title={!notifyEmail.trim() ? "Once musteri email girin" : undefined}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-600/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-600/20 text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {notifying ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
                       Durum Bildirimi
                     </button>
                   </div>
+                  {!notifyEmail.trim() && (
+                    <p className="text-[10px] text-gray-600 mt-1.5">Bildirim gondermek icin once musteri email girin.</p>
+                  )}
                 </div>
 
                 {/* GitHub link */}
