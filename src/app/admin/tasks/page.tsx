@@ -56,7 +56,13 @@ type ProjectDef = {
   id: string;
   name: string;
   repo: string;
-  customer: { id: string; code: string; name: string } | null;
+  customer: {
+    id: string;
+    code: string;
+    name: string;
+    contactEmail?: string;
+    members?: { name: string; email: string }[];
+  } | null;
 };
 
 const statusIcons: Record<Status, typeof Circle> = {
@@ -284,20 +290,33 @@ export default function TasksPage() {
     }
   }
 
+  /** Projenin müşterisine bağlı bilinen email'ler (DB'den): iletişim email'i +
+   *  üye email'leri, tekrarsız. Bildirim dropdown'ı buradan beslenir. */
+  function customerEmailOptions(project: string): { label: string; email: string }[] {
+    const c = projectList.find((p) => p.name === project)?.customer;
+    if (!c) return [];
+    const opts: { label: string; email: string }[] = [];
+    const seen = new Set<string>();
+    const push = (label: string, email?: string | null) => {
+      const e = (email || "").trim();
+      if (!e || seen.has(e.toLowerCase())) return;
+      seen.add(e.toLowerCase());
+      opts.push({ label, email: e });
+    };
+    push(`${c.name} (iletisim)`, c.contactEmail);
+    c.members?.forEach((m) => push(m.name, m.email));
+    return opts;
+  }
+
   function getCustomerEmail(project: string): string {
+    // Önce bu proje için elle girilmiş override (localStorage), yoksa DB'deki
+    // müşteri iletişim email'i. (Eski localStorage müşteri listesi kalktı —
+    // müşteriler artık DB'de, o yüzden otomatik doldurma DB'den gelir.)
     try {
-      // First check task-specific override
       const override = localStorage.getItem(`erpide_email_${project}`);
       if (override) return override;
-      // Then check customer management data
-      const saved = localStorage.getItem("erpide_customers");
-      if (saved) {
-        const customers = JSON.parse(saved);
-        const match = customers.find((c: { project: string }) => c.project === project);
-        if (match?.contactEmail) return match.contactEmail;
-      }
     } catch {}
-    return "";
+    return customerEmailOptions(project)[0]?.email || "";
   }
 
   function saveEmail(project: string, email: string) {
@@ -314,6 +333,15 @@ export default function TasksPage() {
     setNotifySuccess("");
     fetchComments(task);
   }
+
+  /* Task, projeler yüklenmeden açıldıysa email'i DB verisi gelince tamamla */
+  useEffect(() => {
+    if (selectedTask && !notifyEmail) {
+      const e = getCustomerEmail(selectedTask.project);
+      if (e) setNotifyEmail(e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectList]);
 
   /* ─── post comment ─── */
   async function addComment(task: Task) {
@@ -1273,16 +1301,42 @@ export default function TasksPage() {
                   </div>
                   <div className="mb-3">
                     <label className="text-[10px] text-gray-500 block mb-1">Musteri Email</label>
-                    <input
-                      type="email"
-                      value={notifyEmail}
-                      onChange={(e) => {
-                        setNotifyEmail(e.target.value);
-                        saveEmail(activeTask.project, e.target.value);
-                      }}
-                      placeholder="ornek@firma.com"
-                      className="w-full px-3 py-2 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition"
-                    />
+                    {(() => {
+                      const emailOpts = customerEmailOptions(activeTask.project);
+                      const isKnown = emailOpts.some((o) => o.email === notifyEmail);
+                      return (
+                        <>
+                          {emailOpts.length > 0 && (
+                            <select
+                              value={isKnown ? notifyEmail : "__custom"}
+                              onChange={(e) => {
+                                const v = e.target.value === "__custom" ? "" : e.target.value;
+                                setNotifyEmail(v);
+                                saveEmail(activeTask.project, v);
+                              }}
+                              className="w-full px-3 py-2 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer"
+                            >
+                              {emailOpts.map((o) => (
+                                <option key={o.email} value={o.email}>{o.label} — {o.email}</option>
+                              ))}
+                              <option value="__custom">Baska email gir...</option>
+                            </select>
+                          )}
+                          {(emailOpts.length === 0 || !isKnown) && (
+                            <input
+                              type="email"
+                              value={notifyEmail}
+                              onChange={(e) => {
+                                setNotifyEmail(e.target.value);
+                                saveEmail(activeTask.project, e.target.value);
+                              }}
+                              placeholder="ornek@firma.com"
+                              className={`w-full px-3 py-2 rounded-xl bg-[#111118] border border-white/10 text-white text-sm placeholder-gray-500 focus:border-blue-500/50 focus:outline-none transition ${emailOpts.length > 0 ? "mt-2" : ""}`}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
                     <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de gonderilir</p>
                   </div>
                   <div className="flex flex-wrap gap-2">

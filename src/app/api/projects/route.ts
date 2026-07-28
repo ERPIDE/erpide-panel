@@ -33,7 +33,17 @@ export async function GET() {
   }
 
   const projects = await getPrisma().project.findMany({
-    include: { customer: { select: { id: true, code: true, name: true } } },
+    include: {
+      customer: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          contactEmail: true,
+          members: { select: { name: true, email: true } },
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
   return NextResponse.json({ projects });
