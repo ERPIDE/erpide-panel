@@ -92,12 +92,12 @@ function formatDate(d?: string): string {
   return dt.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/** createdAt → "YYYY-MM" ay anahtarı; geçersiz tarihte null. */
-function monthKey(d?: string): string | null {
+/** createdAt → "YYYY-MM-DD" gün anahtarı (yerel saat); geçersiz tarihte null. */
+function dayKey(d?: string): string | null {
   if (!d) return null;
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return null;
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
 function todayISO(): string {
@@ -123,7 +123,9 @@ export default function TasksPage() {
   const [fStatus, setFStatus] = useState("todo");
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
-  const [fMonth, setFMonth] = useState("all");
+  // Açılış tarihi aralığı — "YYYY-MM-DD", boş = filtre yok
+  const [fDateFrom, setFDateFrom] = useState("");
+  const [fDateTo, setFDateTo] = useState("");
   // Sıralama — default task numarası (yeni → eski). Kullanıcı değiştirebilir.
   const [sortBy, setSortBy] = useState<"num-desc" | "num-asc" | "score" | "date-desc">("num-desc");
 
@@ -581,7 +583,12 @@ export default function TasksPage() {
       if (fStatus !== "all" && t.status !== fStatus) return false;
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
-      if (fMonth !== "all" && monthKey(t.createdAt) !== fMonth) return false;
+      if (fDateFrom || fDateTo) {
+        const key = dayKey(t.createdAt);
+        if (!key) return false;
+        if (fDateFrom && key < fDateFrom) return false;
+        if (fDateTo && key > fDateTo) return false;
+      }
       return true;
     }).sort((a, b) => {
       switch (sortBy) {
@@ -592,7 +599,7 @@ export default function TasksPage() {
         default:          return b.id - a.id;
       }
     });
-  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fMonth, sortBy]);
+  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fDateFrom, fDateTo, sortBy]);
 
   /** Müşteri filtre seçenekleri: proje tanımlarındaki müşteriler + task'larda
    *  görülen client adları (eski task'larda serbest metin olabilir). */
@@ -602,16 +609,6 @@ export default function TasksPage() {
     tasks.forEach((t) => { if (t.client) set.add(t.client); });
     return Array.from(set).sort();
   }, [projectList, tasks]);
-
-  /* Görevlerin açılış aylarından filtre seçenekleri (yeniden eskiye) */
-  const availableMonths = useMemo(() => {
-    const set = new Set<string>();
-    tasks.forEach((t) => {
-      const key = monthKey(t.createdAt);
-      if (key) set.add(key);
-    });
-    return Array.from(set).sort().reverse();
-  }, [tasks]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -671,10 +668,10 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-3">
+      {/* Toolbar — arama üstte tam genişlik, filtreler alt satırda */}
+      <div className="flex flex-col gap-3">
         {/* search */}
-        <div className="relative flex-1">
+        <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             placeholder="Gorev ara... (baslik veya numara: 82 ya da 82 84)"
@@ -705,14 +702,36 @@ export default function TasksPage() {
             <option value="all">Tum Etiketler</option>
             {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
           </select>
-          <select value={fMonth} onChange={(e) => setFMonth(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
-            <option value="all">Tum Aylar</option>
-            {availableMonths.map((m) => (
-              <option key={m} value={m}>
-                {new Date(`${m}-01T00:00:00`).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
-              </option>
-            ))}
-          </select>
+          {/* Açılış tarihi aralığı */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111118] border border-white/10">
+            <span className="text-xs text-gray-500 shrink-0">Tarih</span>
+            <input
+              type="date"
+              value={fDateFrom}
+              onChange={(e) => setFDateFrom(e.target.value)}
+              max={fDateTo || undefined}
+              title="Baslangic tarihi"
+              className="bg-transparent text-white text-sm focus:outline-none [color-scheme:dark] cursor-pointer"
+            />
+            <span className="text-gray-600 text-sm">—</span>
+            <input
+              type="date"
+              value={fDateTo}
+              onChange={(e) => setFDateTo(e.target.value)}
+              min={fDateFrom || undefined}
+              title="Bitis tarihi"
+              className="bg-transparent text-white text-sm focus:outline-none [color-scheme:dark] cursor-pointer"
+            />
+            {(fDateFrom || fDateTo) && (
+              <button
+                onClick={() => { setFDateFrom(""); setFDateTo(""); }}
+                className="text-gray-500 hover:text-white transition text-sm leading-none px-0.5"
+                title="Tarih filtresini temizle"
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
             <option value="num-desc">No ↓ (yeni)</option>
             <option value="num-asc">No ↑ (eski)</option>
@@ -745,9 +764,9 @@ export default function TasksPage() {
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
         <span>{filtered.length} gorev listeleniyor</span>
-        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fMonth !== "all") && (
+        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fDateFrom || fDateTo) && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFMonth("all"); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFDateFrom(""); setFDateTo(""); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
