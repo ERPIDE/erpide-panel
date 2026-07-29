@@ -29,6 +29,7 @@ import {
   Loader2,
   Trash2,
   RefreshCw,
+  Mail,
 } from "lucide-react";
 import {
   Task,
@@ -132,6 +133,8 @@ export default function TasksPage() {
   // Açılış tarihi aralığı — "YYYY-MM-DD", boş = filtre yok
   const [fDateFrom, setFDateFrom] = useState("");
   const [fDateTo, setFDateTo] = useState("");
+  // Tamamlandı bildirimi filtresi: all | sent | unsent
+  const [fNotified, setFNotified] = useState("all");
   // Sıralama — default task numarası (yeni → eski). Kullanıcı değiştirebilir.
   const [sortBy, setSortBy] = useState<"num-desc" | "num-asc" | "score" | "date-desc">("num-desc");
 
@@ -456,6 +459,7 @@ export default function TasksPage() {
           taskTitle: task.title,
           taskId: task.id,
           project: task.project,
+          repo: task.repo,
           toEmail: notifyEmail.trim() || undefined,
           ...extra,
         }),
@@ -463,6 +467,9 @@ export default function TasksPage() {
 
       if (res.ok) {
         toast("success", "Email gonderildi!");
+        // Tamamlandı bildiriminde issue "bildirildi" etiketi aldı —
+        // listeyi tazele ki buton kilitlensin ve filtre/rozet güncellensin.
+        if (type === "task_completed") await fetchTasks();
       } else {
         const err = await res.json();
         toast("error", err.error || "Email gonderilemedi");
@@ -611,6 +618,8 @@ export default function TasksPage() {
       if (fStatus !== "all" && t.status !== fStatus) return false;
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
+      if (fNotified === "sent" && !t.completionNotified) return false;
+      if (fNotified === "unsent" && t.completionNotified) return false;
       if (fDateFrom || fDateTo) {
         const key = dayKey(t.createdAt);
         if (!key) return false;
@@ -627,7 +636,7 @@ export default function TasksPage() {
         default:          return b.id - a.id;
       }
     });
-  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fDateFrom, fDateTo, sortBy]);
+  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fNotified, fDateFrom, fDateTo, sortBy]);
 
   /** Müşteri filtre seçenekleri: proje tanımlarındaki müşteriler + task'larda
    *  görülen client adları (eski task'larda serbest metin olabilir). */
@@ -730,6 +739,21 @@ export default function TasksPage() {
             <option value="all">Tum Etiketler</option>
             {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
           </select>
+          <select
+            value={fNotified}
+            onChange={(e) => {
+              const v = e.target.value;
+              setFNotified(v);
+              // Bildirim filtresi tamamlanan task'lar için anlamlı — durum
+              // filtresi "Bekliyor"da kalırsa liste boş görünür, otomatik geçir.
+              if (v !== "all") setFStatus("done");
+            }}
+            className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer"
+          >
+            <option value="all">Bildirim (Tumu)</option>
+            <option value="sent">Bildirim Gonderildi</option>
+            <option value="unsent">Bildirim Gonderilmedi</option>
+          </select>
           {/* Açılış tarihi aralığı */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111118] border border-white/10">
             <span className="text-xs text-gray-500 shrink-0">Tarih</span>
@@ -792,9 +816,9 @@ export default function TasksPage() {
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
         <span>{filtered.length} gorev listeleniyor</span>
-        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fDateFrom || fDateTo) && (
+        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fNotified !== "all" || fDateFrom || fDateTo) && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFDateFrom(""); setFDateTo(""); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFNotified("all"); setFDateFrom(""); setFDateTo(""); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
@@ -890,6 +914,15 @@ export default function TasksPage() {
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <Paperclip size={12} />
                       {t.attachments.length}
+                    </span>
+                  )}
+                  {/* tamamlandı bildirimi rozeti */}
+                  {t.completionNotified && (
+                    <span
+                      title="Musteriye tamamlandi bildirimi gonderildi"
+                      className="hidden sm:flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 font-medium"
+                    >
+                      <Mail size={10} /> Bildirildi
                     </span>
                   )}
                   {/* status badge */}
@@ -1340,15 +1373,25 @@ export default function TasksPage() {
                     <p className="text-[10px] text-gray-600 mt-1">+ info@erpide.com adresine de gonderilir</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => sendNotification("task_completed", activeTask)}
-                      disabled={notifying || !notifyEmail.trim()}
-                      title={!notifyEmail.trim() ? "Once musteri email girin" : undefined}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {notifying ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                      Tamamlandi Bildirimi
-                    </button>
+                    {activeTask.completionNotified ? (
+                      <span
+                        title="Tamamlandi bildirimi zaten gonderildi"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/20 border border-green-500/30 text-green-400 text-xs font-medium cursor-default"
+                      >
+                        <CheckCircle2 size={12} />
+                        Bildirim Gonderildi ✓
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => sendNotification("task_completed", activeTask)}
+                        disabled={notifying || !notifyEmail.trim()}
+                        title={!notifyEmail.trim() ? "Once musteri email girin" : undefined}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {notifying ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                        Tamamlandi Bildirimi
+                      </button>
+                    )}
                     <button
                       onClick={() => sendNotification("status_change", activeTask, { status: activeTask.status })}
                       disabled={notifying || !notifyEmail.trim()}

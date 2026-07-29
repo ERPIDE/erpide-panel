@@ -205,6 +205,8 @@ export async function GET() {
               closedAt: issue.closed_at ? issue.closed_at.split("T")[0] : undefined,
               createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
               url: issue.html_url,
+              // "bildirildi" etiketi /api/notify tamamlandı bildirimi sonrası basılır
+              completionNotified: labels.includes("bildirildi"),
               commentsCount: issue.comments,
               comments: [],
               attachments,

@@ -65,6 +65,8 @@ export interface Task {
   createdAt: string;
   /** GitHub issue closed_at — task kapatıldığında (status=done) dolu. */
   closedAt?: string;
+  /** Müşteriye tamamlandı bildirimi gönderildi mi ("bildirildi" etiketi). */
+  completionNotified?: boolean;
   createdBy: string;
   devNote?: string;
   url?: string;

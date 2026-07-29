@@ -8,6 +8,45 @@ function getResend() {
   return new Resend(key);
 }
 
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+const ORG = "ERPIDE";
+/** Tamamlandı bildirimi gönderilen issue'ya basılan kalıcı işaret etiketi.
+ *  /api/tasks bunu completionNotified olarak okur; buton + filtre buradan beslenir. */
+const NOTIFIED_LABEL = "bildirildi";
+
+/** Issue'ya "bildirildi" etiketini basar — email gönderimini asla bloklamaz. */
+async function markIssueNotified(repo: string, issueNumber: number): Promise<boolean> {
+  if (!GITHUB_TOKEN || !repo || !issueNumber) return false;
+  const gh = (url: string, options?: RequestInit) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+    });
+  try {
+    // Etiket repoda yoksa oluştur (422 = zaten var, sorun değil)
+    await gh(`https://api.github.com/repos/${ORG}/${repo}/labels`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: NOTIFIED_LABEL,
+        color: "22c55e",
+        description: "Musteriye tamamlandi bildirimi gonderildi",
+      }),
+    });
+    const res = await gh(
+      `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}/labels`,
+      { method: "POST", body: JSON.stringify({ labels: [NOTIFIED_LABEL] }) },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 const clientNames: Record<string, string> = {
   CANIAS: "Sirmersan",
   "1C ERP": "ATM Constructor",
@@ -22,7 +61,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { type, taskTitle, taskId, project, status, comment, toEmail } = body;
+    const { type, taskTitle, taskId, project, repo, status, comment, toEmail } = body;
 
     const recipientEmail = toEmail;
     const recipientName = clientNames[project] || "Musteri";
@@ -111,7 +150,13 @@ export async function POST(request: NextRequest) {
       console.error("Admin copy failed:", e);
     }
 
-    return NextResponse.json({ id: data?.id, message: "Email gonderildi" });
+    // Tamamlandı bildirimi gitti → issue'yu kalıcı işaretle (buton kilidi + filtre)
+    let marked = false;
+    if (type === "task_completed") {
+      marked = await markIssueNotified(repo, Number(taskId));
+    }
+
+    return NextResponse.json({ id: data?.id, message: "Email gonderildi", marked });
   } catch (error) {
     console.error("Notify error:", error);
     return NextResponse.json({ error: "Email gonderilemedi" }, { status: 500 });
