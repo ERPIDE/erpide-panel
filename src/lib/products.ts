@@ -136,6 +136,8 @@ export interface SKU {
   grantsModules?: string[];
   /** kind="credit" SKU'sunun aldığı kontör/mesaj adedi (örn. 500, 1000, 2000, 10000). */
   creditsGranted?: number;
+  /** Bundle SKU: tek kod/tek satın alma ile gelen ek kullanıcı koltuğu sayısı. */
+  seatsIncluded?: number;
   /** Locale overrides. Default `name`/`description`/`features` TR; i18n yalnız
    *  diğer dilleri ezer. AI Kontör + CaptchaERPIDE gibi global ürünlerin
    *  SKU'larında dolu, FinansERPIDE/TR-only ürünlerde opsiyonel. */
@@ -370,6 +372,34 @@ export const PRODUCTS: Product[] = [
           "Birikmiş + net defter değeri raporu",
           "Bekleyen amortisman alarmı (dashboard)",
         ],
+      },
+      {
+        id: "finanserpide-full-monthly",
+        productId: "finanserpide",
+        name: "Tam Paket (4 Kullanıcı)",
+        description: "Tüm modüller + 4 kullanıcı — tek kodla aktivasyon",
+        price: 90,
+        currency: "TRY",
+        prices: { USD: 90 },
+        cycle: "monthly",
+        kind: "base",
+        // Base modüller + tüm modül eklentileri tek SKU'da
+        grantsModules: [
+          "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
+          "/muhasebe", "/ik", "/uretim", "/sabitkiymet",
+        ],
+        seatsIncluded: 3, // owner + 3 = 4 kullanıcı
+        features: [
+          "Temel Paket (Satış · Satınalma · Stok · Finans)",
+          "Muhasebe Modülü (yevmiye, mizan, KDV, defter-i kebir)",
+          "İnsan Kaynakları Modülü (personel, devam, bordro)",
+          "Üretim Modülü (BOM, üretim emri, maliyetlendirme)",
+          "Sabit Kıymet Modülü (demirbaş, amortisman)",
+          "4 kullanıcı koltuğu",
+          "e-Fatura / e-Arşiv (QNB eFinans)",
+          "Tek aktivasyon kodu ile hepsi",
+        ],
+        highlight: true,
       },
       {
         id: "finanserpide-extra-user-monthly",

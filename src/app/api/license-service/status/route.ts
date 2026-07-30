@@ -196,7 +196,13 @@ export async function GET(req: Request) {
               const m = moduleKeyFromSku(sku);
               if (m) mods.add(m);
             }
+            // Bundle/base SKU kendi grantsModules listesini de açar (Tam Paket)
+            for (const g of sku.grantsModules ?? []) {
+              const key = g.startsWith("/") ? g.slice(1) : g;
+              if (key) mods.add(key);
+            }
             if (sku.kind === "seat") s.seats += 1;
+            if (sku.seatsIncluded) s.seats += sku.seatsIncluded;
           }
           s.modules = Array.from(mods);
         }
