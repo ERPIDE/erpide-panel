@@ -22,6 +22,10 @@ async function Inner({ orderId }: { orderId?: string }) {
     return s + (sku?.creditsGranted ?? 0);
   }, 0);
 
+  // FinansERPIDE alindiysa musteri buradan tek tikla iceri girer — lisans
+  // kodu girmesi gerekmez, kimligi bu oturumdan tasiyoruz (SSO).
+  const boughtFinansERPIDE = order ? order.items.some((it) => it.productId === "finanserpide") : false;
+
   let hasActiveFinansERPIDE = false;
   if (order && aiKontorItems.length > 0) {
     const userOrders = await listOrdersByUserId(order.userId);
@@ -90,6 +94,24 @@ async function Inner({ orderId }: { orderId?: string }) {
                 </Link>
               </div>
             )}
+          </div>
+        )}
+
+        {/* FinansERPIDE — ana adim: sirket kurulumunu simdi baslat */}
+        {boughtFinansERPIDE && (
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 mb-8 text-left">
+            <h2 className="text-lg font-bold text-white mb-1.5">Sıradaki adım: şirketini kur</h2>
+            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+              Aboneliğin bu hesaba tanımlandı. FinansERPIDE&apos;ye <strong>aynı erpide.com
+              hesabınla</strong> gireceksin — ayrı bir şifre veya lisans kodu girmene gerek yok.
+              İlk girişte sadece şirket bilgilerini (unvan, VKN, vergi dairesi) soracağız.
+            </p>
+            <Link
+              href="/api/sso/finanserpide"
+              className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:opacity-90 transition"
+            >
+              FinansERPIDE&apos;yi Aç ve Şirketimi Kur <ArrowRight size={16} />
+            </Link>
           </div>
         )}
 

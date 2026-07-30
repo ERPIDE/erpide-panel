@@ -31,18 +31,16 @@ interface LicenseRow {
 }
 
 /** Lisans → uygulamaya yönlendirme URL'i.
- *  - FinansERPIDE: lisans kodunu prefill ederek /lisans?key=XXX sayfasına
- *    gönderiyoruz — adam kodu manuel kopyalamasın, lisans otomatik
- *    doğrulansın, /uye-ol akışına geçsin.
+ *  - FinansERPIDE: SSO. Müşteri erpide.com oturumuyla doğrudan girer; hesabı
+ *    yoksa ürün tarafı şirket kurulumuna düşürür. Lisans kodu artık yalnızca
+ *    yedek yol (kod hâlâ kartta yazılı, /lisans sayfasına elle girilebilir).
  *  - CaptchaERPIDE: provision sırasında random şifre üretildiği için adam
  *    dashboard'a şifre ile giremez. /sso?api_key=XXX → backend api key'i
  *    doğrular, access token mint eder, dashboard'a yönlendirir. */
 function defaultAppUrl(productId: string, licenseKey?: string, apiKey?: string): string | null {
   switch (productId) {
     case "pocketerpide":  return "/pocket";
-    case "finanserpide":  return licenseKey
-      ? `https://finans.erpide.com/lisans?key=${encodeURIComponent(licenseKey)}`
-      : "https://finans.erpide.com/lisans";
+    case "finanserpide":  return "/api/sso/finanserpide";
     case "captchaerpide": return apiKey
       ? `https://captcha.erpide.com/sso?api_key=${encodeURIComponent(apiKey)}`
       : "https://captcha.erpide.com/dashboard";

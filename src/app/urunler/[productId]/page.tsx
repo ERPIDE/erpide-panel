@@ -352,6 +352,9 @@ function Inner({ productId }: { productId: string }) {
             <FinansERPIDEConfigurator
               product={product}
               activeBaseSkuId={activeSkuOfThisProduct}
+              // Kontör ayrı bir ürün ama satın alma kararı burada veriliyor —
+              // müşteri planını kurarken AI'ı da aynı ekrandan ekleyebilsin.
+              aiKontorProduct={getProduct("ai-kontor") ?? null}
             />
           </div>
         </main>
