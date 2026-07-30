@@ -327,12 +327,11 @@ function GenerateModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
   async function submit() {
     if (!skuId.trim()) { setError("Ürün seçimi gerekli"); return; }
-    if (!adminToken.trim()) { setError("Admin token gerekli (ADMIN_BOOTSTRAP_TOKEN)"); return; }
     setError(""); setBusy(true);
     try {
       const r = await fetch("/api/admin/license-codes/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-token": adminToken.trim() },
+        headers: { "Content-Type": "application/json", ...(adminToken.trim() ? { "x-admin-token": adminToken.trim() } : {}) },
         body: JSON.stringify({ skuId: skuId.trim(), count, durationDays, note: note.trim() || undefined }),
       });
       const d = await r.json();
@@ -398,7 +397,7 @@ function GenerateModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
             <FormField label="Not (opsiyonel — örn: Hepsiburada Q3 2026)">
               <input value={note} onChange={(e) => setNote(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
             </FormField>
-            <FormField label="ADMIN_BOOTSTRAP_TOKEN">
+            <FormField label="ADMIN_BOOTSTRAP_TOKEN (opsiyonel — owner girişiyle gerekmez)">
               <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono" />
             </FormField>
             {error && (

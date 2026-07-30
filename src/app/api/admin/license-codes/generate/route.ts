@@ -9,6 +9,8 @@
  * kayıt yapıldığı için tekrar listeyle döner).
  */
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { getOwnerSession, SESSION_COOKIE } from "@/lib/auth";
 import { createLicenseCode } from "@/lib/auth/user-store";
 import { getSku, getProductOfSku } from "@/lib/products";
 import { randomBytes } from "crypto";
@@ -24,9 +26,15 @@ function generateCode(): string {
 }
 
 export async function POST(req: Request) {
-  const token = req.headers.get("x-admin-token");
-  if (!token || token !== process.env.ADMIN_BOOTSTRAP_TOKEN) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  // Yetki: owner oturumu (admin panelinde zaten giriş yapılmış) VEYA
+  // otomasyon için x-admin-token. Panelden üretirken token yazmak gerekmez.
+  const cookieStore = await cookies();
+  const session = await getOwnerSession(cookieStore.get(SESSION_COOKIE)?.value);
+  if (!session) {
+    const token = req.headers.get("x-admin-token");
+    if (!token || token !== process.env.ADMIN_BOOTSTRAP_TOKEN) {
+      return NextResponse.json({ error: "Yetkisiz — owner girişi veya geçerli admin token gerekli" }, { status: 403 });
+    }
   }
 
   let body: { skuId?: string; count?: number; durationDays?: number; note?: string; expiresAt?: string };
