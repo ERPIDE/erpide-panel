@@ -23,8 +23,16 @@ export const runtime = "nodejs";
 
 const PRODUCT_URL = process.env.FINANSERPIDE_URL || "https://finans.erpide.com";
 
+/** Musterinin tarayicisinin gordugu adres — proxy arkasinda req.url ic adresi
+ *  tasiyabilir, o durumda uretilen redirect hicbir yere gitmez. */
+function publicOrigin(req: Request): string {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (host) return `${req.headers.get("x-forwarded-proto") || "https"}://${host}`;
+  return new URL(req.url).origin;
+}
+
 export async function GET(req: Request) {
-  const origin = new URL(req.url).origin;
+  const origin = publicOrigin(req);
 
   const session = await getSession();
   if (!session.userId || !session.email) {
