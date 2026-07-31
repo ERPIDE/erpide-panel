@@ -536,6 +536,7 @@ export const PRODUCTS: Product[] = [
         cycle: "monthly",
         kind: "base",
         legacy: true,
+        unlimitedSeats: true, // koltuk satisi kalkti — eski paketler de sinirsiz
         grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
         features: [
           "Satış (teklif, sipariş, irsaliye, fatura)",
@@ -640,6 +641,7 @@ export const PRODUCTS: Product[] = [
         cycle: "monthly",
         kind: "base",
         legacy: true,
+        unlimitedSeats: true, // koltuk satisi kalkti — eski paketler de sinirsiz
         // Base modüller + tüm modül eklentileri tek SKU'da
         grantsModules: [
           "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
