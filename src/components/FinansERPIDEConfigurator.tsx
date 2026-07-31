@@ -14,13 +14,13 @@
  * Eski SKU'lar `legacy` işaretli, burada gösterilmiyor ama mevcut abonelikler
  * onlara bağlı olduğu için siliniyor değil.
  *
- * AI kontörü ayrı bir ürün; buradan da eklenebiliyor çünkü satın alma kararı
- * aynı anda veriliyor.
+ * AI kontörü buradan satılmıyor: Eylül şu an sadece ERPİDE A.Ş. hesabında
+ * açık (mesaj maliyeti ~₺3, müşteriye bu fiyattan satmak anlamsız).
  */
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Sparkles, Users } from "lucide-react";
+import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -29,8 +29,6 @@ interface Props {
   product: Product;
   /** Kullanıcının mevcut FinansERPIDE planı varsa onun base SKU'su (yükselt akışı için). */
   activeBaseSkuId?: string | null;
-  /** AI Kontör ürünü — Eylül için ek mesaj paketi aynı ekrandan seçilebilsin. */
-  aiKontorProduct?: Product | null;
 }
 
 // FinansERPIDE canlı sistemden çekilmiş ekran görüntüleri — Playwright otomatik
@@ -50,7 +48,7 @@ const FINANSERPIDE_SCREENSHOTS = [
   { src: "/screenshots/finanserpide/12-amortisman-demo.png",       caption: "Amortisman — aylık otomatik 770/257 yevmiyesi" },
 ];
 
-export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiKontorProduct }: Props) {
+export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: Props) {
   const router = useRouter();
   const { addItem, lines } = useCart();
 
@@ -60,16 +58,11 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
     () => product.skus.filter((s) => s.kind === "base" && !s.legacy),
     [product]
   );
-  const creditSkus = useMemo(
-    () => (aiKontorProduct?.skus || []).filter((s) => s.kind === "credit" && !s.legacy),
-    [aiKontorProduct]
-  );
 
   // Varsayılan seçim: highlight'lı paket (Tam Ticaret), yoksa ilki.
   const [selectedPackageId, setSelectedPackageId] = useState<string>(
     () => (packages.find((p) => p.highlight) || packages[0])?.id || ""
   );
-  const [creditSkuId, setCreditSkuId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addedConfirm, setAddedConfirm] = useState(false);
   // Lightbox — SS'lere tıklayınca tam boy. -1 kapalı, 0..N-1 hero+gallery indeksleri.
@@ -104,18 +97,12 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
   const packagePrice = selectedPackage ? priceFor(selectedPackage, "TRY") : null;
   const monthlyTotal = packagePrice?.price ?? 0;
   const monthlyCcy = packagePrice?.currency ?? "TRY";
-  const selectedCreditSku = creditSkus.find((s) => s.id === creditSkuId) || null;
-  // Kontör tek seferlik alım — aylık aboneliğe eklenmez, ayrı gösterilir.
-  const creditPriced = selectedCreditSku ? priceFor(selectedCreditSku, "TRY") : null;
-  const creditPrice = creditPriced?.price ?? 0;
-  const creditCcy = creditPriced?.currency ?? "TRY";
 
   async function handleAddToCart() {
     if (!selectedPackage) return;
     setAdding(true);
     setAddedConfirm(false);
     addItem(selectedPackage.id, 1);
-    if (selectedCreditSku) addItem(selectedCreditSku.id, 1);
     await new Promise((r) => setTimeout(r, 250));
     setAdding(false);
     setAddedConfirm(true);
@@ -304,64 +291,6 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
           </p>
         </div>
 
-        {/* AI KONTÖR — planla birlikte alınabilir, sonradan da alınabilir. */}
-        {creditSkus.length > 0 && (
-          <>
-            <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
-              3. Eylül AI — İsteğe Bağlı
-            </p>
-            <div className="p-5 rounded-2xl bg-[#111118] border border-white/10 mb-6">
-              <div className="flex items-start gap-3 mb-4">
-                <Sparkles size={18} className="text-purple-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-white mb-1">AI Asistan Kontörü</h4>
-                  <p className="text-xs text-gray-400 leading-relaxed">
-                    Eylül&apos;e konuşarak fatura kesebilir, cari açabilir, rapor sorabilirsiniz.
-                    Her paket tek seferliktir, bitene kadar geçerlidir ve sonraki aya devreder.
-                    <strong className="text-gray-300"> Şimdi almak zorunda değilsiniz</strong> —
-                    ihtiyaç duyduğunuzda hesabınızdan ekleyebilirsiniz.
-                  </p>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCreditSkuId(null)}
-                  className={`p-3 rounded-xl border text-left transition ${
-                    creditSkuId === null
-                      ? "border-blue-500/60 bg-blue-500/5 ring-2 ring-blue-500/20"
-                      : "border-white/10 hover:border-white/25"
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-white">Şimdilik istemiyorum</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Sonradan ekleyebilirsiniz</p>
-                </button>
-                {creditSkus.map((sku) => {
-                  const { price, currency: skuCcy } = priceFor(sku, "TRY");
-                  const isSelected = creditSkuId === sku.id;
-                  return (
-                    <button
-                      key={sku.id}
-                      type="button"
-                      onClick={() => setCreditSkuId(sku.id)}
-                      className={`p-3 rounded-xl border text-left transition ${
-                        isSelected
-                          ? "border-purple-500/60 bg-purple-500/5 ring-2 ring-purple-500/20"
-                          : "border-white/10 hover:border-white/25"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-white">{sku.name}</p>
-                        <span className="text-sm font-bold text-white">{formatPrice(price, skuCcy, { short: true })}</span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{sku.description}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
       </div>
 
       {/* SAĞ — Sticky Sepet Özeti */}
@@ -382,17 +311,6 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
                 />
                 <p className="text-[10px] text-gray-500">Sınırsız kullanıcı dahil · fiyatlara KDV dahil değildir</p>
               </>
-            )}
-            {selectedCreditSku && (
-              <div className="pt-2 mt-2 border-t border-white/5">
-                <SummaryRow
-                  label={`${selectedCreditSku.name} (tek seferlik)`}
-                  value={formatPrice(creditPrice, creditCcy, { short: true })}
-                />
-                <p className="text-[10px] text-gray-500 mt-1">
-                  Aylık aboneliğe dahil değil — ilk ödemeye eklenir.
-                </p>
-              </div>
             )}
           </div>
 
@@ -424,7 +342,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
           )}
 
           <p className="text-[11px] text-gray-500 mt-4 leading-relaxed">
-            Ödemeler iyzico güvenli kart altyapısı üzerinden alınır. USD fiyat, ödeme anında TL karşılığına çevrilir. İstediğin zaman iptal edebilirsin.
+            Fiyatlara KDV dahil değildir. Ödemeler iyzico güvenli kart altyapısı üzerinden alınır. İstediğin zaman iptal edebilirsin.
           </p>
         </div>
 
