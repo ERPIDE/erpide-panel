@@ -179,3 +179,36 @@ export async function chargeSavedCard(input: SavedCardChargeInput): Promise<Save
     );
   });
 }
+
+
+/**
+ * Aynı gün yapılmış bir ödemeyi tamamen iptal eder (iyzico "cancel").
+ *
+ * Kartlı deneme için kullanıyoruz: kartı saklayabilmek adına ₺1 çekiyoruz,
+ * hemen ardından bunu iptal ediyoruz. Aynı gün iptal edilen işlem müşterinin
+ * ekstresine çoğu bankada hiç yansımaz; refund'dan farkı budur (refund yeni
+ * bir iade hareketi yaratır ve günler sürer).
+ */
+export async function cancelPayment(input: {
+  paymentId: string;
+  conversationId: string;
+  reason?: string;
+}): Promise<{ status: "success" | "failure"; errorMessage?: string }> {
+  if (isMockMode()) return { status: "success" };
+  const client = getClient();
+  return new Promise((resolve) => {
+    client.cancel.create(
+      {
+        locale: "tr",
+        conversationId: input.conversationId,
+        paymentId: input.paymentId,
+        ip: "85.34.78.112",
+      },
+      (err: unknown, result: Record<string, unknown>) => {
+        if (err) { resolve({ status: "failure", errorMessage: String(err) }); return; }
+        if (result.status === "success") resolve({ status: "success" });
+        else resolve({ status: "failure", errorMessage: result.errorMessage as string });
+      }
+    );
+  });
+}

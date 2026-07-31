@@ -36,6 +36,7 @@ import {
 } from "@/lib/auth/user-store";
 import { getSku } from "@/lib/products";
 import { chargeSavedCard, isMockMode } from "@/lib/payments/iyzico";
+import { issueSubscriptionInvoice } from "@/lib/payments/subscription-invoice";
 import { provisionCaptchaLicense, revokeCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { sendOrderConfirmationEmail, sendRenewalFailedEmail, sendExpiringSoonEmail } from "@/lib/payments/email";
 import { invalidateRemoteLicenseCache } from "@/lib/payments/license-service-invalidate";
@@ -66,7 +67,13 @@ function hoursBetween(a: Date, b: Date): number {
 
 
 async function processOrder(order: OrderRecord, now: Date): Promise<{ status: string; orderId: string; detail?: string }> {
-  if (order.status !== "PAID") return { status: "skip:not-paid", orderId: order.id };
+  // Kartli deneme: sure dolunca ilk tahsilat burada yapiliyor ve siparis
+  // PAID'e geciyor. Deneme de normal abonelik gibi yenilenir — tek fark
+  // vadenin subscriptionExpiresAt yerine trialExpiresAt'te olmasi.
+  const isTrialConversion = order.status === "TRIAL" && order.isTrial === true;
+  if (order.status !== "PAID" && !isTrialConversion) {
+    return { status: "skip:not-paid", orderId: order.id };
+  }
   if (order.cancelledAt) {
     // Kullanıcı iptal etti — yenileme yapma. Süre dolduğunda EXPIRED'a düşer.
     return { status: "skip:cancelled", orderId: order.id };
@@ -76,9 +83,10 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
     await maybeSendExpiringEmail(order, now);
     return { status: "skip:auto-renew-off", orderId: order.id };
   }
-  if (!order.subscriptionExpiresAt) return { status: "skip:no-expiry", orderId: order.id };
+  const dueAtRaw = isTrialConversion ? order.trialExpiresAt : order.subscriptionExpiresAt;
+  if (!dueAtRaw) return { status: "skip:no-expiry", orderId: order.id };
 
-  const expiresAt = new Date(order.subscriptionExpiresAt);
+  const expiresAt = new Date(dueAtRaw);
   if (expiresAt.getTime() - now.getTime() > RENEW_WINDOW_HOURS * 60 * 60 * 1000) {
     return { status: "skip:not-due-yet", orderId: order.id };
   }
@@ -92,6 +100,12 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
   const user = await findUserById(order.userId, true);
   if (!user) return { status: "skip:no-user", orderId: order.id };
   if (!user.iyzicoCardUserKey || !user.iyzicoCardToken) {
+    if (isTrialConversion) {
+      // Karti olmayan eski denemeler (kartli akis oncesi baslatilanlar):
+      // tahsilat denenmez, deneme normal sekilde sona erer.
+      await updateOrder(order.id, { status: "EXPIRED" });
+      return { status: "trial-ended:no-card", orderId: order.id };
+    }
     await updateOrder(order.id, {
       lastRenewAttemptAt: now.toISOString(),
       lastRenewError: "Kayıtlı kart yok — manuel yenileme gerekiyor",
@@ -237,7 +251,22 @@ async function processOrder(order: OrderRecord, now: Date): Promise<{ status: st
     autoRenewEnabled: false,
     lastRenewAttemptAt: now.toISOString(),
     lastRenewError: undefined,
+    // Deneme tahsilata dönüştü — artık "aktif deneme" olarak listelenmesin.
+    ...(isTrialConversion ? { status: "EXPIRED" as const } : {}),
   });
+
+  // Her tahsilat faturalanır. Yenilemede de fatura kesilmemesi, aylık gelirin
+  // belgesiz kalması demekti.
+  try {
+    const inv = await issueSubscriptionInvoice(newOrder, user);
+    if (inv.ok && inv.documentNumber) {
+      console.log("[cron-renew] fatura kesildi:", { orderId: newOrder.id, belge: inv.documentNumber, gonderildi: inv.sent });
+    } else {
+      console.error("[cron-renew] fatura kesilemedi:", inv.error || inv.warning, "order=", newOrder.id);
+    }
+  } catch (e) {
+    console.error("[cron-renew] fatura adimi patladi:", e);
+  }
 
   // Notify the customer.
   try {

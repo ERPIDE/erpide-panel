@@ -154,7 +154,7 @@ export async function POST(req: Request) {
   }
 }
 
-async function initCheckoutMulti(opts: {
+export async function initCheckoutMulti(opts: {
   conversationId: string;
   callbackUrl: string;
   totalPrice: number;

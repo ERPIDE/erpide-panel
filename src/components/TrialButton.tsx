@@ -60,7 +60,11 @@ export default function TrialButton({ skuId, productId, returnTo, className, com
         return;
       }
       setState("started");
-      window.location.href = entryPointFor(productId);
+      // Kartı yoksa iyzico'nun kart doğrulama sayfasına gidiyor; kartı varsa
+      // deneme çoktan başladı, doğrudan ürüne alıyoruz.
+      window.location.href = data.needsCard && data.paymentPageUrl
+        ? data.paymentPageUrl
+        : entryPointFor(productId);
     } catch {
       setError("Bağlantı hatası. Tekrar dener misin?");
       setState("error");

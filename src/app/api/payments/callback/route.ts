@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { retrieveCheckout } from "@/lib/payments/iyzico";
+import { retrieveCheckout, cancelPayment } from "@/lib/payments/iyzico";
 import { findOrderByConversationId, updateOrder, findUserById, updateUser, type OrderItem } from "@/lib/auth/user-store";
 import { issueSubscriptionInvoice } from "@/lib/payments/subscription-invoice";
+import { invalidateRemoteLicenseCache } from "@/lib/payments/license-service-invalidate";
 import { sendOrderConfirmationEmail } from "@/lib/payments/email";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { provisionFinanserpideSku } from "@/lib/payments/finanserpide-provision";
@@ -130,6 +131,52 @@ async function handle(req: Request) {
     } else {
       provisionedItems.push(item);
     }
+  }
+
+  // ===== KARTLI DENEME =====
+  // ₺1'lik doğrulama işlemiyle kartı sakladık; denemeyi başlatıp o ₺1'i aynı
+  // gün iptal ediyoruz. Sipariş PAID'e geçmez — 14 gün sonra yenileme cron'u
+  // gerçek tutarı çekecek.
+  if (order.isTrial) {
+    const trialOrder = await updateOrder(order.id, {
+      status: "TRIAL",
+      paymentId: result.paymentId,
+      iyzicoToken: token,
+      autoRenewEnabled: true,
+    });
+
+    if (result.paymentId) {
+      const cancelled = await cancelPayment({
+        paymentId: result.paymentId,
+        conversationId,
+        reason: "trial-card-verification",
+      });
+      if (cancelled.status !== "success") {
+        // İptal edilemezse müşteriden ₺1 tahsil edilmiş kalır. Denemeyi
+        // bozmuyoruz ama görülmesi için yüksek sesle logluyoruz.
+        console.error("[callback] deneme dogrulama ₺1 iptal edilemedi:", result.paymentId, cancelled.errorMessage);
+      }
+    }
+
+    if (user) {
+      const sku = getSku(order.items[0]?.skuId || "");
+      if (sku && order.items[0]?.productId === "finanserpide") {
+        const prov = await provisionFinanserpideSku({
+          buyerEmail: user.email,
+          paymentId: `trial-${order.id}`,
+          sku,
+          quantity: 1,
+        });
+        if (!prov.ok) console.error("[callback] deneme provision failed:", prov.error);
+      }
+      await invalidateRemoteLicenseCache(user.email).catch(() => {});
+    }
+
+    void trialOrder;
+    const trialUrl = new URL("/odeme/basarili", req.url);
+    trialUrl.searchParams.set("order", order.id);
+    trialUrl.searchParams.set("trial", "1");
+    return NextResponse.redirect(trialUrl, 303);
   }
 
   const updated = await updateOrder(order.id, {

@@ -364,7 +364,8 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
                 returnTo="/urunler/finanserpide"
               />
               <p className="text-[11px] text-gray-500 text-center mt-2 mb-3">
-                Kart bilgisi istemiyoruz. Süre bitince kendiliğinden kapanır.
+                14 gün boyunca ücretsiz. Süre bitmeden iptal edersen hiçbir ücret alınmaz;
+                iptal etmezsen aboneliğin kendiliğinden başlar.
               </p>
             </div>
           )}
