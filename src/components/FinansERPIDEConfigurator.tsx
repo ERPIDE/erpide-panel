@@ -20,7 +20,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Users, Sparkles } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
 import { priceFor, formatPrice } from "@/lib/currency";
@@ -65,6 +65,8 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
   );
   const [adding, setAdding] = useState(false);
   const [addedConfirm, setAddedConfirm] = useState(false);
+  const [trialState, setTrialState] = useState<"idle" | "loading" | "started" | "error">("idle");
+  const [trialError, setTrialError] = useState("");
   // Lightbox — SS'lere tıklayınca tam boy. -1 kapalı, 0..N-1 hero+gallery indeksleri.
   // index 0 = HERO dashboard, 1..N = gallery item'ları (FINANSERPIDE_SCREENSHOTS[i-1]).
   const [lightbox, setLightbox] = useState<number>(-1);
@@ -107,6 +109,36 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
     setAdding(false);
     setAddedConfirm(true);
     setTimeout(() => setAddedConfirm(false), 2500);
+  }
+
+  async function handleStartTrial() {
+    if (!selectedPackage) return;
+    setTrialState("loading");
+    setTrialError("");
+    try {
+      const res = await fetch("/api/trial/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skuId: selectedPackage.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        // Giriş yoksa üyeliğe yolla, dönüşte buraya geri gelsin.
+        router.push(`/giris?next=${encodeURIComponent("/urunler/finanserpide")}`);
+        return;
+      }
+      if (!res.ok) {
+        setTrialError(data.error || "Deneme başlatılamadı.");
+        setTrialState("error");
+        return;
+      }
+      setTrialState("started");
+      // Deneme açıldı — müşteriyi bekletmeden ürüne sok (SSO, kod yok).
+      window.location.href = "/api/sso/finanserpide";
+    } catch {
+      setTrialError("Bağlantı hatası. Tekrar dener misin?");
+      setTrialState("error");
+    }
   }
 
   const inCartBase = selectedPackage ? (lines.find((l) => l.skuId === selectedPackage.id)?.quantity || 0) : 0;
@@ -313,6 +345,29 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
               </>
             )}
           </div>
+
+          {!isUpgrade && (
+            <>
+              <button
+                onClick={handleStartTrial}
+                disabled={trialState === "loading" || trialState === "started"}
+                className="w-full py-3.5 rounded-xl font-semibold transition flex items-center justify-center gap-2 mb-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {trialState === "loading" ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {trialState === "loading" ? "Deneme başlatılıyor..."
+                  : trialState === "started" ? "Deneme açıldı, yönlendiriliyorsun..."
+                  : "14 Gün Ücretsiz Dene"}
+              </button>
+              <p className="text-[11px] text-gray-500 text-center mb-3">
+                Kart bilgisi istemiyoruz. Süre bitince kendiliğinden kapanır.
+              </p>
+              {trialError && (
+                <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
+                  {trialError}
+                </div>
+              )}
+            </>
+          )}
 
           <button
             onClick={handleAddToCart}
