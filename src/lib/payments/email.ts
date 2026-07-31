@@ -308,3 +308,120 @@ export async function sendExpiringSoonEmail(opts: {
   });
   return result;
 }
+
+
+/**
+ * "Denemen bitmek üzere" — bitişe birkaç gün kala.
+ *
+ * Deneme sessizce bitiyordu: müşteri bir sabah giriyor, erişim kapalı, sebebini
+ * bilmiyor. Bu mail hem uyarı hem de satın almaya tek tıklık yol.
+ */
+export async function sendTrialEndingSoonEmail(opts: {
+  to: string;
+  buyerName: string;
+  productName: string;
+  skuId: string;
+  daysLeft: number;
+  expiresAt: string;
+}) {
+  const { to, buyerName, productName, skuId, daysLeft, expiresAt } = opts;
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[trial-ending-email] RESEND_API_KEY tanımsız:", { to, skuId });
+    return { skipped: true };
+  }
+
+  const buyUrl = `https://erpide.com/urunler/finanserpide?sku=${encodeURIComponent(skuId)}`;
+  const endsOn = new Date(expiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f5">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 0">
+<tr><td>${emailHeader}</td></tr>
+<tr><td style="background:#ffffff;padding:32px 40px;max-width:600px;margin:0 auto">
+  <p style="font-size:15px;color:#111827;margin:0 0 16px">Merhaba ${buyerName},</p>
+  <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px">
+    <strong>${productName}</strong> ücretsiz denemenin bitmesine
+    <strong>${daysLeft} gün</strong> kaldı — ${endsOn} tarihinde sona eriyor.
+  </p>
+  <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 24px">
+    Devam etmek istersen aşağıdaki bağlantıdan paketini seçebilirsin.
+    <strong>Verilerin olduğu gibi kalır</strong>; kaldığın yerden devam edersin.
+  </p>
+  <div style="text-align:center;margin:0 0 24px">
+    <a href="${buyUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:600">
+      Paketimi Seç ve Devam Et
+    </a>
+  </div>
+  <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:0">
+    Sorun yaşarsan <a href="mailto:info@erpide.com" style="color:#3b82f6;text-decoration:none">info@erpide.com</a> adresine yazabilirsin.
+  </p>
+  ${emailSignature}
+</td></tr>
+<tr><td>${emailFooter}</td></tr>
+</table></body></html>`;
+
+  return resend.emails.send({
+    from: FROM,
+    to,
+    bcc: INTERNAL_BCC,
+    subject: `Denemen ${daysLeft} gün sonra bitiyor — ${productName}`,
+    html,
+  });
+}
+
+
+/**
+ * "Denemen bitti" — bitiş günü. Verilerin durduğunu vurguluyoruz: müşterinin
+ * en büyük korkusu bu ve geri dönüşü kolaylaştıran şey de bu.
+ */
+export async function sendTrialEndedEmail(opts: {
+  to: string;
+  buyerName: string;
+  productName: string;
+  skuId: string;
+}) {
+  const { to, buyerName, productName, skuId } = opts;
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[trial-ended-email] RESEND_API_KEY tanımsız:", { to, skuId });
+    return { skipped: true };
+  }
+
+  const buyUrl = `https://erpide.com/urunler/finanserpide?sku=${encodeURIComponent(skuId)}`;
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f5">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 0">
+<tr><td>${emailHeader}</td></tr>
+<tr><td style="background:#ffffff;padding:32px 40px;max-width:600px;margin:0 auto">
+  <p style="font-size:15px;color:#111827;margin:0 0 16px">Merhaba ${buyerName},</p>
+  <p style="font-size:14px;color:#374151;line-height:1.7;margin:0 0 20px">
+    <strong>${productName}</strong> ücretsiz deneme süren sona erdi.
+  </p>
+  <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:16px;margin:0 0 24px">
+    <p style="font-size:13px;color:#166534;line-height:1.6;margin:0">
+      <strong>Verilerin duruyor.</strong> Cari kartların, faturaların ve tüm kayıtların
+      hesabında güvende. Bir paket seçtiğin anda kaldığın yerden devam edersin.
+    </p>
+  </div>
+  <div style="text-align:center;margin:0 0 24px">
+    <a href="${buyUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:600">
+      Devam Etmek İçin Paket Seç
+    </a>
+  </div>
+  <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:0">
+    Denememizi beğenmediysen sebebini duymak isteriz:
+    <a href="mailto:info@erpide.com" style="color:#3b82f6;text-decoration:none">info@erpide.com</a>
+  </p>
+  ${emailSignature}
+</td></tr>
+<tr><td>${emailFooter}</td></tr>
+</table></body></html>`;
+
+  return resend.emails.send({
+    from: FROM,
+    to,
+    bcc: INTERNAL_BCC,
+    subject: `Denemen sona erdi — ${productName}`,
+    html,
+  });
+}

@@ -107,6 +107,10 @@ export interface OrderRecord {
   iyzicoToken?: string;
   isTrial?: boolean;
   trialExpiresAt?: string;
+  /** "Denemen bitiyor" maili gönderildi (ISO). Aynı maili iki kez atmamak için. */
+  trialReminderSent?: string;
+  /** "Denemen bitti" maili gönderildi (ISO). */
+  trialEndedNoticeSent?: string;
 
   // Paid subscription cycle: when this subscription period ends. After this
   // date the backend License is no longer valid and API calls 403 — unless
@@ -391,6 +395,8 @@ function rowToOrder(row: AnyRow): OrderRecord {
     iyzicoToken: (row.iyzicoToken as string) || undefined,
     isTrial: (row.isTrial as boolean) || undefined,
     trialExpiresAt: iso(row.trialExpiresAt),
+    trialReminderSent: iso(row.trialReminderSent),
+    trialEndedNoticeSent: iso(row.trialEndedNoticeSent),
     subscriptionExpiresAt: iso(row.subscriptionExpiresAt),
     billingCycle: (row.billingCycle as OrderRecord["billingCycle"]) || undefined,
     autoRenewEnabled: (row.autoRenewEnabled as boolean) ?? undefined,
@@ -420,6 +426,8 @@ function orderToPrisma(rec: Partial<OrderRecord>): AnyRow {
   if (rec.iyzicoToken !== undefined) out.iyzicoToken = rec.iyzicoToken || null;
   if (rec.isTrial !== undefined) out.isTrial = !!rec.isTrial;
   if (rec.trialExpiresAt !== undefined) out.trialExpiresAt = dateOrNull(rec.trialExpiresAt);
+  if (rec.trialReminderSent !== undefined) out.trialReminderSent = dateOrNull(rec.trialReminderSent);
+  if (rec.trialEndedNoticeSent !== undefined) out.trialEndedNoticeSent = dateOrNull(rec.trialEndedNoticeSent);
   if (rec.subscriptionExpiresAt !== undefined) out.subscriptionExpiresAt = dateOrNull(rec.subscriptionExpiresAt);
   if (rec.billingCycle !== undefined) out.billingCycle = rec.billingCycle || null;
   if (rec.autoRenewEnabled !== undefined) out.autoRenewEnabled = rec.autoRenewEnabled ?? null;

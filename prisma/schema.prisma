@@ -76,6 +76,10 @@ model Order {
   iyzicoToken    String?
   isTrial        Boolean   @default(false)
   trialExpiresAt DateTime?
+  /// "Denemen bitiyor" hatirlatmasi gonderildi — ayni mail iki kez gitmesin.
+  trialReminderSent    DateTime?
+  /// "Denemen bitti" bildirimi gonderildi.
+  trialEndedNoticeSent DateTime?
 
   subscriptionExpiresAt DateTime?
   billingCycle          String?
