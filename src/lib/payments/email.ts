@@ -15,8 +15,10 @@ export async function sendOrderConfirmationEmail(opts: {
   to: string;
   buyerName: string;
   order: OrderRecord;
+  /** Resmi e-Fatura/e-Arşiv PDF'i — kesilebildiyse mail'e eklenir. */
+  invoice?: { documentNumber: string; pdfBase64?: string | null } | null;
 }) {
-  const { to, buyerName, order } = opts;
+  const { to, buyerName, order, invoice } = opts;
   const resend = getResend();
   if (!resend) {
     console.warn("[order-email] RESEND_API_KEY tanımsız:", { to, orderId: order.id });
@@ -67,12 +69,21 @@ export async function sendOrderConfirmationEmail(opts: {
 <tr><td>${emailFooter}</td></tr>
 </table></body></html>`;
 
+  // Fatura kesilebildiyse resmi PDF'i ekle. Kesilemediyse mail yine gider —
+  // müşteriyi faturamız yüzünden onaysız bırakmayız, fatura elle tamamlanır.
+  const attachments = invoice?.pdfBase64
+    ? [{ filename: `${invoice.documentNumber}.pdf`, content: invoice.pdfBase64 }]
+    : undefined;
+
   const result = await resend.emails.send({
     from: FROM,
     to,
     bcc: INTERNAL_BCC,
-    subject: `Siparişin Onaylandı — ${order.items.length} Lisans Anahtarın Hazır`,
+    subject: invoice?.pdfBase64
+      ? `Siparişin Onaylandı — Faturan Ekte (${invoice.documentNumber})`
+      : `Siparişin Onaylandı — ${order.items.length} Lisans Anahtarın Hazır`,
     html,
+    ...(attachments ? { attachments } : {}),
   });
   return result;
 }

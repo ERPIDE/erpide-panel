@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { retrieveCheckout } from "@/lib/payments/iyzico";
 import { findOrderByConversationId, updateOrder, findUserById, updateUser, type OrderItem } from "@/lib/auth/user-store";
+import { issueSubscriptionInvoice } from "@/lib/payments/subscription-invoice";
 import { sendOrderConfirmationEmail } from "@/lib/payments/email";
 import { provisionCaptchaLicense } from "@/lib/payments/captcha-provision";
 import { provisionFinanserpideSku } from "@/lib/payments/finanserpide-provision";
@@ -145,12 +146,32 @@ async function handle(req: Request) {
     autoRenewEnabled: true,
   });
 
+  // Odeme kesinlesti -> satis faturasini kes. Bu cagri odeme akisini ASLA
+  // dusurmemeli: musteri parayi odedi, lisansi acildi. Fatura kesilemezse
+  // loglanir ve elle tamamlanir.
+  let invoiceInfo: { documentNumber: string; pdfBase64?: string | null } | null = null;
+  try {
+    if (user && updated) {
+      const inv = await issueSubscriptionInvoice(updated, user);
+      if (inv.ok && inv.documentNumber) {
+        invoiceInfo = { documentNumber: inv.documentNumber, pdfBase64: inv.pdfBase64 };
+        console.log("[callback] fatura kesildi:", { orderId: order.id, belge: inv.documentNumber, gonderildi: inv.sent });
+        if (inv.warning) console.warn("[callback] fatura uyarisi:", inv.warning);
+      } else {
+        console.error("[callback] fatura kesilemedi:", inv.error || inv.warning, "order=", order.id);
+      }
+    }
+  } catch (e) {
+    console.error("[callback] fatura adimi patladi:", e);
+  }
+
   try {
     if (user && updated) {
       await sendOrderConfirmationEmail({
         to: user.email,
         buyerName: `${user.name} ${user.surname}`,
         order: updated,
+        invoice: invoiceInfo,
       });
     }
   } catch (e) {
