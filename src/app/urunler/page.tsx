@@ -10,6 +10,7 @@ import { MarketScopeBadge } from "@/components/ProductBadges";
 import { ProductLogo } from "@/components/ProductLogo";
 import { priceFor, formatPrice } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
+import TrialButton from "@/components/TrialButton";
 
 type FilterTab = "all" | ProductCategory;
 
@@ -284,16 +285,31 @@ function ProductBlock({ product, visibleSkus, activeSkuByProduct, lastSkuByProdu
                             }
 
                             return (
-                              <Link
-                                href={`/urunler/${product.id}?sku=${sku.id}`}
-                                className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
-                                  hasActiveOnProduct
-                                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
-                                    : "bg-blue-600 text-white hover:bg-blue-700"
-                                }`}
-                              >
-                                {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
-                              </Link>
+                              <>
+                                {/* Denemesi olan ürünlerde birincil eylem "dene":
+                                    müşteri ürünü görmeden satın alma kararı
+                                    vermek zorunda kalmasın. */}
+                                {!hasActiveOnProduct && !product.noTrial && (
+                                  <TrialButton
+                                    skuId={sku.id}
+                                    productId={product.id}
+                                    returnTo="/urunler"
+                                    compact
+                                  />
+                                )}
+                                <Link
+                                  href={`/urunler/${product.id}?sku=${sku.id}`}
+                                  className={`block text-center py-2.5 rounded-xl font-semibold transition text-sm ${
+                                    hasActiveOnProduct
+                                      ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
+                                      : !product.noTrial
+                                        ? "border border-white/10 text-white hover:bg-white/5"
+                                        : "bg-blue-600 text-white hover:bg-blue-700"
+                                  }`}
+                                >
+                                  {hasActiveOnProduct ? t("products.upgrade_to_plan") : t("products.add_to_cart")}
+                                </Link>
+                              </>
                             );
                           })()}
                         </div>
