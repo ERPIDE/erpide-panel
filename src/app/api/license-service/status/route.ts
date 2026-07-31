@@ -61,6 +61,10 @@ function moduleKeyFromSku(sku: SKU): string | null {
 // FinansERPIDE temel paketin verdiği modüller (base SKU)
 const BASE_MODULES_FOR_FINANSERPIDE = ["satis", "satinalma", "stok", "finans"];
 
+/** "Sınırsız kullanıcı" için taşınan değer. Ürün tarafı bu sayıyı görünce
+ *  koltuk sayacı yerine "Sınırsız" gösterir. */
+const UNLIMITED_SEATS = 99_999;
+
 interface ProductState {
   active: boolean;
   status: "ACTIVE" | "EXPIRED" | "NONE";
@@ -203,6 +207,10 @@ export async function GET(req: Request) {
             }
             if (sku.kind === "seat") s.seats += 1;
             if (sku.seatsIncluded) s.seats += sku.seatsIncluded;
+            // Yeni paketlerde koltuk satmıyoruz. UNLIMITED_SEATS bir sihirli
+            // sayı değil sözleşme: ürün tarafı bu değeri "sınırsız" diye
+            // gösterir (bkz. finanserpide src/lib/seats.ts).
+            if (sku.unlimitedSeats) s.seats = UNLIMITED_SEATS;
           }
           s.modules = Array.from(mods);
         }

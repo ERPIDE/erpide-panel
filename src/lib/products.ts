@@ -138,6 +138,18 @@ export interface SKU {
   creditsGranted?: number;
   /** Bundle SKU: tek kod/tek satın alma ile gelen ek kullanıcı koltuğu sayısı. */
   seatsIncluded?: number;
+  /**
+   * Kullanıcı sayısı sınırsız. FinansERPIDE paketleri 2026-07'den beri böyle:
+   * ek kullanıcı bize kayda değer maliyet yazmıyor (maliyet işlem hacminden
+   * geliyor), rakipler de sınırsız veriyor. Koltuk satmak müşteriyi kapıda
+   * kaybettiriyordu.
+   */
+  unlimitedSeats?: boolean;
+  /**
+   * Satışa kapalı eski SKU. Yeni müşteriye gösterilmez ama license-service
+   * çözmeye devam eder — mevcut abonelikler aynen çalışır.
+   */
+  legacy?: boolean;
   /** Locale overrides. Default `name`/`description`/`features` TR; i18n yalnız
    *  diğer dilleri ezer. AI Kontör + CaptchaERPIDE gibi global ürünlerin
    *  SKU'larında dolu, FinansERPIDE/TR-only ürünlerde opsiyonel. */
@@ -274,6 +286,97 @@ export const PRODUCTS: Product[] = [
     },
     comingSoon: true,
     skus: [
+      // ===== SATIŞTAKİ PAKETLER (2026-07) =====
+      //
+      // Üç paket, hepsinde SINIRSIZ KULLANICI. Önceki model (temel + modül
+      // eklentileri + koltuk başı ücret) 5 kullanıcılı bir firmayı rakiplerin
+      // ~4 katına çıkarıyordu ve müşteri fiyatı görünce ürüne bakmıyordu bile.
+      //
+      // Fiyatlama kuralı: liste fiyatı = doğrudan maliyet × 2,36.
+      // (iyzico %3,49 komisyon KDV dahil tutardan kesiliyor + %25 kurumlar
+      // vergisi → vergi sonrası %40 net kâr.) KDV maliyet değildir; tahsil
+      // edip devlete yatırıyoruz, fiyatın üstüne eklenir.
+      //
+      // USD tutuluyor ama müşteriye TL karşılığı gösteriliyor: TL liste fiyatı
+      // enflasyonda sabit kalamıyor, kurdan türetince kendini güncelliyor.
+      {
+        id: "finanserpide-baslangic-monthly",
+        productId: "finanserpide",
+        name: "Başlangıç",
+        description: "Ticaretini yürüt: satış, satınalma, stok, cari, e-fatura — sınırsız kullanıcı",
+        price: 15,
+        currency: "TRY",
+        prices: { USD: 15 },
+        cycle: "monthly",
+        kind: "base",
+        unlimitedSeats: true,
+        grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
+        features: [
+          "Sınırsız kullanıcı",
+          "Satış (teklif, sipariş, irsaliye, fatura)",
+          "Satınalma (talep, sipariş, irsaliye, fatura)",
+          "Stok yönetimi (ürün, depo, hareket, maliyet)",
+          "Cari hesap + mutabakat",
+          "Banka entegrasyonu + otomatik hareket eşleştirme",
+          "e-Fatura / e-Arşiv (QNB eFinans)",
+          "1 şirket (VKN bazlı izole veritabanı)",
+          "Sınırsız fatura",
+        ],
+      },
+      {
+        id: "finanserpide-profesyonel-monthly",
+        productId: "finanserpide",
+        name: "Profesyonel",
+        description: "Resmi muhasebeni kendi içinde tut: yevmiye, mizan, KDV, amortisman + Eylül AI",
+        price: 25,
+        currency: "TRY",
+        prices: { USD: 25 },
+        cycle: "monthly",
+        kind: "base",
+        unlimitedSeats: true,
+        grantsModules: [
+          "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
+          "/muhasebe", "/sabitkiymet",
+        ],
+        features: [
+          "Başlangıç paketindeki her şey",
+          "Muhasebe — TDHP hesap planı, otomatik yevmiye",
+          "Mizan, defter-i kebir, bilanço, gelir tablosu",
+          "KDV / stopaj hesabı ve beyan hazırlığı",
+          "Sabit kıymet — demirbaş kartı, amortisman planı",
+          "Eylül AI asistanı (kontörle)",
+          "Sınırsız kullanıcı",
+        ],
+        highlight: true,
+      },
+      {
+        id: "finanserpide-kurumsal-monthly",
+        productId: "finanserpide",
+        name: "Kurumsal",
+        description: "Üretim ve personel dahil tam ERP — reçete, üretim emri, bordro, izin",
+        price: 40,
+        currency: "TRY",
+        prices: { USD: 40 },
+        cycle: "monthly",
+        kind: "base",
+        unlimitedSeats: true,
+        grantsModules: [
+          "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
+          "/muhasebe", "/sabitkiymet", "/uretim", "/ik",
+        ],
+        features: [
+          "Profesyonel paketteki her şey",
+          "Üretim — BOM reçeteleri, üretim emri, maliyetlendirme",
+          "İnsan Kaynakları — personel, devam takibi, izin",
+          "Bordro — SGK kesintileri, otomatik personel ödemesi",
+          "Öncelikli destek",
+          "Sınırsız kullanıcı",
+        ],
+      },
+
+      // ===== EMEKLİ SKU'LAR =====
+      // Satışa kapalı. Silinmiyor: mevcut abonelikler bu id'lere bağlı ve
+      // license-service sipariş geçmişini bunlarla çözüyor.
       {
         id: "finanserpide-base-monthly",
         productId: "finanserpide",
@@ -284,6 +387,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 20 },
         cycle: "monthly",
         kind: "base",
+        legacy: true,
         grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
         features: [
           "Satış (teklif, sipariş, irsaliye, fatura)",
@@ -307,6 +411,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 10 },
         cycle: "monthly",
         kind: "module",
+        legacy: true,
         grantsModules: ["/muhasebe"],
         features: [
           "Hesap planı (TR muhasebe)",
@@ -326,6 +431,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 10 },
         cycle: "monthly",
         kind: "module",
+        legacy: true,
         grantsModules: ["/ik"],
         features: [
           "Personel kartoteks (SGK, banka, sözleşme)",
@@ -345,6 +451,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 10 },
         cycle: "monthly",
         kind: "module",
+        legacy: true,
         grantsModules: ["/uretim"],
         features: [
           "Çoklu seviye reçete (BOM)",
@@ -364,6 +471,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 10 },
         cycle: "monthly",
         kind: "module",
+        legacy: true,
         grantsModules: ["/sabitkiymet"],
         features: [
           "Demirbaş kartoteks (alış tarihi, oran, yöntem)",
@@ -383,6 +491,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 90 },
         cycle: "monthly",
         kind: "base",
+        legacy: true,
         // Base modüller + tüm modül eklentileri tek SKU'da
         grantsModules: [
           "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
@@ -411,6 +520,7 @@ export const PRODUCTS: Product[] = [
         prices: { USD: 10 },
         cycle: "monthly",
         kind: "seat",
+        legacy: true,
         features: [
           "+1 kullanıcı koltuğu",
           "Rol ve yetki ataması",

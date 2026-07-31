@@ -15,14 +15,26 @@ import type { SKU, Currency } from "@/lib/products";
 export const SUPPORTED_CURRENCIES: Currency[] = ["TRY", "USD"];
 
 /** USD→TRY çevrim kuru. iyzico hesabımız sadece TRY ödeme aldığı için fiyatlar
- *  USD gösterilse de ödeme TRY çevrilerek çekilir. Kuru env'den okuyoruz —
- *  default 40, manuel güncellenir ya da ileride bir kur API'sine bağlanır. */
-const DEFAULT_USD_TRY = 40;
+ *  USD gösterilse de ödeme TRY çevrilerek çekilir.
+ *
+ *  DİKKAT: bu sayı düşük kalırsa her satışta eksik tahsilat yaparız — kur
+ *  yükselirken fiyat sabit kalır ve marj sessizce erir. USD_TRY_RATE env'i
+ *  set edilmeli; buradaki default sadece emniyet ağı (TCMB 30.07.2026: 47,41).
+ */
+const DEFAULT_USD_TRY = 47;
 export function getUsdTryRate(): number {
   const raw = process.env.USD_TRY_RATE;
   const parsed = raw ? Number(raw) : NaN;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_USD_TRY;
 }
+
+/** Tarayıcıda "≈ ₺X" göstermek için kur. Sunucu env'i client bundle'a
+ *  girmediğinden NEXT_PUBLIC_ değişkenini okur; yoksa aynı default'a düşer.
+ *  Sadece gösterim içindir — tahsilat her zaman getUsdTryRate() ile yapılır. */
+export const USD_TRY_DISPLAY: number =
+  Number(process.env.NEXT_PUBLIC_USD_TRY_RATE) > 0
+    ? Number(process.env.NEXT_PUBLIC_USD_TRY_RATE)
+    : DEFAULT_USD_TRY;
 
 /** Bir SKU için iyzico'ya gönderilecek TRY tutarı. SKU'nun USD fiyatı varsa
  *  kur ile çarpar; yoksa legacy `price` (TRY) döner. */

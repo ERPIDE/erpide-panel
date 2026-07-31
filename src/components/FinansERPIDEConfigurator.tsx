@@ -15,10 +15,10 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Minus, ShoppingCart, Loader2, ArrowRight, Briefcase, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Sparkles, Users } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
-import { priceFor, formatPrice } from "@/lib/currency";
+import { priceFor, formatPrice, USD_TRY_DISPLAY } from "@/lib/currency";
 
 interface Props {
   product: Product;
@@ -26,52 +26,6 @@ interface Props {
   activeBaseSkuId?: string | null;
   /** AI Kontör ürünü — Eylül için ek mesaj paketi aynı ekrandan seçilebilsin. */
   aiKontorProduct?: Product | null;
-}
-
-/**
- * Hazır başlangıç paketleri.
- *
- * Müşteri "hangi modülü almalıyım" sorusuyla karşılaşınca satın almayı
- * erteliyor. Bu üç seçenek karar yükünü kaldırır: bir tık, hazır yapılandırma.
- * Altındaki detay bölümü açık kalır — isteyen ince ayar yapar.
- *
- * moduleKey = SKU id'sindeki modül adı (finanserpide-module-<key>-monthly).
- */
-const PRESETS: Array<{
-  id: string;
-  name: string;
-  who: string;
-  moduleKeys: string[];
-  extraUsers: number;
-  badge?: string;
-}> = [
-  {
-    id: "ticaret",
-    name: "Ticaret",
-    who: "Alım-satım yapan, muhasebesini mali müşavirine bırakan firmalar",
-    moduleKeys: [],
-    extraUsers: 0,
-  },
-  {
-    id: "ticaret-muhasebe",
-    name: "Ticaret + Muhasebe",
-    who: "Yevmiyesini, mizanını, KDV'sini kendi içinde tutan firmalar",
-    moduleKeys: ["muhasebe"],
-    extraUsers: 1,
-    badge: "En çok tercih edilen",
-  },
-  {
-    id: "tam",
-    name: "Tam Paket",
-    who: "Üretim yapan, personeli ve demirbaşı olan firmalar",
-    moduleKeys: ["muhasebe", "ik", "uretim", "sabitkiymet"],
-    extraUsers: 3,
-  },
-];
-
-/** SKU id'sinden modül anahtarını çıkarır: finanserpide-module-ik-monthly → ik */
-function moduleKeyOf(skuId: string): string {
-  return skuId.replace(/^finanserpide-module-/, "").replace(/-monthly$/, "");
 }
 
 // FinansERPIDE canlı sistemden çekilmiş ekran görüntüleri — Playwright otomatik
@@ -95,24 +49,22 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
   const router = useRouter();
   const { addItem, lines } = useCart();
 
-  // SKU'ları tipine göre grupla. Base'i id ile seçiyoruz: "Tam Paket" bundle'ı
-  // da kind:"base" taşıyor ve find() sıraya bağlı yanlış SKU'yu seçebilirdi.
-  // Bundle konfigüratörde gösterilmez — aynı kapsam preset'lerle kuruluyor.
-  const baseSku = useMemo(
-    () => product.skus.find((s) => s.id === "finanserpide-base-monthly") || product.skus.find((s) => s.kind === "base"),
+  // Satıştaki paketler. Emekli SKU'lar (eski temel + modül eklentileri +
+  // koltuk) listede duruyor ama gösterilmiyor — mevcut abonelikler onlara bağlı.
+  const packages = useMemo(
+    () => product.skus.filter((s) => s.kind === "base" && !s.legacy),
     [product]
   );
-  const moduleSkus = useMemo(() => product.skus.filter((s) => s.kind === "module"), [product]);
-  const seatSku = useMemo(() => product.skus.find((s) => s.kind === "seat"), [product]);
   const creditSkus = useMemo(
-    () => (aiKontorProduct?.skus || []).filter((s) => s.kind === "credit"),
+    () => (aiKontorProduct?.skus || []).filter((s) => s.kind === "credit" && !s.legacy),
     [aiKontorProduct]
   );
 
-  const [selectedModuleIds, setSelectedModuleIds] = useState<Set<string>>(new Set());
-  const [extraUsers, setExtraUsers] = useState(0);
+  // Varsayılan seçim: highlight'lı paket (Profesyonel), yoksa ilki.
+  const [selectedPackageId, setSelectedPackageId] = useState<string>(
+    () => (packages.find((p) => p.highlight) || packages[0])?.id || ""
+  );
   const [creditSkuId, setCreditSkuId] = useState<string | null>(null);
-  const [activePreset, setActivePreset] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addedConfirm, setAddedConfirm] = useState(false);
   // Lightbox — SS'lere tıklayınca tam boy. -1 kapalı, 0..N-1 hero+gallery indeksleri.
@@ -136,59 +88,21 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox, totalImages]);
 
-  if (!baseSku || !seatSku) {
-    return <div className="text-red-400">Plan konfigürasyonu yüklenemedi — yönetici ile iletişime geçin.</div>;
+  if (packages.length === 0) {
+    return <div className="text-red-400">Paket listesi yüklenemedi — yönetici ile iletişime geçin.</div>;
   }
 
-  const basePrice = priceFor(baseSku, "USD").price;
-  const seatPrice = priceFor(seatSku, "USD").price;
-  const moduleTotal = moduleSkus
-    .filter((m) => selectedModuleIds.has(m.id))
-    .reduce((sum, m) => sum + priceFor(m, "USD").price, 0);
+  const selectedPackage = packages.find((p) => p.id === selectedPackageId) || packages[0] || null;
+  const monthlyTotal = selectedPackage ? priceFor(selectedPackage, "USD").price : 0;
   const selectedCreditSku = creditSkus.find((s) => s.id === creditSkuId) || null;
   // Kontör tek seferlik alım — aylık aboneliğe eklenmez, ayrı gösterilir.
   const creditPrice = selectedCreditSku ? priceFor(selectedCreditSku, "USD").price : 0;
-  const monthlyTotal = basePrice + moduleTotal + extraUsers * seatPrice;
-
-  function toggleModule(id: string) {
-    setActivePreset(null); // elle değiştirdi — preset rozetini düşür
-    setSelectedModuleIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function applyPreset(presetId: string) {
-    const preset = PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
-    const ids = moduleSkus
-      .filter((m) => preset.moduleKeys.includes(moduleKeyOf(m.id)))
-      .map((m) => m.id);
-    setSelectedModuleIds(new Set(ids));
-    setExtraUsers(preset.extraUsers);
-    setActivePreset(presetId);
-  }
-
-  /** Bir preset'in aylık tutarı — kartın üstünde göstermek için. */
-  function presetPrice(preset: (typeof PRESETS)[number]): number {
-    const mods = moduleSkus
-      .filter((m) => preset.moduleKeys.includes(moduleKeyOf(m.id)))
-      .reduce((sum, m) => sum + priceFor(m, "USD").price, 0);
-    return basePrice + mods + preset.extraUsers * seatPrice;
-  }
 
   async function handleAddToCart() {
+    if (!selectedPackage) return;
     setAdding(true);
     setAddedConfirm(false);
-    // Base SKU
-    addItem(baseSku!.id, 1);
-    // Modüller
-    for (const id of selectedModuleIds) addItem(id, 1);
-    // Ek kullanıcılar
-    if (extraUsers > 0) addItem(seatSku!.id, extraUsers);
-    // AI kontör (tek seferlik)
+    addItem(selectedPackage.id, 1);
     if (selectedCreditSku) addItem(selectedCreditSku.id, 1);
     await new Promise((r) => setTimeout(r, 250));
     setAdding(false);
@@ -196,7 +110,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
     setTimeout(() => setAddedConfirm(false), 2500);
   }
 
-  const inCartBase = lines.find((l) => l.skuId === baseSku.id)?.quantity || 0;
+  const inCartBase = selectedPackage ? (lines.find((l) => l.skuId === selectedPackage.id)?.quantity || 0) : 0;
   const isUpgrade = !!activeBaseSkuId; // mevcut planı var → "Yükselt" tonu
   const Icon = product.icon;
 
@@ -312,120 +226,56 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
             <Icon size={26} className="text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Planınızı Yapılandırın</h2>
+            <h2 className="text-2xl font-bold text-white">Paketinizi Seçin</h2>
             <p className="text-sm text-gray-400 mt-1">
-              Hazır bir paketle başlayın, isterseniz altından tek tek değiştirin.
+              Hepsinde kullanıcı sayısı sınırsız. İstediğiniz zaman yükseltebilirsiniz.
             </p>
           </div>
         </div>
 
-        {/* HAZIR PAKETLER — "hangisini almalıyım" sorusunu tek tıkla çözer */}
-        <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
-          1. Firmanıza en yakın olanı seçin
-        </p>
-        <div className="grid sm:grid-cols-3 gap-3 mb-8">
-          {PRESETS.map((preset) => {
-            const isActive = activePreset === preset.id;
+        <div className="space-y-3 mb-6">
+          {packages.map((pkg) => {
+            const isSelected = selectedPackageId === pkg.id;
+            const price = priceFor(pkg, "USD").price;
             return (
               <button
-                key={preset.id}
+                key={pkg.id}
                 type="button"
-                onClick={() => applyPreset(preset.id)}
-                className={`relative text-left p-4 rounded-2xl border transition ${
-                  isActive
-                    ? "border-blue-500/60 bg-blue-500/10 ring-2 ring-blue-500/20"
+                onClick={() => setSelectedPackageId(pkg.id)}
+                className={`relative w-full text-left p-5 rounded-2xl border transition ${
+                  isSelected
+                    ? "border-blue-500/60 bg-blue-500/5 ring-2 ring-blue-500/20"
                     : "border-white/10 bg-[#111118] hover:border-white/25"
                 }`}
               >
-                {preset.badge && (
-                  <span className="absolute -top-2 left-4 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500 text-white uppercase tracking-wider">
-                    {preset.badge}
+                {pkg.highlight && (
+                  <span className="absolute -top-2 left-5 text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500 text-white uppercase tracking-wider">
+                    En çok tercih edilen
                   </span>
                 )}
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <h3 className="font-semibold text-white text-sm">{preset.name}</h3>
-                  {isActive && <Check size={14} className="text-blue-400 flex-shrink-0" />}
-                </div>
-                <p className="text-2xl font-bold text-white mb-1">
-                  {formatPrice(presetPrice(preset), "USD", { short: true })}
-                  <span className="text-[11px] text-gray-500 font-normal ml-1">/ay</span>
-                </p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">{preset.who}</p>
-                <p className="text-[10px] text-gray-500 mt-2">
-                  {preset.moduleKeys.length === 0 ? "Temel modüller" : `Temel + ${preset.moduleKeys.length} modül`}
-                  {preset.extraUsers > 0 ? ` · ${preset.extraUsers + 1} kullanıcı` : " · 1 kullanıcı"}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
-          2. İsterseniz ince ayar yapın
-        </p>
-
-        <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/30 mb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Briefcase size={16} className="text-emerald-400" />
-                <h3 className="font-semibold text-white">Temel Paket</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">Her Zaman Dahil</span>
-              </div>
-              <p className="text-xs text-gray-400 mb-3">{baseSku.description}</p>
-              <ul className="grid sm:grid-cols-2 gap-1.5">
-                {baseSku.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs text-gray-300">
-                    <Check size={11} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-2xl font-bold text-white">{formatPrice(basePrice, "USD", { short: true })}</p>
-              <p className="text-[11px] text-gray-500">/ay</p>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3 mt-6 px-1">Opsiyonel Modüller</p>
-        <div className="space-y-3 mb-6">
-          {moduleSkus.map((mod) => {
-            const isSelected = selectedModuleIds.has(mod.id);
-            const price = priceFor(mod, "USD").price;
-            return (
-              <button
-                key={mod.id}
-                onClick={() => toggleModule(mod.id)}
-                className={`w-full text-left p-4 rounded-2xl border transition ${
-                  isSelected
-                    ? "border-blue-500/60 bg-blue-500/5 ring-2 ring-blue-500/20"
-                    : "border-white/10 bg-[#111118] hover:border-white/20"
-                }`}
-              >
                 <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition ${
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 transition ${
                     isSelected ? "bg-blue-500 border-blue-500" : "border-white/20"
                   }`}>
                     {isSelected && <Check size={12} className="text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-3 mb-1">
-                      <h4 className="font-semibold text-white">{mod.name}</h4>
+                      <h3 className="font-semibold text-white text-lg">{pkg.name}</h3>
                       <div className="text-right flex-shrink-0">
-                        <span className="text-lg font-bold text-white">+{formatPrice(price, "USD", { short: true })}</span>
+                        <span className="text-2xl font-bold text-white">{formatPrice(price, "USD", { short: true })}</span>
                         <span className="text-[11px] text-gray-500 ml-1">/ay</span>
+                        <p className="text-[10px] text-gray-500">≈ {formatPrice(Math.round(price * USD_TRY_DISPLAY), "TRY", { short: true })} + KDV</p>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-400 mb-2">{mod.description}</p>
-                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">
-                      {mod.features.slice(0, 3).map((f, i) => (
-                        <li key={i} className="flex items-center gap-1">
-                          <Check size={10} className="text-blue-400" /> {f}
+                    <p className="text-xs text-gray-400 mb-3">{pkg.description}</p>
+                    <ul className="grid sm:grid-cols-2 gap-1.5">
+                      {pkg.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-gray-300">
+                          <Check size={11} className="text-emerald-400 mt-0.5 flex-shrink-0" />
+                          <span>{f}</span>
                         </li>
                       ))}
-                      {mod.features.length > 3 && <li className="text-gray-600">+ {mod.features.length - 3} özellik</li>}
                     </ul>
                   </div>
                 </div>
@@ -434,43 +284,12 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
           })}
         </div>
 
-        <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">Ek Kullanıcı Koltuğu</p>
-        <div className="p-5 rounded-2xl bg-[#111118] border border-white/10 mb-6">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <div className="flex-1">
-              <h4 className="font-semibold text-white mb-1">Ek Kullanıcı</h4>
-              <p className="text-xs text-gray-400">
-                Temel paket 1 owner içerir. Ek her kullanıcı +{formatPrice(seatPrice, "USD", { short: true })}/ay.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => { setActivePreset(null); setExtraUsers((v) => Math.max(0, v - 1)); }}
-                className="w-9 h-9 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 flex items-center justify-center transition"
-              >
-                <Minus size={14} />
-              </button>
-              <input
-                type="number"
-                min={0}
-                max={500}
-                value={extraUsers}
-                onChange={(e) => setExtraUsers(Math.max(0, Math.min(500, Number(e.target.value) || 0)))}
-                className="w-16 text-center bg-black/40 border border-white/10 rounded-lg text-white font-bold py-2 outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={() => { setActivePreset(null); setExtraUsers((v) => Math.min(500, v + 1)); }}
-                className="w-9 h-9 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 flex items-center justify-center transition"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-          </div>
-          {extraUsers > 0 && (
-            <p className="text-xs text-blue-300">
-              Toplam {extraUsers + 1} kullanıcı · {extraUsers} × {formatPrice(seatPrice, "USD", { short: true })} = {formatPrice(extraUsers * seatPrice, "USD", { short: true })}/ay
-            </p>
-          )}
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 mb-6">
+          <Users size={15} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-300 leading-relaxed">
+            <strong className="text-emerald-300">Kullanıcı başına ücret yok.</strong> Muhasebecinizi,
+            depo sorumlunuzu, saha ekibinizi ekleyin — hepsi paket fiyatına dahil.
+          </p>
         </div>
 
         {/* AI KONTÖR — planla birlikte alınabilir, sonradan da alınabilir. */}
@@ -543,17 +362,14 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
           </div>
 
           <div className="space-y-2 mb-5 pb-5 border-b border-white/5">
-            <SummaryRow label="Temel Paket" value={formatPrice(basePrice, "USD", { short: true })} />
-            {Array.from(selectedModuleIds).map((id) => {
-              const m = moduleSkus.find((x) => x.id === id);
-              if (!m) return null;
-              return <SummaryRow key={id} label={m.name} value={`+${formatPrice(priceFor(m, "USD").price, "USD", { short: true })}`} />;
-            })}
-            {extraUsers > 0 && (
-              <SummaryRow
-                label={`Ek Kullanıcı × ${extraUsers}`}
-                value={`+${formatPrice(extraUsers * seatPrice, "USD", { short: true })}`}
-              />
+            {selectedPackage && (
+              <>
+                <SummaryRow
+                  label={selectedPackage.name}
+                  value={`${formatPrice(monthlyTotal, "USD", { short: true })}/ay`}
+                />
+                <p className="text-[10px] text-gray-500">Sınırsız kullanıcı dahil</p>
+              </>
             )}
             {selectedCreditSku && (
               <div className="pt-2 mt-2 border-t border-white/5">

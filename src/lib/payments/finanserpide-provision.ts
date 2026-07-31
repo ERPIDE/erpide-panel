@@ -47,6 +47,16 @@ export async function provisionFinanserpideSku(input: FinansProvisionInput): Pro
       ? input.sku.creditsGranted
       : undefined;
 
+  // Paketin açtığı modüller: eskiden ürün tarafı sabit bir BASE_MODULES
+  // listesi varsayıyordu, ama Profesyonel/Kurumsal paketleri farklı setler
+  // veriyor. Tek doğru kaynak buradaki SKU tanımı — listeyi biz gönderiyoruz.
+  const modules =
+    kind === "base" && input.sku.grantsModules?.length
+      ? input.sku.grantsModules
+          .map((m) => (m.startsWith("/") ? m.slice(1) : m))
+          .filter(Boolean)
+      : undefined;
+
   const payload = {
     buyerEmail: input.buyerEmail,
     vkn: input.vkn,
@@ -55,6 +65,8 @@ export async function provisionFinanserpideSku(input: FinansProvisionInput): Pro
       id: input.sku.id,
       kind,
       moduleKey,
+      modules,
+      unlimitedSeats: input.sku.unlimitedSeats === true,
       quantity: input.quantity ?? 1,
       credits,
     },
