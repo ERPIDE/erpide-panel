@@ -358,30 +358,16 @@ export default async function LisanslarimPage() {
                   </div>
                 )}
 
-                {/* FinansERPIDE için yönlendirme + lisans key prominent.
-                    Adam butonu kullanmayıp manuel /lisans sayfasına gitse de
-                    burada kopyalayabilsin. CredentialRow zaten kopya butonu
-                    sağlıyor. */}
+                {/* FinansERPIDE: lisans anahtarı gösterilmiyor. Müşteri
+                    erpide.com hesabıyla giriyor (SSO), kod yapıştırmıyor ve
+                    ayrı şifre belirlemiyor. Anahtar arka planda duruyor ama
+                    kullanıcıya bir iş yüklemiyor. */}
                 {!expired && lic.productId === "finanserpide" && (
-                  <div className="space-y-3">
-                    <CredentialRow
-                      icon={<Key size={14} className="text-emerald-400" />}
-                      label="LİSANS ANAHTARI"
-                      value={lic.licenseKey}
-                      copyLabel={t("license.copy_button")}
-                      copy
-                      monospace
-                    />
-                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-200/90">
-                      <strong className="text-blue-300">İlk kez mi gidiyorsun?</strong> &quot;Şirket Hesabımı Kur&quot; tıkla,
-                      lisans kodun otomatik doğrulanacak. Sonra VKN + şirket
-                      bilgilerini girip yeni bir şifre belirleyeceksin (erpide.com
-                      şifrenden farklı). Hesap kurulduktan sonra aynı buton
-                      doğrudan FinansERPIDE&apos;i açar.
-                      <br /><br />
-                      <span className="text-blue-300/70">Veya:</span> yukarıdaki anahtarı kopyalayıp
-                      finans.erpide.com/lisans sayfasına manuel yapıştırabilirsin.
-                    </div>
+                  <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-200/90">
+                    <strong className="text-blue-300">Kod girmene gerek yok.</strong> Yukarıdaki
+                    butona bas, erpide.com hesabınla doğrudan içeri gireceksin —
+                    ayrı bir şifre yok. İlk girişte yalnızca şirket bilgilerini
+                    (unvan, VKN, vergi dairesi) onaylayacaksın.
                   </div>
                 )}
 
