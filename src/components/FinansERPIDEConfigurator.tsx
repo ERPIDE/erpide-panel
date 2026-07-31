@@ -1,16 +1,21 @@
 "use client";
 /**
- * FinansERPIDE Plan Konfigüratörü
+ * FinansERPIDE paket seçimi.
  *
- * Sabit plan paketleri yerine modüler lisans:
- *   Temel ($20)        → Satış + Satınalma + Stok + Finans (her zaman dahil)
- *   + Muhasebe ($10)   → opsiyonel
- *   + İK ($10)         → opsiyonel
- *   + Üretim ($10)     → opsiyonel
- *   + Ek Kullanıcı ($10 × N) → istediği kadar
+ *   Temel Ticaret ₺749  → satış, satınalma, stok, cari, banka, e-fatura
+ *   Tam Ticaret   ₺1.249 → + muhasebe, sabit kıymet, üretim, İK, AI
  *
- * Sepete eklendiğinde her seçim ayrı line item olur (base + her modül × 1 + ek-kullanıcı × N).
- * Bu sayede mevcut sepet yapısı + iyzico checkout aynen çalışır.
+ * İkisinde de kullanıcı sınırsız. Fiyat TL: ürün Türkiye'ye özel, müşterisi
+ * TL düşünüyor; dolar gösterip kurdan çevirmek hem kafa karıştırıyordu hem de
+ * kur güncellenmeyince sessizce marj yiyordu.
+ *
+ * Önceki model modülleri tek tek satıyordu (temel + modül eklentileri + koltuk
+ * başı ücret); 5 kullanıcılı bir firma rakiplerin ~4 katına çıkıyordu.
+ * Eski SKU'lar `legacy` işaretli, burada gösterilmiyor ama mevcut abonelikler
+ * onlara bağlı olduğu için siliniyor değil.
+ *
+ * AI kontörü ayrı bir ürün; buradan da eklenebiliyor çünkü satın alma kararı
+ * aynı anda veriliyor.
  */
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -18,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { Check, ShoppingCart, Loader2, ArrowRight, X, ChevronLeft, ChevronRight, Sparkles, Users } from "lucide-react";
 import type { Product, SKU } from "@/lib/products";
 import { useCart } from "@/components/CartProvider";
-import { priceFor, formatPrice, USD_TRY_DISPLAY } from "@/lib/currency";
+import { priceFor, formatPrice } from "@/lib/currency";
 
 interface Props {
   product: Product;
@@ -60,7 +65,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
     [aiKontorProduct]
   );
 
-  // Varsayılan seçim: highlight'lı paket (Profesyonel), yoksa ilki.
+  // Varsayılan seçim: highlight'lı paket (Tam Ticaret), yoksa ilki.
   const [selectedPackageId, setSelectedPackageId] = useState<string>(
     () => (packages.find((p) => p.highlight) || packages[0])?.id || ""
   );
@@ -93,10 +98,17 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
   }
 
   const selectedPackage = packages.find((p) => p.id === selectedPackageId) || packages[0] || null;
-  const monthlyTotal = selectedPackage ? priceFor(selectedPackage, "USD").price : 0;
+  // Para birimini SKU belirler — FinansERPIDE paketleri TL, diğer ürünler
+  // (AI kontör vb.) hâlâ USD olabilir. Sabit "USD" yazmak TL fiyatları
+  // dolar işaretiyle gösteriyordu.
+  const packagePrice = selectedPackage ? priceFor(selectedPackage, "TRY") : null;
+  const monthlyTotal = packagePrice?.price ?? 0;
+  const monthlyCcy = packagePrice?.currency ?? "TRY";
   const selectedCreditSku = creditSkus.find((s) => s.id === creditSkuId) || null;
   // Kontör tek seferlik alım — aylık aboneliğe eklenmez, ayrı gösterilir.
-  const creditPrice = selectedCreditSku ? priceFor(selectedCreditSku, "USD").price : 0;
+  const creditPriced = selectedCreditSku ? priceFor(selectedCreditSku, "TRY") : null;
+  const creditPrice = creditPriced?.price ?? 0;
+  const creditCcy = creditPriced?.currency ?? "TRY";
 
   async function handleAddToCart() {
     if (!selectedPackage) return;
@@ -236,7 +248,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
         <div className="space-y-3 mb-6">
           {packages.map((pkg) => {
             const isSelected = selectedPackageId === pkg.id;
-            const price = priceFor(pkg, "USD").price;
+            const { price, currency: pkgCcy } = priceFor(pkg, "TRY");
             return (
               <button
                 key={pkg.id}
@@ -263,9 +275,9 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
                     <div className="flex items-center justify-between gap-3 mb-1">
                       <h3 className="font-semibold text-white text-lg">{pkg.name}</h3>
                       <div className="text-right flex-shrink-0">
-                        <span className="text-2xl font-bold text-white">{formatPrice(price, "USD", { short: true })}</span>
+                        <span className="text-2xl font-bold text-white">{formatPrice(price, pkgCcy, { short: true })}</span>
                         <span className="text-[11px] text-gray-500 ml-1">/ay</span>
-                        <p className="text-[10px] text-gray-500">≈ {formatPrice(Math.round(price * USD_TRY_DISPLAY), "TRY", { short: true })} + KDV</p>
+                        <p className="text-[10px] text-gray-500">+ KDV</p>
                       </div>
                     </div>
                     <p className="text-xs text-gray-400 mb-3">{pkg.description}</p>
@@ -325,7 +337,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
                   <p className="text-[11px] text-gray-500 mt-0.5">Sonradan ekleyebilirsiniz</p>
                 </button>
                 {creditSkus.map((sku) => {
-                  const price = priceFor(sku, "USD").price;
+                  const { price, currency: skuCcy } = priceFor(sku, "TRY");
                   const isSelected = creditSkuId === sku.id;
                   return (
                     <button
@@ -340,7 +352,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-white">{sku.name}</p>
-                        <span className="text-sm font-bold text-white">{formatPrice(price, "USD", { short: true })}</span>
+                        <span className="text-sm font-bold text-white">{formatPrice(price, skuCcy, { short: true })}</span>
                       </div>
                       <p className="text-[11px] text-gray-500 mt-0.5">{sku.description}</p>
                     </button>
@@ -357,7 +369,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
         <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/30">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1">Aylık Toplam</p>
           <div className="flex items-baseline gap-1 mb-5">
-            <span className="text-5xl font-bold text-white">{formatPrice(monthlyTotal, "USD", { short: true })}</span>
+            <span className="text-5xl font-bold text-white">{formatPrice(monthlyTotal, monthlyCcy, { short: true })}</span>
             <span className="text-sm text-gray-400">/ay</span>
           </div>
 
@@ -366,16 +378,16 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId, aiK
               <>
                 <SummaryRow
                   label={selectedPackage.name}
-                  value={`${formatPrice(monthlyTotal, "USD", { short: true })}/ay`}
+                  value={`${formatPrice(monthlyTotal, monthlyCcy, { short: true })}/ay`}
                 />
-                <p className="text-[10px] text-gray-500">Sınırsız kullanıcı dahil</p>
+                <p className="text-[10px] text-gray-500">Sınırsız kullanıcı dahil · fiyatlara KDV dahil değildir</p>
               </>
             )}
             {selectedCreditSku && (
               <div className="pt-2 mt-2 border-t border-white/5">
                 <SummaryRow
                   label={`${selectedCreditSku.name} (tek seferlik)`}
-                  value={formatPrice(creditPrice, "USD", { short: true })}
+                  value={formatPrice(creditPrice, creditCcy, { short: true })}
                 />
                 <p className="text-[10px] text-gray-500 mt-1">
                   Aylık aboneliğe dahil değil — ilk ödemeye eklenir.
@@ -444,11 +456,12 @@ function SkuItemListAddedToCart({ product }: { product: Product }) {
       <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-2">Sepette {product.name} İçin</p>
       <div className="space-y-1.5">
         {productLines.map(({ line, sku }) => {
-          const linePrice = priceFor(sku, "USD").price * line.quantity;
+          const linePriced = priceFor(sku, "TRY");
+          const linePrice = linePriced.price * line.quantity;
           return (
             <div key={sku.id} className="flex justify-between text-xs">
               <span className="text-gray-400 truncate pr-2">{sku.name}{line.quantity > 1 ? ` × ${line.quantity}` : ""}</span>
-              <span className="text-gray-300 font-mono">{formatPrice(linePrice, "USD", { short: true })}</span>
+              <span className="text-gray-300 font-mono">{formatPrice(linePrice, linePriced.currency, { short: true })}</span>
             </div>
           );
         })}

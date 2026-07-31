@@ -83,7 +83,7 @@ export default async function ProductLayout({
   // Aylık fiyat olan SKU varsa offers'a dahil et. ContactOnly ürünler için
   // offers verilmez, isQuotation true gibi alanlar Google'ın tanıdığı şema
   // değil — boş bırakıp brand sinyali öne çıkarılır.
-  const monthlySkus = product.skus.filter((s) => s.cycle === "monthly" && (s.kind === "base" || s.kind === "standalone" || !s.kind));
+  const monthlySkus = product.skus.filter((s) => !s.legacy && s.cycle === "monthly" && (s.kind === "base" || s.kind === "standalone" || !s.kind));
   const offers = monthlySkus.length > 0
     ? monthlySkus.map((s) => ({
         "@type": "Offer",

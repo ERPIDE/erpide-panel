@@ -160,7 +160,9 @@ function Inner({ productId }: { productId: string }) {
     : "en";
   const onecBtn = ONEC_BUTTONS[featureLocale];
   const onecLbl = ONEC_LABELS[featureLocale];
-  const [selectedSku, setSelectedSku] = useState(initialSku || product?.skus.find((s) => s.highlight)?.id || product?.skus[0]?.id || "");
+  const [selectedSku, setSelectedSku] = useState(
+    initialSku || product?.skus.find((s) => s.highlight && !s.legacy)?.id || product?.skus.find((s) => !s.legacy)?.id || ""
+  );
   const [adding, setAdding] = useState(false);
 
   // Kullanıcının mevcut durumu: aktif paid SKU var mı?
@@ -711,7 +713,7 @@ function Inner({ productId }: { productId: string }) {
                 <h2 className="text-xl font-bold text-white">Plan Seçin</h2>
               </div>
               <div className="space-y-3 mb-8">
-                {product.skus.map((sku) => {
+                {product.skus.filter((s) => !s.legacy).map((sku) => {
                   const { price, currency: skuCcy } = priceFor(sku, currency);
                   const isCurrentPlan = activeSkuOfThisProduct === sku.id;
                   const isExpiredSku = productAppState === "expired" && lastSkuOfThisProduct === sku.id;

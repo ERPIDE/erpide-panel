@@ -286,77 +286,50 @@ export const PRODUCTS: Product[] = [
     },
     comingSoon: true,
     skus: [
-      // ===== SATIŞTAKİ PAKETLER (2026-07) =====
+      // ===== SATIŞTAKİ PAKETLER =====
       //
-      // Üç paket, hepsinde SINIRSIZ KULLANICI. Önceki model (temel + modül
-      // eklentileri + koltuk başı ücret) 5 kullanıcılı bir firmayı rakiplerin
-      // ~4 katına çıkarıyordu ve müşteri fiyatı görünce ürüne bakmıyordu bile.
+      // İki paket, ikisinde de SINIRSIZ KULLANICI. Fiyat TL — FinansERPIDE
+      // Türkiye'ye özel bir ürün (TR mevzuatı, TR bankaları, TR e-fatura),
+      // müşterisi TL düşünüyor. Dolar gösterip kurdan çevirmek hem kafa
+      // karıştırıyordu hem de kur güncellenmeyince sessizce marj yiyordu.
+      // Enflasyon karşısında liste fiyatı yıllık gözden geçirilir.
       //
       // Fiyatlama kuralı: liste fiyatı = doğrudan maliyet × 2,36.
       // (iyzico %3,49 komisyon KDV dahil tutardan kesiliyor + %25 kurumlar
       // vergisi → vergi sonrası %40 net kâr.) KDV maliyet değildir; tahsil
       // edip devlete yatırıyoruz, fiyatın üstüne eklenir.
       //
-      // USD tutuluyor ama müşteriye TL karşılığı gösteriliyor: TL liste fiyatı
-      // enflasyonda sabit kalamıyor, kurdan türetince kendini güncelliyor.
+      // Rakip (bizimhesap.com, 07/2026): Temel ₺870 · Tam ₺1.100 + KDV.
       {
-        id: "finanserpide-baslangic-monthly",
+        id: "finanserpide-temel-monthly",
         productId: "finanserpide",
-        name: "Başlangıç",
-        description: "Ticaretini yürüt: satış, satınalma, stok, cari, e-fatura — sınırsız kullanıcı",
-        price: 15,
+        name: "Temel Ticaret",
+        description: "Satış, satınalma, stok, cari, banka ve e-fatura — sınırsız kullanıcı",
+        price: 749,
         currency: "TRY",
-        prices: { USD: 15 },
         cycle: "monthly",
         kind: "base",
         unlimitedSeats: true,
         grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
         features: [
           "Sınırsız kullanıcı",
-          "Satış (teklif, sipariş, irsaliye, fatura)",
-          "Satınalma (talep, sipariş, irsaliye, fatura)",
-          "Stok yönetimi (ürün, depo, hareket, maliyet)",
-          "Cari hesap + mutabakat",
-          "Banka entegrasyonu + otomatik hareket eşleştirme",
-          "e-Fatura / e-Arşiv (QNB eFinans)",
-          "1 şirket (VKN bazlı izole veritabanı)",
-          "Sınırsız fatura",
+          "Satış — teklif, sipariş, irsaliye, fatura",
+          "Satınalma — talep, sipariş, irsaliye, fatura",
+          "Stok — ürün, depo, hareket, ağırlıklı ortalama maliyet",
+          "Cari hesap + mutabakat mektubu",
+          "Banka entegrasyonu — hareketler otomatik düşer, faturayla eşleşir",
+          "e-Fatura / e-Arşiv (QNB eSolutions)",
+          "Sınırsız fatura, 1 şirket (izole veritabanı)",
+          "Mobil erişim",
         ],
       },
       {
-        id: "finanserpide-profesyonel-monthly",
+        id: "finanserpide-tam-monthly",
         productId: "finanserpide",
-        name: "Profesyonel",
-        description: "Resmi muhasebeni kendi içinde tut: yevmiye, mizan, KDV, amortisman + Eylül AI",
-        price: 25,
+        name: "Tam Ticaret",
+        description: "Resmi muhasebe, üretim ve personel dahil tam ERP — sınırsız kullanıcı",
+        price: 1249,
         currency: "TRY",
-        prices: { USD: 25 },
-        cycle: "monthly",
-        kind: "base",
-        unlimitedSeats: true,
-        grantsModules: [
-          "/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard",
-          "/muhasebe", "/sabitkiymet",
-        ],
-        features: [
-          "Başlangıç paketindeki her şey",
-          "Muhasebe — TDHP hesap planı, otomatik yevmiye",
-          "Mizan, defter-i kebir, bilanço, gelir tablosu",
-          "KDV / stopaj hesabı ve beyan hazırlığı",
-          "Sabit kıymet — demirbaş kartı, amortisman planı",
-          "Eylül AI asistanı (kontörle)",
-          "Sınırsız kullanıcı",
-        ],
-        highlight: true,
-      },
-      {
-        id: "finanserpide-kurumsal-monthly",
-        productId: "finanserpide",
-        name: "Kurumsal",
-        description: "Üretim ve personel dahil tam ERP — reçete, üretim emri, bordro, izin",
-        price: 40,
-        currency: "TRY",
-        prices: { USD: 40 },
         cycle: "monthly",
         kind: "base",
         unlimitedSeats: true,
@@ -365,13 +338,17 @@ export const PRODUCTS: Product[] = [
           "/muhasebe", "/sabitkiymet", "/uretim", "/ik",
         ],
         features: [
-          "Profesyonel paketteki her şey",
+          "Temel Ticaret'teki her şey",
+          "Muhasebe — TDHP hesap planı, otomatik yevmiye, mizan, defter-i kebir",
+          "Bilanço, gelir tablosu, KDV ve stopaj hesabı",
+          "Sabit kıymet — demirbaş kartı, amortisman planı",
           "Üretim — BOM reçeteleri, üretim emri, maliyetlendirme",
           "İnsan Kaynakları — personel, devam takibi, izin",
           "Bordro — SGK kesintileri, otomatik personel ödemesi",
+          "Eylül AI asistanı (kontörle)",
           "Öncelikli destek",
-          "Sınırsız kullanıcı",
         ],
+        highlight: true,
       },
 
       // ===== EMEKLİ SKU'LAR =====

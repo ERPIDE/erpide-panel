@@ -112,7 +112,11 @@ export default function UrunlerPage() {
 
                 <div className="space-y-14">
                   {products.map((product) => {
-                    const visibleSkus = product.skus.filter((s) => !s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit");
+                    // legacy: satışa kapalı eski paketler. Silinmiyorlar (mevcut
+                    // abonelikler o id'lere bağlı) ama listede görünmemeliler.
+                    const visibleSkus = product.skus.filter(
+                      (s) => !s.legacy && (!s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit")
+                    );
                     return (
                       <ProductBlock
                         key={product.id}
