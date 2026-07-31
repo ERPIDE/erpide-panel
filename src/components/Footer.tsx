@@ -122,11 +122,7 @@ export default function Footer() {
           <p className="text-xs text-gray-600">
             &copy; {new Date().getFullYear()} {COMPANY.shortName}. {t("footer.rights_reserved")}
           </p>
-          <div className="flex items-center gap-3 text-[11px] text-gray-600">
-            <Link href="/panel" className="hover:text-gray-300 transition">{t("nav.customer_panel")}</Link>
-            <span className="text-gray-700">·</span>
-            <Link href="/admin" className="hover:text-gray-300 transition">{t("nav.admin")}</Link>
-          </div>
+
         </div>
       </div>
     </footer>

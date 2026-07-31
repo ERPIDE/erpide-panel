@@ -115,9 +115,17 @@ export default function UrunlerPage() {
                   {products.map((product) => {
                     // legacy: satışa kapalı eski paketler. Silinmiyorlar (mevcut
                     // abonelikler o id'lere bağlı) ama listede görünmemeliler.
-                    const visibleSkus = product.skus.filter(
+                    const sellable = product.skus.filter(
                       (s) => !s.legacy && (!s.kind || s.kind === "base" || s.kind === "standalone" || s.kind === "credit")
                     );
+                    // Aynı paketin aylık ve yıllık hâli yan yana dizilince
+                    // liste dört karta çıkıp karışıyordu. Vitrinde yıllık
+                    // (en avantajlı) fiyat duruyor; aylık seçenek ürün detay
+                    // sayfasındaki dönem seçicisinde.
+                    const hasYearly = sellable.some((s) => s.cycle === "yearly");
+                    const visibleSkus = hasYearly
+                      ? sellable.filter((s) => s.cycle !== "monthly")
+                      : sellable;
                     return (
                       <ProductBlock
                         key={product.id}
@@ -248,8 +256,17 @@ function ProductBlock({ product, visibleSkus, activeSkuByProduct, lastSkuByProdu
                         <h3 className="text-xl font-bold text-white mb-1">{getSkuText(sku, locale, "name")}</h3>
                         <p className="text-xs text-gray-400 mb-4">{getSkuText(sku, locale, "description")}</p>
                         <div className="mb-4">
-                          <span className="text-3xl font-bold text-white">{formatPrice(price, currency, { short: true })}</span>
+                          {/* Yıllık pakette öne çıkan rakam aylık karşılığı —
+                              müşteri fiyatı "ayda ne kadar" diye düşünüyor. */}
+                          <span className="text-3xl font-bold text-white">
+                            {formatPrice(sku.cycle === "yearly" ? Math.round(price / 12) : price, currency, { short: true })}
+                          </span>
                           <span className="text-gray-400 ml-1 text-sm">{t("products.per_month")}</span>
+                          {sku.cycle === "yearly" && (
+                            <p className="text-[11px] text-gray-500 mt-1">
+                              yıllık {formatPrice(price, currency, { short: true })} peşin · aylık ödemeye göre %50 tasarruf
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2 mb-4">
                           {(() => {

@@ -56,7 +56,9 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
   // Satıştaki paketler. Emekli SKU'lar (eski temel + modül eklentileri +
   // koltuk) listede duruyor ama gösterilmiyor — mevcut abonelikler onlara bağlı.
   // Aylık / yıllık ayrı SKU'lar; ekranda tek seferde bir dönem gösteriliyor.
-  const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
+  // Varsayilan yillik: musteri once en avantajli fiyati gorsun. Aylik odeme
+  // isteyene sekme duruyor ama liste fiyati daha yuksek.
+  const [cycle, setCycle] = useState<"monthly" | "yearly">("yearly");
   const packages = useMemo(
     () => product.skus.filter((s) => s.kind === "base" && !s.legacy && s.cycle === cycle),
     [product, cycle]
@@ -261,7 +263,7 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
           >
             Yıllık
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              2 AY BEDAVA
+              %50 İNDİRİM
             </span>
           </button>
         </div>
@@ -296,16 +298,18 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
                     <div className="flex items-center justify-between gap-3 mb-1">
                       <h3 className="font-semibold text-white text-lg">{pkg.name}</h3>
                       <div className="text-right flex-shrink-0">
-                        <span className="text-2xl font-bold text-white">{formatPrice(price, pkgCcy, { short: true })}</span>
-                        <span className="text-[11px] text-gray-500 ml-1">{cycle === "yearly" ? "/yıl" : "/ay"}</span>
+                        {/* Yıllıkta öne çıkan rakam AYLIK KARŞILIĞI: müşteri
+                            fiyatı hep "ayda ne kadar" diye düşünüyor ve
+                            rakiplerle de böyle karşılaştırıyor. Yıllık toplam
+                            hemen altında, gizlemiyoruz. */}
+                        <span className="text-2xl font-bold text-white">
+                          {formatPrice(cycle === "yearly" ? Math.round(price / 12) : price, pkgCcy, { short: true })}
+                        </span>
+                        <span className="text-[11px] text-gray-500 ml-1">/ay</span>
                         <p className="text-[10px] text-gray-500">
-                          + KDV
-                          {cycle === "yearly" && (() => {
-                            // Yıllık tutarı aylığa bölüp "ayda şu kadar" diyoruz;
-                            // müşteri iki dönemi kafadan karşılaştırabilsin.
-                            const monthlyEq = Math.round(price / 12);
-                            return <> · ayda ≈ {formatPrice(monthlyEq, pkgCcy, { short: true })}</>;
-                          })()}
+                          {cycle === "yearly"
+                            ? <>+ KDV · yıllık {formatPrice(price, pkgCcy, { short: true })} peşin</>
+                            : <>+ KDV · aylık ödeme</>}
                         </p>
                       </div>
                     </div>
@@ -338,10 +342,12 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
       {/* SAĞ — Sticky Sepet Özeti */}
       <aside className="lg:sticky lg:top-24 h-fit">
         <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/30">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1">{cycle === "yearly" ? "Yıllık Toplam" : "Aylık Toplam"}</p>
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1">Aylık Maliyet</p>
           <div className="flex items-baseline gap-1 mb-5">
-            <span className="text-5xl font-bold text-white">{formatPrice(monthlyTotal, monthlyCcy, { short: true })}</span>
-            <span className="text-sm text-gray-400">{cycle === "yearly" ? "/yıl" : "/ay"}</span>
+            <span className="text-5xl font-bold text-white">
+              {formatPrice(cycle === "yearly" ? Math.round(monthlyTotal / 12) : monthlyTotal, monthlyCcy, { short: true })}
+            </span>
+            <span className="text-sm text-gray-400">/ay</span>
           </div>
 
           <div className="space-y-2 mb-5 pb-5 border-b border-white/5">
@@ -349,9 +355,14 @@ export default function FinansERPIDEConfigurator({ product, activeBaseSkuId }: P
               <>
                 <SummaryRow
                   label={selectedPackage.name}
-                  value={`${formatPrice(monthlyTotal, monthlyCcy, { short: true })}${cycle === "yearly" ? "/yıl" : "/ay"}`}
+                  value={cycle === "yearly"
+                    ? `${formatPrice(monthlyTotal, monthlyCcy, { short: true })}/yıl`
+                    : `${formatPrice(monthlyTotal, monthlyCcy, { short: true })}/ay`}
                 />
-                <p className="text-[10px] text-gray-500">Sınırsız kullanıcı dahil · fiyatlara KDV dahil değildir</p>
+                <p className="text-[10px] text-gray-500">
+                  Sınırsız kullanıcı dahil · fiyatlara KDV dahil değildir
+                  {cycle === "yearly" && " · 12 aylık peşin tahsil edilir"}
+                </p>
               </>
             )}
           </div>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, ShoppingBag, MessageCircle } from "lucide-react";
+import { Menu, X, Globe, ShoppingCart, User, LogOut, Package, Key, ChevronDown, LayoutGrid, ExternalLink, Wallet, ShoppingBag, MessageCircle, Shield } from "lucide-react";
 import Logo from "./Logo";
 import { useTranslation, localeNames, type Locale } from "@/lib/i18n";
 import { useCart } from "./CartProvider";
@@ -183,6 +183,15 @@ export default function Navbar() {
                   </Link>
                   <Link href="/hesabim/siparislerim" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition">
                     <Package size={14} /> {t("sidebar.orders")}
+                  </Link>
+                  {/* Panel/Admin footer'dan buraya taşındı: footer müşteriye
+                      dönük bir alan, iç araçların orada durması dağıtıyordu. */}
+                  <div className="border-t border-white/5 my-1" />
+                  <Link href="/panel" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition">
+                    <LayoutGrid size={14} /> {t("nav.customer_panel")}
+                  </Link>
+                  <Link href="/admin" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 transition">
+                    <Shield size={14} /> {t("nav.admin")}
                   </Link>
                   <div className="border-t border-white/5">
                     <form action="/api/shop/auth/logout" method="POST">
