@@ -19,6 +19,9 @@ export async function sendOrderConfirmationEmail(opts: {
   invoice?: { documentNumber: string; pdfBase64?: string | null } | null;
 }) {
   const { to, buyerName, order, invoice } = opts;
+  // FinansERPIDE alındıysa mailin ilk eylemi "uygulamayı aç" olmalı — müşteri
+  // maili açıp nereden gireceğini aramasın.
+  const hasFinansERPIDE = order.items.some((it) => it.productId === "finanserpide");
   const resend = getResend();
   if (!resend) {
     console.warn("[order-email] RESEND_API_KEY tanımsız:", { to, orderId: order.id });
@@ -43,8 +46,15 @@ export async function sendOrderConfirmationEmail(opts: {
   <h1 style="font-size:22px;color:#0f172a;margin:0 0 16px">Siparişiniz Onaylandı, ${buyerName}!</h1>
   <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px">
     <strong>${order.items.length} ürün</strong> içeren siparişiniz için ödemeniz alındı.
-    Aşağıdaki lisans anahtarlarını ürün panellerinizden profil sayfanızdan girerek aktive edebilirsiniz.
+    ${hasFinansERPIDE
+      ? "Kod girmenize gerek yok — aşağıdaki butona basıp erpide.com hesabınızla doğrudan içeri girebilirsiniz."
+      : "Aşağıdaki lisans anahtarlarını ürün panellerinizden aktive edebilirsiniz."}
   </p>
+  ${hasFinansERPIDE ? `
+  <div style="text-align:center;margin:0 0 28px">
+    <a href="https://erpide.com/api/sso/finanserpide" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:10px;font-weight:700;font-size:15px">FinansERPIDE'yi Aç &rarr;</a>
+    <p style="font-size:12px;color:#6b7280;margin:10px 0 0">Ayrı şifre yok; erpide.com hesabınızla giriyorsunuz.</p>
+  </div>` : ""}
   <table cellpadding="0" cellspacing="0" style="width:100%;background-color:#f9fafb;border-radius:8px;margin:24px 0">
     <thead><tr>
       <th style="padding:12px 16px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;text-align:left;background:#f3f4f6">Ürün</th>

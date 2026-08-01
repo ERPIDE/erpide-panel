@@ -121,7 +121,9 @@ export default function Navbar() {
                     name="FinansERPIDE"
                     desc={t("nav.app_desc_fin")}
                     state={appStates.finanserpide}
-                    appUrl="https://finans.erpide.com/giris"
+                    // SSO: doğrudan içeri alır. Giriş sayfasına atmak müşteriyi
+                    // "nasıl gireceğim" sorusuyla baş başa bırakıyordu.
+                    appUrl="/api/sso/finanserpide"
                     buyUrl="/urunler/finanserpide"
                     onClose={() => setAppsOpen(false)}
                   />

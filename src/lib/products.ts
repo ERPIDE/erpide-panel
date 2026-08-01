@@ -309,7 +309,7 @@ export const PRODUCTS: Product[] = [
       {
         id: "finanserpide-temel-monthly",
         productId: "finanserpide",
-        name: "Temel Ticaret",
+        name: "İşletme",
         description: "Satış, satınalma, stok, cari, banka ve e-fatura — sınırsız kullanıcı",
         price: 1249,
         currency: "TRY",
@@ -330,7 +330,7 @@ export const PRODUCTS: Product[] = [
         ],
         i18n: {
           en: {
-            name: "Essential Commerce",
+            name: "Business",
             description: "Sales, purchasing, stock, contacts, banking and e-invoicing — unlimited users",
             features: [
               "Unlimited users",
@@ -345,7 +345,7 @@ export const PRODUCTS: Product[] = [
             ],
           },
           ru: {
-            name: "Базовая торговля",
+            name: "Бизнес",
             description: "Продажи, закупки, склад, контрагенты, банк и э-фактура — без ограничения пользователей",
             features: [
               "Неограниченное число пользователей",
@@ -360,7 +360,7 @@ export const PRODUCTS: Product[] = [
             ],
           },
           kk: {
-            name: "Негізгі сауда",
+            name: "Бизнес",
             description: "Сату, сатып алу, қойма, контрагенттер, банк және э-шот — шексіз пайдаланушы",
             features: [
               "Шексіз пайдаланушы",
@@ -379,9 +379,9 @@ export const PRODUCTS: Product[] = [
       {
         id: "finanserpide-tam-monthly",
         productId: "finanserpide",
-        name: "Tam Ticaret",
+        name: "Kurumsal",
         description: "Resmi muhasebe, üretim ve personel dahil tam ERP — sınırsız kullanıcı",
-        price: 2099,
+        price: 1799,
         currency: "TRY",
         cycle: "monthly",
         kind: "base",
@@ -391,7 +391,7 @@ export const PRODUCTS: Product[] = [
           "/muhasebe", "/sabitkiymet", "/uretim", "/ik",
         ],
         features: [
-          "Temel Ticaret'teki her şey",
+          "İşletme paketindeki her şey",
           "Muhasebe — TDHP hesap planı, otomatik yevmiye, mizan, defter-i kebir",
           "Bilanço, gelir tablosu, KDV ve stopaj hesabı",
           "Sabit kıymet — demirbaş kartı, amortisman planı",
@@ -404,10 +404,10 @@ export const PRODUCTS: Product[] = [
         highlight: true,
         i18n: {
           en: {
-            name: "Complete Commerce",
+            name: "Enterprise",
             description: "Full ERP including statutory accounting, manufacturing and payroll — unlimited users",
             features: [
-              "Everything in Essential Commerce",
+              "Everything in Business",
               "Accounting — Turkish chart of accounts, automatic journal entries, trial balance, general ledger",
               "Balance sheet, income statement, VAT and withholding calculation",
               "Fixed assets — asset cards, depreciation schedule",
@@ -419,7 +419,7 @@ export const PRODUCTS: Product[] = [
             ],
           },
           ru: {
-            name: "Полная торговля",
+            name: "Корпоративный",
             description: "Полный ERP с бухгалтерией, производством и расчетом зарплаты — без ограничения пользователей",
             features: [
               "Все из базового пакета",
@@ -434,7 +434,7 @@ export const PRODUCTS: Product[] = [
             ],
           },
           kk: {
-            name: "Толық сауда",
+            name: "Корпоративтік",
             description: "Бухгалтерия, өндіріс және жалақыны қамтитын толық ERP — шексіз пайдаланушы",
             features: [
               "Негізгі пакеттегінің бәрі",
@@ -456,7 +456,7 @@ export const PRODUCTS: Product[] = [
       {
         id: "finanserpide-temel-yearly",
         productId: "finanserpide",
-        name: "Temel Ticaret — Yıllık",
+        name: "İşletme — Yıllık",
         description: "Satış, satınalma, stok, cari, banka ve e-fatura — sınırsız kullanıcı · yıllık ödemede yarı fiyat",
         price: 7490,
         currency: "TRY",
@@ -465,24 +465,24 @@ export const PRODUCTS: Product[] = [
         unlimitedSeats: true,
         grantsModules: ["/satis", "/satinalma", "/stok", "/finans", "/cari", "/faturalar", "/dashboard"],
         features: [
-          "Temel Ticaret'in tamamı",
+          "İşletme paketinin tamamı",
           "Aylık ödemeye göre %50 tasarruf",
           "Yıl boyunca fiyat sabit (zamdan etkilenmez)",
           "Sınırsız kullanıcı",
         ],
         i18n: {
           en: {
-            name: "Essential Commerce — Annual",
+            name: "Business — Annual",
             description: "Everything in Essential Commerce — unlimited users · 50% off",
-            features: ["Everything in Essential Commerce", "50% cheaper than paying monthly", "Price locked for a year", "Unlimited users"],
+            features: ["Everything in Business", "50% cheaper than paying monthly", "Price locked for a year", "Unlimited users"],
           },
           ru: {
-            name: "Базовая торговля — год",
+            name: "Бизнес — год",
             description: "Все из базового пакета — без ограничения пользователей · скидка 50%",
             features: ["Все из базового пакета", "На 50% дешевле помесячной оплаты", "Цена зафиксирована на год", "Неограниченное число пользователей"],
           },
           kk: {
-            name: "Негізгі сауда — жылдық",
+            name: "Бизнес — жылдық",
             description: "Негізгі пакеттегінің бәрі — шексіз пайдаланушы · 50% жеңілдік",
             features: ["Негізгі пакеттегінің бәрі", "Айлық төлемнен 50% арзан", "Жыл бойы баға тұрақты", "Шексіз пайдаланушы"],
           },
@@ -491,7 +491,7 @@ export const PRODUCTS: Product[] = [
       {
         id: "finanserpide-tam-yearly",
         productId: "finanserpide",
-        name: "Tam Ticaret — Yıllık",
+        name: "Kurumsal — Yıllık",
         description: "Muhasebe, üretim ve personel dahil tam ERP — sınırsız kullanıcı · yıllık ödemede yarı fiyat",
         price: 12490,
         currency: "TRY",
@@ -503,7 +503,7 @@ export const PRODUCTS: Product[] = [
           "/muhasebe", "/sabitkiymet", "/uretim", "/ik",
         ],
         features: [
-          "Tam Ticaret'in tamamı",
+          "Kurumsal paketin tamamı",
           "Aylık ödemeye göre %50 tasarruf",
           "Yıl boyunca fiyat sabit (zamdan etkilenmez)",
           "Sınırsız kullanıcı",
@@ -511,17 +511,17 @@ export const PRODUCTS: Product[] = [
         ],
         i18n: {
           en: {
-            name: "Complete Commerce — Annual",
+            name: "Enterprise — Annual",
             description: "Full ERP with accounting, manufacturing and payroll — unlimited users · 50% off",
-            features: ["Everything in Complete Commerce", "50% cheaper than paying monthly", "Price locked for a year", "Unlimited users", "Priority support"],
+            features: ["Everything in Enterprise", "50% cheaper than paying monthly", "Price locked for a year", "Unlimited users", "Priority support"],
           },
           ru: {
-            name: "Полная торговля — год",
+            name: "Корпоративный — год",
             description: "Полный ERP с бухгалтерией и производством — без ограничения пользователей · скидка 50%",
             features: ["Все из полного пакета", "На 50% дешевле помесячной оплаты", "Цена зафиксирована на год", "Неограниченное число пользователей", "Приоритетная поддержка"],
           },
           kk: {
-            name: "Толық сауда — жылдық",
+            name: "Корпоративтік — жылдық",
             description: "Бухгалтерия мен өндірісті қамтитын толық ERP — шексіз пайдаланушы · 50% жеңілдік",
             features: ["Толық пакеттегінің бәрі", "Айлық төлемнен 50% арзан", "Жыл бойы баға тұрақты", "Шексіз пайдаланушы", "Басым қолдау"],
           },
