@@ -5,11 +5,10 @@
  * TRIAL statüsünde bir sipariş açılır, ürün tarafı lisansı license-service
  * üzerinden görür ve müşteri erpide.com hesabıyla doğrudan içeri girer.
  *
- * Deneme KARTLIDIR. Süre dolduğunda tahsilatın kendiliğinden yapılabilmesi
- * için kart saklanır; müşteri iptal etmezse abonelik otomatik başlar.
- * iyzico ödeme yapılmadan kart saklamadığı için ₺1'lik bir doğrulama işlemi
- * alınır ve callback'te aynı gün iptal edilir (ekstreye çoğu bankada hiç
- * yansımaz). Müşterinin kayıtlı kartı zaten varsa bu adım atlanır.
+ * Deneme KART İSTEMEZ. Kısa süre kartlı denendi (₺1 doğrulama + iptal) ama
+ * TR pazarında kart istemek denemeye başlamayı kapıda öldürüyor; rakipler de
+ * kartsız veriyor. Müşteri tek tıkla içeri giriyor, ürünün içinde "X gün
+ * kaldı · Aboneliği Başlat" bandını görüyor ve hazır olduğunda ödüyor.
  *
  * Kurallar:
  *   - Giriş yapmış olmak şart (deneme kimliğe bağlı)
@@ -19,9 +18,10 @@
  *     yakanlar), satıştan kalkmış SKU'lar da öyle
  *   - Zaten aktif denemesi varsa yeni açmaz, mevcudu döner (çift tıklama)
  *
- * Deneme bitince renew-subscriptions cron'u saklı karttan gerçek tutarı çeker
- * ve sipariş PAID'e geçer. İptal edilmişse ya da kart yoksa tahsilat denenmez;
- * license-service süresi geçmiş lisansı zaten kapatır.
+ * Deneme bitince license-service süresi geçmiş lisansı kapatır ve müşteri
+ * abonelik ekranına düşer. Kartı kayıtlı olan müşterilerde (daha önce alışveriş
+ * yapmış) renew-subscriptions otomatik tahsilat yapar; kartı olmayanda deneme
+ * sessizce sona erer.
  */
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
@@ -35,7 +35,6 @@ import {
 import { getSku, getProductOfSku } from "@/lib/products";
 import { priceForCharge } from "@/lib/currency";
 import { generateLicenseKey } from "@/lib/payments/license";
-import { initCheckoutMulti } from "@/app/api/checkout/route";
 import { provisionFinanserpideSku } from "@/lib/payments/finanserpide-provision";
 import { invalidateRemoteLicenseCache } from "@/lib/payments/license-service-invalidate";
 
@@ -92,10 +91,8 @@ export async function POST(req: Request) {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 
-  // Deneme kart ister: süre dolduğunda tahsilat kendiliğinden yapılabilsin.
-  // Müşterinin kayıtlı kartı yoksa ₺1'lik bir doğrulama işlemiyle iyzico'ya
-  // kart kaydettiriyoruz; o ₺1 callback'te aynı gün iptal ediliyor (iyzico
-  // ödeme yapılmadan kart saklamıyor).
+  // Kartı zaten kayıtlı olan müşteride (daha önce alışveriş yapmış) deneme
+  // bitiminde otomatik tahsilat yapılabilir; olmayanda deneme sessizce biter.
   const hasSavedCard = !!(user.iyzicoCardUserKey && user.iyzicoCardToken);
 
   const item: OrderItem = {
@@ -118,60 +115,14 @@ export async function POST(req: Request) {
     totalPrice: chargeAfterTrial,
     currency: "TRY",
     conversationId,
-    // Kart zaten varsa deneme hemen başlar; yoksa ödeme dönüşünde TRIAL'a çevrilir.
-    status: hasSavedCard ? "TRIAL" : "PENDING",
+    status: "TRIAL",
     isTrial: true,
     trialExpiresAt: expiresAt.toISOString(),
     billingCycle: sku.cycle === "yearly" ? "yearly" : "monthly",
-    // Denemenin tamamı otomatik geçiş içindir — müşteri iptal etmezse devam eder.
-    autoRenewEnabled: true,
+    // Kartı varsa süre sonunda otomatik geçer; yoksa cron tahsilat denemeden
+    // denemeyi sonlandırır.
+    autoRenewEnabled: hasSavedCard,
   });
-
-  if (!hasSavedCard) {
-    const origin = req.headers.get("origin") || "https://erpide.com";
-    const checkout = await initCheckoutMulti({
-      conversationId,
-      callbackUrl: `${origin}/api/payments/callback`,
-      totalPrice: 1,
-      currency: "TRY",
-      buyer: {
-        id: user.id,
-        name: user.name,
-        surname: user.surname,
-        email: user.email,
-        gsmNumber: user.gsmNumber || "+905000000000",
-        identityNumber: user.identityNumber || user.taxNumber || "11111111111",
-        registrationAddress: user.address || "Türkiye",
-        city: user.city || "İstanbul",
-        country: "Turkey",
-        ip: (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "85.34.78.112",
-      },
-      basketItems: [{
-        id: `trial-${sku.id}`,
-        name: `${product.name} ${sku.name} — ${TRIAL_DAYS} gün deneme (kart doğrulama)`,
-        category1: product.name,
-        itemType: "VIRTUAL",
-        price: "1.00",
-      }],
-      basketId: order.id,
-      cardUserKey: user.iyzicoCardUserKey,
-    });
-
-    if (checkout.status !== "success") {
-      return NextResponse.json(
-        { error: checkout.errorMessage || "Kart doğrulama başlatılamadı" },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      needsCard: true,
-      paymentPageUrl: checkout.paymentPageUrl,
-      orderId: order.id,
-      trialDays: TRIAL_DAYS,
-    });
-  }
 
   // Ürün tarafında aboneliği aç — satın almadaki akışın aynısı. Başarısız
   // olursa denemeyi geri almıyoruz: lisans state'inin tek doğru kaynağı
