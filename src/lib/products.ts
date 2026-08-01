@@ -107,7 +107,7 @@ export const CATEGORIES: {
  *   "credit"    → Tüketilen kontör (AI mesaj kontörü gibi)
  *   "standalone"→ Tek paket ürün (PocketERPIDE, CaptchaERPIDE Starter/Pro/Ent)
  */
-export type SKUKind = "base" | "module" | "seat" | "credit" | "standalone";
+export type SKUKind = "base" | "module" | "seat" | "credit" | "standalone" | "ai-plan";
 
 export interface SKU {
   id: string;
@@ -136,6 +136,12 @@ export interface SKU {
   grantsModules?: string[];
   /** kind="credit" SKU'sunun aldığı kontör/mesaj adedi (örn. 500, 1000, 2000, 10000). */
   creditsGranted?: number;
+  /**
+   * kind="ai-plan": aylık AI mesaj hakkı. Kontörden farkı devretmemesi —
+   * her ay sıfırlanır. Müşteri "kaç kontörüm kaldı" diye takip etmek yerine
+   * paketini seçip kullanıyor.
+   */
+  aiMessagesPerMonth?: number;
   /** Bundle SKU: tek kod/tek satın alma ile gelen ek kullanıcı koltuğu sayısı. */
   seatsIncluded?: number;
   /**
@@ -817,23 +823,18 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "ai-kontor",
-    name: "AI Asistan Kontörü",
-    tagline: "FinansERPIDE AI Asistanına Ek Mesaj Kontörü",
+    name: "Eylül AI",
+    tagline: "FinansERPIDE'yi konuşarak yönetin",
     description:
-      "FinansERPIDE planında kalan AI mesaj limitinizi aştığınızda kontör paketi alarak kesintisiz devam edin. Tek seferlik satın alma — paket bitmeden tekrar dolmaz, yenisini alabilirsiniz.",
+      "Eylül, FinansERPIDE'nin yapay zekâ asistanı. Fatura kes, cari aç, rapor sor, mutabakat hazırlat — hepsini yazarak yaptır. Her FinansERPIDE hesabında ayda 10 mesaj ücretsiz; daha fazlası için aylık paket seçin.",
     longDescription:
-      "FinansERPIDE'nin yerleşik AI asistanı (Claude tabanlı) plan limitiniz dolduğunda 429 döner. Bu pakete yatırım yaparak fatura okuma, hesaplama, raporlama, veri girişi gibi AI işlemlerine kesintisiz devam edebilirsiniz. Kontörler hesabınıza anında işlenir, sadece tüketildikçe düşer; aylık plan limitinizin üstüne eklenir, bir sonraki aya devreder.",
+      "Eylül sisteminizin içinde çalışır: \"Ahmet Ticaret'e 12.000 TL danışmanlık faturası kes\" dediğinizde faturayı oluşturur, KDV'sini hesaplar, yevmiyesini yazar. Cari bakiyeleri, stok durumu, vadesi geçen alacaklar, aylık kâr-zarar — hepsini sorabilirsiniz. Türk muhasebe ve vergi mevzuatını bilir; \"bu masrafı hangi hesaba yazayım\" gibi soruları da yanıtlar. Paketler aylıktır ve her ay yenilenir; kullanılmayan hak devretmez.",
     icon: Sparkles,
     color: "from-amber-500 to-orange-600",
     domain: "finans.erpide.com",
     category: "ai-credits",
     marketScope: "GLOBAL",
-    // Public site'ten gizli; sadece mevcut müşteriler hesabim/lisanslarim'dan
-    // kontör bakiyesini görebilir. iyzico üye işyeri başvuru sürecinde
-    // "kredi/jeton/kontör modeli" satılmaması talebi nedeniyle 2026-06'da
-    // public listelerden çekildi. Backend (kontör tüketimi, callback,
-    // license-service) olduğu gibi çalışıyor.
-    hiddenFromPublic: true,
+
     i18n: {
       en: {
         name: "AI Assistant Credits",
@@ -856,6 +857,108 @@ export const PRODUCTS: Product[] = [
     // FinansERPIDE plani olan musteriler sepete ekleyebilir (aiKontorBlocked).
     noTrial: true,
     skus: [
+      // ===== AYLIK AI PAKETLERI =====
+      // Kontor (tek seferlik, devreden) modeli birakildi: musteri "kac kontorum
+      // kaldi" diye takip etmek zorunda kaliyordu. Artik aylik hak; her ay
+      // yenilenir, devretmez. Her FinansERPIDE hesabinda ayda 10 mesaj zaten
+      // ucretsiz — paketler bunun ustune gecer, eklenmez.
+      //
+      // Fiyatlama: mesaj maliyeti ~₺1,5 (arac sonuclari kirpildiktan sonra).
+      // Hacim buyudukce mesaj basi fiyat dusuyor.
+      {
+        id: "eylul-junior-monthly",
+        productId: "ai-kontor",
+        name: "Junior",
+        description: "Ayda 100 mesaj — gunluk birkac islem",
+        price: 349,
+        currency: "TRY",
+        cycle: "monthly",
+        kind: "ai-plan",
+        aiMessagesPerMonth: 100,
+        features: [
+          "Ayda 100 AI mesajı",
+          "Fatura kesme, cari açma, rapor sorgulama",
+          "Türk muhasebe ve vergi mevzuatı bilgisi",
+          "Firma geneli — tüm kullanıcılar ortak havuzdan harcar",
+          "Mesaj başı ≈ ₺3,49",
+        ],
+        i18n: {
+          en: { name: "Junior", description: "100 messages/month — a few operations a day", features: ["100 AI messages per month", "Create invoices, add contacts, query reports", "Knows Turkish accounting and tax rules", "Company-wide shared pool", "≈ ₺3.49 per message"] },
+          ru: { name: "Junior", description: "100 сообщений в месяц — несколько операций в день", features: ["100 AI-сообщений в месяц", "Счета, контрагенты, отчеты", "Знает турецкий учет и налоги", "Общий пул на компанию", "≈ ₺3,49 за сообщение"] },
+          kk: { name: "Junior", description: "Айына 100 хабарлама", features: ["Айына 100 AI хабарлама", "Шот, контрагент, есеп", "Түрік есебі мен салығын біледі", "Компания бойынша ортақ пул", "≈ ₺3,49 хабарлама"] },
+        },
+      },
+      {
+        id: "eylul-standart-monthly",
+        productId: "ai-kontor",
+        name: "Standart",
+        description: "Ayda 300 mesaj — gunluk duzenli kullanim",
+        price: 899,
+        currency: "TRY",
+        cycle: "monthly",
+        kind: "ai-plan",
+        aiMessagesPerMonth: 300,
+        highlight: true,
+        features: [
+          "Ayda 300 AI mesajı",
+          "Junior'daki her şey",
+          "Toplu işlemler (gelen faturaları sınıflandır, mutabakat hazırla)",
+          "Firma geneli — tüm kullanıcılar ortak havuzdan harcar",
+          "Mesaj başı ≈ ₺3,00",
+        ],
+        i18n: {
+          en: { name: "Standard", description: "300 messages/month — regular daily use", features: ["300 AI messages per month", "Everything in Junior", "Bulk operations (classify incoming invoices, prepare reconciliation)", "Company-wide shared pool", "≈ ₺3.00 per message"] },
+          ru: { name: "Стандарт", description: "300 сообщений в месяц", features: ["300 AI-сообщений в месяц", "Все из Junior", "Массовые операции", "Общий пул на компанию", "≈ ₺3,00 за сообщение"] },
+          kk: { name: "Стандарт", description: "Айына 300 хабарлама", features: ["Айына 300 AI хабарлама", "Junior-дағының бәрі", "Топтық операциялар", "Компания бойынша ортақ пул", "≈ ₺3,00 хабарлама"] },
+        },
+      },
+      {
+        id: "eylul-plus-monthly",
+        productId: "ai-kontor",
+        name: "Plus",
+        description: "Ayda 750 mesaj — yogun kullanim, birkac kisi",
+        price: 1999,
+        currency: "TRY",
+        cycle: "monthly",
+        kind: "ai-plan",
+        aiMessagesPerMonth: 750,
+        features: [
+          "Ayda 750 AI mesajı",
+          "Standart'taki her şey",
+          "Muhasebe ekibi için toplu yevmiye ve mizan analizi",
+          "Firma geneli — tüm kullanıcılar ortak havuzdan harcar",
+          "Mesaj başı ≈ ₺2,67",
+        ],
+        i18n: {
+          en: { name: "Plus", description: "750 messages/month — heavy use, small team", features: ["750 AI messages per month", "Everything in Standard", "Bulk journal and trial-balance analysis", "Company-wide shared pool", "≈ ₺2.67 per message"] },
+          ru: { name: "Plus", description: "750 сообщений в месяц", features: ["750 AI-сообщений в месяц", "Все из Стандарта", "Массовый анализ проводок", "Общий пул на компанию", "≈ ₺2,67 за сообщение"] },
+          kk: { name: "Plus", description: "Айына 750 хабарлама", features: ["Айына 750 AI хабарлама", "Стандарттағының бәрі", "Топтық талдау", "Компания бойынша ортақ пул", "≈ ₺2,67 хабарлама"] },
+        },
+      },
+      {
+        id: "eylul-pro-monthly",
+        productId: "ai-kontor",
+        name: "Pro",
+        description: "Ayda 2.000 mesaj — Eylul'u surekli calistiran firmalar",
+        price: 4799,
+        currency: "TRY",
+        cycle: "monthly",
+        kind: "ai-plan",
+        aiMessagesPerMonth: 2000,
+        features: [
+          "Ayda 2.000 AI mesajı",
+          "Plus'taki her şey",
+          "Öncelikli işlem sırası",
+          "Firma geneli — tüm kullanıcılar ortak havuzdan harcar",
+          "Mesaj başı ≈ ₺2,40",
+        ],
+        i18n: {
+          en: { name: "Pro", description: "2,000 messages/month — teams running Eylül all day", features: ["2,000 AI messages per month", "Everything in Plus", "Priority processing", "Company-wide shared pool", "≈ ₺2.40 per message"] },
+          ru: { name: "Pro", description: "2 000 сообщений в месяц", features: ["2 000 AI-сообщений в месяц", "Все из Plus", "Приоритетная обработка", "Общий пул на компанию", "≈ ₺2,40 за сообщение"] },
+          kk: { name: "Pro", description: "Айына 2 000 хабарлама", features: ["Айына 2 000 AI хабарлама", "Plus-тағының бәрі", "Басым өңдеу", "Компания бойынша ортақ пул", "≈ ₺2,40 хабарлама"] },
+        },
+      },
+
       {
         id: "ai-kontor-500",
         productId: "ai-kontor",
@@ -865,6 +968,7 @@ export const PRODUCTS: Product[] = [
         currency: "TRY",
         cycle: "monthly",
         kind: "credit",
+        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
         creditsGranted: 500,
         features: [
           "500 AI mesaj kontörü",
@@ -899,6 +1003,7 @@ export const PRODUCTS: Product[] = [
         currency: "TRY",
         cycle: "monthly",
         kind: "credit",
+        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
         creditsGranted: 1000,
         features: [
           "1.000 AI mesaj kontörü",
@@ -933,6 +1038,7 @@ export const PRODUCTS: Product[] = [
         currency: "TRY",
         cycle: "monthly",
         kind: "credit",
+        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
         creditsGranted: 2000,
         features: [
           "2.000 AI mesaj kontörü",
@@ -968,6 +1074,7 @@ export const PRODUCTS: Product[] = [
         currency: "TRY",
         cycle: "monthly",
         kind: "credit",
+        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
         creditsGranted: 10000,
         features: [
           "10.000 AI mesaj kontörü",

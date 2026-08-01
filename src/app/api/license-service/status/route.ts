@@ -80,6 +80,10 @@ interface ProductState {
   creditsConsumed?: number;
   /** AI Kontör için: granted - consumed (UI bunu gösterir) */
   creditsRemaining?: number;
+  /** Aylık AI mesaj hakkı (ai-plan SKU'su). Kontörden farklı: her ay yenilenir. */
+  aiMessagesPerMonth?: number;
+  /** Bu ürün ücretsiz deneme siparişinden mi geliyor? */
+  isTrial?: boolean;
 }
 
 function emptyProductState(): ProductState {
@@ -160,7 +164,7 @@ export async function GET(req: Request) {
 
   for (const o of sorted) {
     if (o.status !== "PAID" && o.status !== "TRIAL") continue;
-    const isTrialOrder = o.status === "TRIAL" || o.isTrial;
+    const isTrialOrder = o.status === "TRIAL" || !!o.isTrial;
     const expiresAt = isTrialOrder ? o.trialExpiresAt : o.subscriptionExpiresAt;
     const expired = !!expiresAt && new Date(expiresAt).getTime() < now;
 
@@ -188,6 +192,9 @@ export async function GET(req: Request) {
           return sku?.kind === "base";
         });
         s.planCode = baseItem ? "BASE" : s.planCode || items[0].skuName;
+        // Deneme bilgisi ürün tarafına taşınıyor: deneme hesaplarında AI
+        // kapalı (bedava deneme + ücretli AI = kontrolsüz gider).
+        s.isTrial = isTrialOrder;
 
         // FinansERPIDE için modülleri topla (base + her modül SKU)
         if (pid === "finanserpide") {
@@ -219,6 +226,14 @@ export async function GET(req: Request) {
         // order'in kendi tuketim sayacini (creditsConsumed) cikar. Tum aktif
         // order'lar toplanir; sonuc UI'ye gauge cubugu icin uygun.
         if (pid === "ai-kontor") {
+          // Aylık AI paketi: en yüksek hak kazanır (müşteri yükseltmişse
+          // eski küçük paket onu aşağı çekmesin).
+          for (const it of items) {
+            const sku = getSku(it.skuId);
+            if (sku?.kind === "ai-plan" && sku.aiMessagesPerMonth) {
+              s.aiMessagesPerMonth = Math.max(s.aiMessagesPerMonth || 0, sku.aiMessagesPerMonth);
+            }
+          }
           let grantedThisOrder = 0;
           for (const it of items) {
             const sku = getSku(it.skuId);
