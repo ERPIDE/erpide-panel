@@ -40,6 +40,7 @@ export const ALL_MODULES = [
   { key: "witma",            label: "WITMA" },
   { key: "captcha",          label: "Captcha Panel" },
   { key: "dataengine",       label: "Data Engine" },
+  { key: "enflasyon",        label: "Enflasyon" },
   { key: "sistem",           label: "Sistem" },
   { key: "profil",           label: "Profilim" },
 ] as const;

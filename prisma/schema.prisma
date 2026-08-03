@@ -350,3 +350,32 @@ model TicketMessage {
 
   @@index([ticketId])
 }
+
+// ── Enflasyon modülü ──────────────────────────────────────────────
+// ERPIDE Gerçek Enflasyon Raporu: çok kaynaklı (EVDS/TCMB/World Bank/statik)
+// parametre motoru aylık rapor üretir, abone listesine mail atılır.
+
+model InflationSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model InflationRun {
+  id           String    @id @default(cuid())
+  period       String    // "2026-08" — raporun ait olduğu ay
+  trigger      String    // "cron" | "manual"
+  realRate     Float?    // ERPIDE Gerçek Enflasyon (yıllık %)
+  officialRate Float?    // Resmi TÜFE (yıllık %)
+  liveParams   Int       @default(0)
+  totalParams  Int       @default(0)
+  // Motorun tam çıktısı: katmanlar + kategori bazlı tüm parametre değerleri.
+  data         Json
+  createdAt    DateTime  @default(now())
+  sentAt       DateTime?
+  sentCount    Int       @default(0)
+
+  @@index([createdAt])
+}
