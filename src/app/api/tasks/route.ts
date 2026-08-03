@@ -63,6 +63,8 @@ function parseBody(body: string) {
   let deadline = "";
   let customDate = "";
   let creator = "";
+  let assignee = "";
+  let taskType = "";
   let priorityScore = 0;
   let description = body || "";
 
@@ -78,6 +80,12 @@ function parseBody(body: string) {
   const creatorMatch = body.match(/\*\*Oluşturan:\*\*\s*(.+?)(?:\n|\||$)/);
   if (creatorMatch) creator = creatorMatch[1].trim();
 
+  const assigneeMatch = body.match(/\*\*Sorumlu:\*\*\s*(.+?)(?:\n|\||$)/);
+  if (assigneeMatch) assignee = assigneeMatch[1].trim();
+
+  const typeMatch = body.match(/\*\*Tip:\*\*\s*(.+?)(?:\n|\||$)/);
+  if (typeMatch) taskType = typeMatch[1].trim();
+
   const scoreMatch = body.match(/\*\*Öncelik Puanı:\*\*\s*(\d+)/);
   if (scoreMatch) priorityScore = parseInt(scoreMatch[1], 10);
 
@@ -92,6 +100,8 @@ function parseBody(body: string) {
     .replace(/\*\*Deadline:\*\*\s*.+$/gm, "")
     .replace(/\*\*Öncelik:\*\*\s*.+$/gm, "")
     .replace(/\*\*Oluşturan:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Sorumlu:\*\*\s*.+$/gm, "")
+    .replace(/\*\*Tip:\*\*\s*.+$/gm, "")
     .replace(/\*\*Tarih:\*\*\s*.+$/gm, "")
     .replace(/\*\*Öncelik Puanı:\*\*\s*.+$/gm, "")
     .replace(/\|[^\n]+\|/g, "")
@@ -99,7 +109,7 @@ function parseBody(body: string) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return { client, deadline, customDate, creator, description, priorityScore };
+  return { client, deadline, customDate, creator, assignee, taskType, description, priorityScore };
 }
 
 // GET /api/tasks
@@ -204,6 +214,8 @@ export async function GET() {
               createdAt: parsed.customDate || issue.created_at.split("T")[0],
               closedAt: issue.closed_at ? issue.closed_at.split("T")[0] : undefined,
               createdBy: parsed.creator || displayName(issue.user?.login || "unknown"),
+              assignee: parsed.assignee || undefined,
+              taskType: parsed.taskType || undefined,
               url: issue.html_url,
               // "bildirildi" etiketi /api/notify tamamlandı bildirimi sonrası basılır
               completionNotified: labels.includes("bildirildi"),

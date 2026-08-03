@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { repo, issueNumber, status, devNote, customDate, deadline, title, description, priorityScore } = body;
+    const { repo, issueNumber, status, devNote, customDate, deadline, title, description, priorityScore, assignee, taskType } = body;
 
     if (!repo || !issueNumber) {
       return NextResponse.json({ error: "repo and issueNumber required" }, { status: 400 });
@@ -143,6 +143,71 @@ export async function PATCH(request: NextRequest) {
             issueBody = issueBody.substring(0, sepIdx) + `\n**Deadline:** ${deadline}` + issueBody.substring(sepIdx);
           } else {
             issueBody += `\n\n---\n**Deadline:** ${deadline}`;
+          }
+        }
+
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ body: issueBody }),
+          }
+        );
+      }
+    }
+
+    // Update sorumlu (assignee) in issue body
+    if (assignee !== undefined) {
+      const issueResA = await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+      );
+      if (issueResA.ok) {
+        const issue = await issueResA.json();
+        let issueBody: string = issue.body || "";
+
+        if (assignee === null || assignee === "") {
+          // Sorumlu satırını tamamen kaldır
+          issueBody = issueBody.replace(/\n?\*\*Sorumlu:\*\*\s*.+/g, "");
+        } else if (issueBody.match(/\*\*Sorumlu:\*\*\s*.+/)) {
+          issueBody = issueBody.replace(/\*\*Sorumlu:\*\*\s*.+/, `**Sorumlu:** ${assignee}`);
+        } else {
+          const sepIdx = issueBody.indexOf("\n---\n");
+          if (sepIdx > -1) {
+            issueBody = issueBody.substring(0, sepIdx) + `\n**Sorumlu:** ${assignee}` + issueBody.substring(sepIdx);
+          } else {
+            issueBody += `\n\n---\n**Sorumlu:** ${assignee}`;
+          }
+        }
+
+        await ghFetch(
+          `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ body: issueBody }),
+          }
+        );
+      }
+    }
+
+    // Update görev tipi (taskType) in issue body
+    if (taskType !== undefined) {
+      const issueResT = await ghFetch(
+        `https://api.github.com/repos/${ORG}/${repo}/issues/${issueNumber}`
+      );
+      if (issueResT.ok) {
+        const issue = await issueResT.json();
+        let issueBody: string = issue.body || "";
+
+        if (taskType === null || taskType === "") {
+          issueBody = issueBody.replace(/\n?\*\*Tip:\*\*\s*.+/g, "");
+        } else if (issueBody.match(/\*\*Tip:\*\*\s*.+/)) {
+          issueBody = issueBody.replace(/\*\*Tip:\*\*\s*.+/, `**Tip:** ${taskType}`);
+        } else {
+          const sepIdx = issueBody.indexOf("\n---\n");
+          if (sepIdx > -1) {
+            issueBody = issueBody.substring(0, sepIdx) + `\n**Tip:** ${taskType}` + issueBody.substring(sepIdx);
+          } else {
+            issueBody += `\n\n---\n**Tip:** ${taskType}`;
           }
         }
 

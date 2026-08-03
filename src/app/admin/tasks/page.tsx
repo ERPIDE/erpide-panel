@@ -43,6 +43,8 @@ import {
   cleanMarkdown,
   scoreColor,
   scoreToPriority,
+  TASK_TYPES,
+  taskTypeConfig,
 } from "@/lib/store";
 import { useToast } from "@/components/Toast";
 
@@ -119,6 +121,10 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentUserName, setCurrentUserName] = useState("Admin");
+  // Sorumlu atama için admin/geliştirici listesi
+  const [assignees, setAssignees] = useState<{ id: string; name: string; role: string }[]>([]);
+  const [savingAssignee, setSavingAssignee] = useState(false);
+  const [savingType, setSavingType] = useState(false);
 
   // projeler — DB'den (/api/projects); dropdown'lar ve müşteri eşlemesi buradan
   const [projectList, setProjectList] = useState<ProjectDef[]>([]);
@@ -130,6 +136,7 @@ export default function TasksPage() {
   const [fStatus, setFStatus] = useState("todo");
   const [fPriority, setFPriority] = useState("all");
   const [fLabel, setFLabel] = useState("all");
+  const [fTaskType, setFTaskType] = useState("all");
   // Açılış tarihi aralığı — "YYYY-MM-DD", boş = filtre yok
   const [fDateFrom, setFDateFrom] = useState("");
   const [fDateTo, setFDateTo] = useState("");
@@ -218,6 +225,7 @@ export default function TasksPage() {
     fetchTasks();
     fetchProjects();
     fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.userName) setCurrentUserName(d.userName); }).catch(() => {});
+    fetch("/api/tasks/assignees").then(r => r.ok ? r.json() : { assignees: [] }).then(d => setAssignees(d.assignees || [])).catch(() => {});
   }, []);
 
   // Proje listesi gelince create-form'un default projesi listeden seçilsin
@@ -553,6 +561,44 @@ export default function TasksPage() {
     }
   }
 
+  /* ─── update task assignee (sorumlu) ─── */
+  async function saveTaskAssignee(task: Task, name: string) {
+    if (!task.repo) return;
+    try {
+      setSavingAssignee(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, assignee: name }),
+      });
+      if (res.ok) { toast("success", "Sorumlu guncellendi"); await fetchTasks(); }
+      else toast("error", "Sorumlu guncellenemedi");
+    } catch {
+      toast("error", "Sorumlu guncellenemedi");
+    } finally {
+      setSavingAssignee(false);
+    }
+  }
+
+  /* ─── update task type (görev tipi) ─── */
+  async function saveTaskType(task: Task, type: string) {
+    if (!task.repo) return;
+    try {
+      setSavingType(true);
+      const res = await fetch("/api/tasks/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: task.repo, issueNumber: task.id, taskType: type }),
+      });
+      if (res.ok) { toast("success", "Gorev tipi guncellendi"); await fetchTasks(); }
+      else toast("error", "Gorev tipi guncellenemedi");
+    } catch {
+      toast("error", "Gorev tipi guncellenemedi");
+    } finally {
+      setSavingType(false);
+    }
+  }
+
   /* ─── update task date ─── */
   async function saveTaskDate(task: Task) {
     if (!task.repo || !dateValue) return;
@@ -618,6 +664,10 @@ export default function TasksPage() {
       if (fStatus !== "all" && t.status !== fStatus) return false;
       if (fPriority !== "all" && t.priority !== fPriority) return false;
       if (fLabel !== "all" && t.label !== fLabel) return false;
+      if (fTaskType !== "all") {
+        if (fTaskType === "none") { if (t.taskType) return false; }
+        else if (t.taskType !== fTaskType) return false;
+      }
       if (fNotified === "sent" && !t.completionNotified) return false;
       if (fNotified === "unsent" && t.completionNotified) return false;
       if (fDateFrom || fDateTo) {
@@ -636,7 +686,7 @@ export default function TasksPage() {
         default:          return b.id - a.id;
       }
     });
-  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fNotified, fDateFrom, fDateTo, sortBy]);
+  }, [tasks, search, fProject, fCustomer, fStatus, fPriority, fLabel, fTaskType, fNotified, fDateFrom, fDateTo, sortBy]);
 
   /** Müşteri filtre seçenekleri: proje tanımlarındaki müşteriler + task'larda
    *  görülen client adları (eski task'larda serbest metin olabilir). */
@@ -739,6 +789,11 @@ export default function TasksPage() {
             <option value="all">Tum Etiketler</option>
             {labels.map((l) => <option key={l} value={l}>{labelConfig[l].label}</option>)}
           </select>
+          <select value={fTaskType} onChange={(e) => setFTaskType(e.target.value)} className="px-3 py-2.5 rounded-xl bg-[#111118] border border-white/10 text-white text-sm focus:border-blue-500/50 focus:outline-none transition cursor-pointer">
+            <option value="all">Tum Tipler</option>
+            {TASK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            <option value="none">Belirsiz</option>
+          </select>
           <select
             value={fNotified}
             onChange={(e) => {
@@ -816,9 +871,9 @@ export default function TasksPage() {
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <Filter size={12} />
         <span>{filtered.length} gorev listeleniyor</span>
-        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fNotified !== "all" || fDateFrom || fDateTo) && (
+        {(search || fProject !== "all" || fCustomer !== "all" || fStatus !== "all" || fPriority !== "all" || fLabel !== "all" || fTaskType !== "all" || fNotified !== "all" || fDateFrom || fDateTo) && (
           <button
-            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFNotified("all"); setFDateFrom(""); setFDateTo(""); }}
+            onClick={() => { setSearch(""); setFProject("all"); setFCustomer("all"); setFStatus("todo"); setFPriority("all"); setFLabel("all"); setFTaskType("all"); setFNotified("all"); setFDateFrom(""); setFDateTo(""); }}
             className="text-blue-400 hover:text-blue-300 transition ml-1"
           >
             Filtreleri temizle
@@ -877,6 +932,12 @@ export default function TasksPage() {
                       <PriorityIcon size={10} />
                       {pc.label}
                     </span>
+                    {/* görev tipi */}
+                    {t.taskType && (
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${taskTypeConfig[t.taskType]?.bg || "bg-white/5"} ${taskTypeConfig[t.taskType]?.color || "text-gray-400"}`}>
+                        {t.taskType}
+                      </span>
+                    )}
                     {/* deadline — geçersiz tarih verisinde ("Invalid Date") hiç gösterme */}
                     {t.deadline && formatDate(t.deadline) && (
                       <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-red-400 font-medium" : "text-gray-500"}`}>
@@ -1110,6 +1171,36 @@ export default function TasksPage() {
                   <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
                     <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Olusturan</p>
                     <span className="text-sm text-white">{activeTask.createdBy}</span>
+                  </div>
+                  {/* sorumlu (assignee) */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Sorumlu</p>
+                    <select
+                      value={activeTask.assignee || ""}
+                      disabled={savingAssignee}
+                      onChange={(e) => saveTaskAssignee(activeTask, e.target.value)}
+                      className="w-full bg-transparent text-sm text-white outline-none cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="" className="bg-[#111118] text-gray-400">— Atanmadi —</option>
+                      {assignees.map((a) => (
+                        <option key={a.id} value={a.name} className="bg-[#111118] text-white">{a.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* görev tipi (task type) */}
+                  <div className="p-3 rounded-xl bg-[#111118] border border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Gorev Tipi</p>
+                    <select
+                      value={activeTask.taskType || ""}
+                      disabled={savingType}
+                      onChange={(e) => saveTaskType(activeTask, e.target.value)}
+                      className="w-full bg-transparent text-sm text-white outline-none cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="" className="bg-[#111118] text-gray-400">— Secilmedi —</option>
+                      {TASK_TYPES.map((t) => (
+                        <option key={t} value={t} className="bg-[#111118] text-white">{t}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

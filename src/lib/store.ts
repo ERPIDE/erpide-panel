@@ -68,12 +68,25 @@ export interface Task {
   /** Müşteriye tamamlandı bildirimi gönderildi mi ("bildirildi" etiketi). */
   completionNotified?: boolean;
   createdBy: string;
+  /** Sorumlu admin/geliştirici adı (issue body'de **Sorumlu:** olarak tutulur). */
+  assignee?: string;
+  /** Görev tipi: Yazılım | Kontrol | Danışmanlık (issue body'de **Tip:** olarak tutulur). */
+  taskType?: string;
   devNote?: string;
   url?: string;
   commentsCount?: number;
   comments: Comment[];
   attachments: Attachment[];
 }
+
+/** Görev tipleri — yazılım birimine mi gidecek yoksa kontrol/danışmanlık mı.
+ *  Rapor ve filtreleme bu ayrımı kullanır. */
+export const TASK_TYPES = ["Yazılım", "Kontrol", "Danışmanlık"] as const;
+export const taskTypeConfig: Record<string, { color: string; bg: string }> = {
+  "Yazılım": { color: "text-blue-400", bg: "bg-blue-500/10" },
+  "Kontrol": { color: "text-amber-400", bg: "bg-amber-500/10" },
+  "Danışmanlık": { color: "text-purple-400", bg: "bg-purple-500/10" },
+};
 
 export const priorityConfig: Record<Priority, { label: string; color: string; bg: string }> = {
   critical: { label: "Kritik", color: "text-red-500", bg: "bg-red-500/10" },
