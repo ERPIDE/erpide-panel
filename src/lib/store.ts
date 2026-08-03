@@ -81,11 +81,12 @@ export interface Task {
 
 /** Görev tipleri — yazılım birimine mi gidecek yoksa kontrol/danışmanlık mı.
  *  Rapor ve filtreleme bu ayrımı kullanır. */
-export const TASK_TYPES = ["Yazılım", "Kontrol", "Danışmanlık"] as const;
+export const TASK_TYPES = ["Yazılım", "Kontrol", "Danışmanlık", "Geliştirme"] as const;
 export const taskTypeConfig: Record<string, { color: string; bg: string }> = {
   "Yazılım": { color: "text-blue-400", bg: "bg-blue-500/10" },
   "Kontrol": { color: "text-amber-400", bg: "bg-amber-500/10" },
   "Danışmanlık": { color: "text-purple-400", bg: "bg-purple-500/10" },
+  "Geliştirme": { color: "text-teal-400", bg: "bg-teal-500/10" },
 };
 
 export const priorityConfig: Record<Priority, { label: string; color: string; bg: string }> = {
