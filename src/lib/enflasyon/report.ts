@@ -86,7 +86,7 @@ export function buildInflationEmailHtml(run: RunData): string {
   const alimGucu = p("alim-gucu-endeks");
 
   const gapText = h.gap != null
-    ? `Gerçek enflasyon resmi rakamın <b style="color:${h.gap > 0 ? "#dc2626" : "#16a34a"}">${fmtNum(Math.abs(h.gap))} puan ${h.gap > 0 ? "üzerinde" : "altında"}</b> hesaplandı.`
+    ? `Hissedilen enflasyon resmi rakamın <b style="color:${h.gap > 0 ? "#dc2626" : "#16a34a"}">${fmtNum(Math.abs(h.gap))} puan ${h.gap > 0 ? "üzerinde" : "altında"}</b> hesaplandı.`
     : "";
 
   return `
@@ -100,14 +100,27 @@ export function buildInflationEmailHtml(run: RunData): string {
       </p>
 
       <table cellpadding="0" cellspacing="0" width="100%"><tr>
-        ${bigCard("ERPIDE Gerçek", h.real != null ? `%${fmtNum(h.real)}` : "—", "#dc2626", "6 katmanlı kompozit")}
+        ${bigCard("HİSSEDİLEN", h.felt != null ? `%${fmtNum(h.felt)}` : "—", "#dc2626", "borçlu-kiracı hane sepeti")}
         ${bigCard("Resmi TÜFE", h.official != null ? `%${fmtNum(h.official)}` : "—", "#2563eb", "TÜİK yıllık")}
         ${bigCard("ENAG E-TÜFE", `%${fmtNum(h.enag)}`, "#9333ea", "bağımsız ölçüm")}
-        ${bigCard("Fark", h.gap != null ? `${h.gap > 0 ? "+" : ""}${fmtNum(h.gap)}` : "—", signColor(h.gap), "gerçek − resmi")}
+        ${bigCard("Fark", h.gap != null ? `${h.gap > 0 ? "+" : ""}${fmtNum(h.gap)}` : "—", signColor(h.gap), "hissedilen − resmi")}
       </tr></table>
       <p style="font-size:13px;color:#334155;margin:14px 0 0">${gapText}</p>
 
-      ${sectionTitle("Kompozit Katmanları")}
+      ${(run.feltLayers?.length ?? 0) > 0 ? `
+      ${sectionTitle("Hissedilen Enflasyon Bileşenleri")}
+      <p style="font-size:12px;color:#64748b;margin:0 0 8px">Geliri gıdaya, kiraya, borca ve faturaya giden hanenin sepeti.</p>
+      <table cellpadding="0" cellspacing="0" width="100%">
+        ${row(["Bileşen", "Yıllık", "Ağırlık", "Açıklama"], true)}
+        ${run.feltLayers!.map((l) => row([
+          `<b>${l.label}</b>`,
+          l.value != null ? `<b style="color:#0f172a">%${fmtNum(l.value)}</b>` : `<span style="color:#94a3b8">veri yok</span>`,
+          l.effectiveWeight != null ? `%${Math.round(l.effectiveWeight * 100)}` : "—",
+          `<span style="color:#64748b;font-size:12px">${l.detail || ""}</span>`,
+        ])).join("")}
+      </table>` : ""}
+
+      ${sectionTitle(`Genel Kompozit Katmanları${h.real != null ? ` (ekonomi geneli: %${fmtNum(h.real)})` : ""}`)}
       <table cellpadding="0" cellspacing="0" width="100%">
         ${row(["Katman", "Değer", "Ağırlık", "Açıklama"], true)}
         ${run.layers.map((l) => row([

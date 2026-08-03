@@ -40,8 +40,16 @@ interface LayerResult {
 interface RunData {
   period: string;
   computedAt: string;
-  headline: { real: number | null; official: number | null; enag: number; gap: number | null };
+  headline: {
+    felt?: number | null;
+    real: number | null;
+    official: number | null;
+    enag: number;
+    gap: number | null;
+    realGap?: number | null;
+  };
   layers: LayerResult[];
+  feltLayers?: LayerResult[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -334,18 +342,18 @@ export default function EnflasyonPage() {
         </div>
       )}
 
-      {/* Manşet kartları */}
+      {/* Manşet kartları — ANA GÖSTERGE: Hissedilen Enflasyon */}
       {h && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "ERPIDE Gerçek Enflasyon", value: h.real != null ? `%${h.real.toLocaleString("tr-TR")}` : "—", cls: "text-red-400", sub: "6 katmanlı kompozit, yıllık" },
-            { label: "Resmi TÜFE", value: h.official != null ? `%${h.official.toLocaleString("tr-TR")}` : "—", cls: "text-blue-400", sub: "TÜİK yıllık" },
-            { label: "ENAG E-TÜFE", value: `%${h.enag.toLocaleString("tr-TR")}`, cls: "text-purple-400", sub: "bağımsız ölçüm" },
-            { label: "Fark (Gerçek − Resmi)", value: h.gap != null ? `${h.gap > 0 ? "+" : ""}${h.gap.toLocaleString("tr-TR")} puan` : "—", cls: h.gap != null && h.gap > 0 ? "text-red-400" : "text-emerald-400", sub: "makas" },
+            { label: "HİSSEDİLEN ENFLASYON", value: h.felt != null ? `%${h.felt.toLocaleString("tr-TR")}` : "—", cls: "text-red-400", sub: `borçlu-kiracı hane sepeti${h.real != null ? ` · ekonomi geneli %${h.real.toLocaleString("tr-TR")}` : ""}`, ana: true },
+            { label: "Resmi TÜFE", value: h.official != null ? `%${h.official.toLocaleString("tr-TR")}` : "—", cls: "text-blue-400", sub: "TÜİK yıllık", ana: false },
+            { label: "ENAG E-TÜFE", value: `%${h.enag.toLocaleString("tr-TR")}`, cls: "text-purple-400", sub: "bağımsız raf fiyatı ölçümü", ana: false },
+            { label: "Fark (Hissedilen − Resmi)", value: h.gap != null ? `${h.gap > 0 ? "+" : ""}${h.gap.toLocaleString("tr-TR")} puan` : "—", cls: h.gap != null && h.gap > 0 ? "text-red-400" : "text-emerald-400", sub: "vatandaşın makası", ana: false },
           ].map((c) => (
-            <div key={c.label} className="bg-[#111118] border border-white/5 rounded-2xl p-5">
+            <div key={c.label} className={`bg-[#111118] border rounded-2xl p-5 ${c.ana ? "border-red-500/40 glow-blue" : "border-white/5"}`}>
               <p className="text-xs text-gray-500 uppercase tracking-wider">{c.label}</p>
-              <p className={`text-3xl font-bold mt-2 ${c.cls}`}>{c.value}</p>
+              <p className={`${c.ana ? "text-4xl" : "text-3xl"} font-bold mt-2 ${c.cls}`}>{c.value}</p>
               <p className="text-xs text-gray-600 mt-1">{c.sub}</p>
             </div>
           ))}
@@ -355,9 +363,33 @@ export default function EnflasyonPage() {
       <div className="grid lg:grid-cols-[1fr_360px] gap-6">
         {/* Sol: katmanlar + parametre dökümü */}
         <div className="space-y-6">
+          {data && (data.feltLayers?.length ?? 0) > 0 && (
+            <div className="bg-[#111118] border border-red-500/20 rounded-2xl p-5">
+              <h2 className="text-white font-semibold mb-1">Hissedilen Enflasyon Bileşenleri</h2>
+              <p className="text-xs text-gray-500 mb-4">Geliri gıdaya, kiraya, borca ve faturaya giden hanenin sepeti — resmi ortalama bilerek dışarıda.</p>
+              <div className="space-y-2">
+                {data.feltLayers!.map((l) => (
+                  <div key={l.key} className="flex items-center gap-3 text-sm">
+                    <span className="w-52 shrink-0 text-gray-300" title={l.detail}>{l.label}</span>
+                    <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                      {l.value != null && (
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full"
+                          style={{ width: `${Math.min(100, Math.max(2, (l.value / 80) * 100))}%` }}
+                        />
+                      )}
+                    </div>
+                    <span className="w-16 text-right font-semibold text-white">{l.value != null ? `%${l.value.toLocaleString("tr-TR")}` : "—"}</span>
+                    <span className="w-14 text-right text-xs text-gray-500">{l.effectiveWeight != null ? `ağ. %${Math.round(l.effectiveWeight * 100)}` : "—"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {data && (
             <div className="bg-[#111118] border border-white/5 rounded-2xl p-5">
-              <h2 className="text-white font-semibold mb-4">Kompozit Katmanları</h2>
+              <h2 className="text-white font-semibold mb-4">Genel Kompozit Katmanları (ekonomi geneli)</h2>
               <div className="space-y-2">
                 {data.layers.map((l) => (
                   <div key={l.key} className="flex items-center gap-3 text-sm">

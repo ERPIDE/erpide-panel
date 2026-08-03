@@ -64,12 +64,16 @@ export interface RunData {
   period: string;
   computedAt: string;
   headline: {
-    real: number | null;
+    /** Hissedilen Enflasyon — ANA RAKAM. Borçlu-kiracı hane profili. */
+    felt: number | null;
+    real: number | null; // 6 katmanlı genel kompozit (akademik yan gösterge)
     official: number | null;
     enag: number;
-    gap: number | null; // gerçek − resmi
+    gap: number | null;     // hissedilen − resmi
+    realGap: number | null; // kompozit − resmi
   };
   layers: LayerResult[];
+  feltLayers: LayerResult[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -309,6 +313,41 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     );
   }
 
+  // ── HİSSEDİLEN ENFLASYON — ana manşet ───────────────────────────
+  // Borçlu-kiracı hane profili: geliri gıdaya, kiraya, borca ve faturaya giden
+  // vatandaşın sepeti. Resmi TÜFE ve düşük ithal enflasyon BİLEREK dışarıda —
+  // bu gösterge ortalamayı değil, cebi yaşayanı ölçer.
+  // Ağırlıklar: TÜİK hanehalkı bütçe anketi (dar/orta gelir dilimi) + hanehalkı
+  // borç servisi gerçeği. ENAG raf fiyatları bel kemiği.
+  const kiraGercek = evds.get("TP.TUKFIY2025.04110")?.yearlyPct ?? null; // kiracıların fiilen ödediği
+  const enerjiVals = [
+    evds.get("TP.TUKFIY2025.0452")?.yearlyPct,  // doğalgaz
+    evds.get("TP.TUKFIY2025.04510")?.yearlyPct, // elektrik
+  ].filter((v): v is number => v != null);
+  const enerji = enerjiVals.length > 0 ? enerjiVals.reduce((a, b) => a + b, 0) / enerjiVals.length : null;
+  const ulasim = coicopVals.get("07")?.value ?? null;
+
+  const FELT_DEF: { key: string; label: string; weight: number; value: number | null; detail: string }[] = [
+    { key: "felt-enag",   label: "Raf fiyatları (ENAG)",        weight: 0.25, value: enagVal.yearly, detail: "Bağımsız fiyat ölçümü — market gerçeği" },
+    { key: "felt-kira",   label: "Gerçek kira",                 weight: 0.20, value: kiraGercek, detail: "Kiracıların fiilen ödediği kira (TÜİK madde endeksi)" },
+    { key: "felt-gida",   label: "Gıda",                        weight: 0.20, value: gida, detail: "Gıda ve alkolsüz içecekler, güncel" },
+    { key: "felt-borc",   label: "Borç servisi",                weight: 0.15, value: faizIhtiyac, detail: "İhtiyaç kredisi yıllık faizi — borç çevirenin maliyeti" },
+    { key: "felt-enerji", label: "Enerji (elektrik+doğalgaz)",  weight: 0.10, value: enerji != null ? round2(enerji) : null, detail: "Fatura kalemleri ortalaması" },
+    { key: "felt-ulasim", label: "Ulaştırma",                   weight: 0.10, value: ulasim, detail: "Akaryakıt + toplu taşıma grubu" },
+  ];
+  const feltAvailable = FELT_DEF.reduce((s, l) => s + (l.value != null ? l.weight : 0), 0);
+  const feltLayers: LayerResult[] = FELT_DEF.map((l) => ({
+    key: l.key,
+    label: l.label,
+    value: l.value != null ? round2(l.value) : null,
+    weight: l.weight,
+    effectiveWeight: l.value != null && feltAvailable > 0 ? l.weight / feltAvailable : null,
+    detail: l.detail,
+  }));
+  const felt = feltAvailable > 0
+    ? round1(feltLayers.reduce((s, l) => s + (l.value != null && l.effectiveWeight != null ? l.value * l.effectiveWeight : 0), 0))
+    : null;
+
   // ── 4. Alım gücü türetmeleri ────────────────────────────────────
   const mwNow = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 1];
   const mwPrev = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 2];
@@ -332,7 +371,7 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
 
   // ── 5. Parametre sonuçları ──────────────────────────────────────
   const params: ParamResult[] = registry.map((def) => resolveParam(def, {
-    ratesNow, kurDelta, wbCpi, evds, evdsKeyPresent, layerValues, composite,
+    ratesNow, kurDelta, wbCpi, evds, evdsKeyPresent, layerValues, composite, felt,
     officialYearly, officialMonthly, officialSource, importContrib,
     partnerCpi, coicopVals, esTrGenel,
     wbGdp, wbUnemp, wbGdpPc, wbGini, wbPpp, tufe, kfe, m2,
@@ -359,12 +398,15 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     period,
     computedAt: now.toISOString(),
     headline: {
+      felt,
       real: composite,
       official: officialYearly != null ? round1(officialYearly) : null,
       enag: enagVal.yearly,
-      gap: composite != null && officialYearly != null ? round1(composite - officialYearly) : null,
+      gap: felt != null && officialYearly != null ? round1(felt - officialYearly) : null,
+      realGap: composite != null && officialYearly != null ? round1(composite - officialYearly) : null,
     },
     layers,
+    feltLayers,
     params,
     stats,
     notes,
@@ -381,6 +423,7 @@ interface Ctx {
   evdsKeyPresent: boolean;
   layerValues: Record<string, { value: number | null; detail?: string }>;
   composite: number | null;
+  felt: number | null;
   officialYearly: number | null;
   officialMonthly: number | null;
   officialSource: string | null;
@@ -492,6 +535,7 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
   // Türetilmişler
   if (def.source === "derived") {
     switch (def.key) {
+      case "erpide-hissedilen": return mk("derived", ctx.felt);
       case "erpide-gercek-enflasyon": return mk("derived", ctx.composite);
       case "katman-resmi": case "katman-ithal": case "katman-gecim":
       case "katman-varlik": case "katman-kredi": case "katman-enag": {

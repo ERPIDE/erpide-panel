@@ -49,7 +49,7 @@ export async function createRun(trigger: "cron" | "manual"): Promise<{ id: strin
     data: {
       period: data.period,
       trigger,
-      realRate: data.headline.real,
+      realRate: data.headline.felt ?? data.headline.real,
       officialRate: data.headline.official,
       liveParams: data.stats.live,
       totalParams: data.stats.total,

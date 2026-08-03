@@ -313,7 +313,8 @@ function basketParams(): ParamDef[] {
 export function buildRegistry(): ParamDef[] {
   return [
     // Kompozit katmanlar
-    { key: "erpide-gercek-enflasyon", label: "ERPIDE Gerçek Enflasyon (yıllık)", category: "kompozit", source: "derived", unit: "%" },
+    { key: "erpide-hissedilen", label: "ERPIDE Hissedilen Enflasyon (ANA)", category: "kompozit", source: "derived", unit: "%", note: "Borçlu-kiracı hane profili: ENAG %25 + kira %20 + gıda %20 + borç %15 + enerji %10 + ulaşım %10" },
+    { key: "erpide-gercek-enflasyon", label: "ERPIDE Genel Kompozit (yıllık)", category: "kompozit", source: "derived", unit: "%", note: "6 katmanlı ekonomi-geneli ortalama" },
     { key: "katman-resmi",    label: "Katman A — Resmi TÜFE",            category: "kompozit", source: "derived", unit: "%" },
     { key: "katman-ithal",    label: "Katman B — İthal enflasyon",       category: "kompozit", source: "derived", unit: "%" },
     { key: "katman-gecim",    label: "Katman C — Geçim sepeti",          category: "kompozit", source: "derived", unit: "%" },
