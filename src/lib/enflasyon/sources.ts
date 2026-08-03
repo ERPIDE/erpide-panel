@@ -324,6 +324,144 @@ export async function fetchBinanceBtcYearly(): Promise<YearlySeries | null> {
   }
 }
 
+// ── TCMB resmi enflasyon sayfası (anahtarsız, TAM OTOMATİK) ──────
+// TCMB, TÜİK'in TÜFE verisini her ay resmi sayfasında tablo olarak yayınlar.
+// EVDS anahtarı olmadan güncel resmi enflasyona ulaşmanın en sağlam yolu.
+
+export interface TuikCurrent {
+  yearly: number;
+  monthly: number;
+  period: string; // "2026-07"
+}
+
+export async function fetchTcmbInflationPage(): Promise<TuikCurrent | null> {
+  try {
+    const r = await fetch(
+      "https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Istatistikler/Enflasyon+Verileri",
+      {
+        headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+        cache: "no-store",
+        redirect: "follow",
+        signal: AbortSignal.timeout(12000),
+      }
+    );
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const html = await r.text();
+    // Satır örneği: <td>07-2026</td><td>31.75</td><td>1.78</td>
+    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+    for (const row of rows) {
+      const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)]
+        .map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+      const dateMatch = cells[0]?.match(/^(\d{2})-(\d{4})$/);
+      if (!dateMatch) continue;
+      const yearly = parseFloat((cells[1] || "").replace(",", "."));
+      const monthly = parseFloat((cells[2] || "").replace(",", "."));
+      if (!isFinite(yearly) || !isFinite(monthly)) continue;
+      // İlk geçerli satır = en güncel ay.
+      return { yearly, monthly, period: `${dateMatch[2]}-${dateMatch[1]}` };
+    }
+    return null;
+  } catch (e) {
+    console.error("[enflasyon] TCMB enflasyon sayfası alınamadı:", e);
+    return null;
+  }
+}
+
+// ── ENAG otomatik (Google News RSS taraması) ─────────────────────
+// ENAG API/RSS yayınlamıyor ve sitesi bot trafiğine kapalı. Aylık açıklama
+// tüm haber sitelerinde aynı kalıpla yer aldığı için Google News başlıklarından
+// ayıklanır. Mantık dışı değerler elenir; bulunamazsa gömülü son değere düşülür.
+
+const TR_MONTHS: Record<string, string> = {
+  ocak: "01", "şubat": "02", subat: "02", mart: "03", nisan: "04",
+  "mayıs": "05", mayis: "05", haziran: "06", temmuz: "07", "ağustos": "08",
+  agustos: "08", "eylül": "09", eylul: "09", ekim: "10", "kasım": "11",
+  kasim: "11", "aralık": "12", aralik: "12",
+};
+
+export interface EnagCurrent {
+  yearly: number;
+  monthly: number | null;
+  period: string;
+}
+
+export async function fetchEnagFromNews(): Promise<EnagCurrent | null> {
+  try {
+    const r = await fetch(
+      "https://news.google.com/rss/search?q=ENAG+enflasyon+y%C4%B1ll%C4%B1k&hl=tr&gl=TR&ceid=TR:tr",
+      {
+        headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
+      }
+    );
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const xml = await r.text();
+    const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+
+    const candidates: { yearly: number; monthly: number | null; period: string; ts: number }[] = [];
+    for (const it of items) {
+      const title = (it.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "")
+        .replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+      if (!/ENAG/i.test(title)) continue;
+      const pub = it.match(/<pubDate>(.*?)<\/pubDate>/)?.[1];
+      const ts = pub ? Date.parse(pub) : NaN;
+      // 45 günden eski haber = geçen ayların açıklaması, alma.
+      if (!isFinite(ts) || Date.now() - ts > 45 * 86_400_000) continue;
+
+      // "yıllık yüzde 50,49" / "yıllık %50,49" kalıbı — ENAG'a ait yıllık değer.
+      const yearlyMatch = title.match(/y[ıi]ll[ıi]k[^%\d]{0,20}(?:y[üu]zde\s*|%\s*)(\d{1,3}[.,]\d{1,2})/i);
+      if (!yearlyMatch) continue;
+      const yearly = parseFloat(yearlyMatch[1].replace(",", "."));
+      if (!isFinite(yearly) || yearly < 10 || yearly > 200) continue;
+
+      // Aylık: "temmuzda yüzde 3,07" / "aylık yüzde 3,07" kalıbı (yıllıktan farklı sayı).
+      let monthly: number | null = null;
+      for (const m of title.matchAll(/(?:y[üu]zde\s*|%\s*)(\d{1,3}[.,]\d{1,2})/gi)) {
+        const v = parseFloat(m[1].replace(",", "."));
+        if (isFinite(v) && v !== yearly && v >= 0 && v < 25) { monthly = v; break; }
+      }
+
+      // Dönem: başlıktaki ay adından; yoksa haber tarihinin bir önceki ayı.
+      let period: string | null = null;
+      const lower = title.toLocaleLowerCase("tr-TR");
+      for (const [name, no] of Object.entries(TR_MONTHS)) {
+        if (lower.includes(name)) {
+          const d = new Date(ts);
+          // Açıklama genelde takip eden ayın başında — yıl, ay adına göre düzeltilir.
+          const year = parseInt(no, 10) > d.getMonth() + 1 ? d.getFullYear() - 1 : d.getFullYear();
+          period = `${year}-${no}`;
+          break;
+        }
+      }
+      if (!period) {
+        const d = new Date(ts);
+        const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+        period = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+      }
+      candidates.push({ yearly, monthly, period, ts });
+    }
+
+    if (candidates.length === 0) return null;
+    // En yeni haberi esas al; aynı değeri doğrulayan birden çok başlık varsa güven artar.
+    candidates.sort((a, b) => b.ts - a.ts);
+    const best = candidates[0];
+    const agree = candidates.filter((c) => Math.abs(c.yearly - best.yearly) < 0.01).length;
+    if (agree < 2 && candidates.length >= 3) {
+      // Tek başlık farklı değer veriyorsa çoğunluğun değerini kullan.
+      const counts = new Map<number, number>();
+      for (const c of candidates) counts.set(c.yearly, (counts.get(c.yearly) || 0) + 1);
+      const majority = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+      const alt = candidates.find((c) => c.yearly === majority[0]);
+      if (alt && majority[1] >= 2) return { yearly: alt.yearly, monthly: alt.monthly, period: alt.period };
+    }
+    return { yearly: best.yearly, monthly: best.monthly, period: best.period };
+  } catch (e) {
+    console.error("[enflasyon] ENAG haber taraması başarısız:", e);
+    return null;
+  }
+}
+
 // ── Opet akaryakıt API (anahtarsız, resmi olmayan ama istikrarlı) ─
 
 export interface FuelPrices {

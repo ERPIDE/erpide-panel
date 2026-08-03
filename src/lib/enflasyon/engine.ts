@@ -23,6 +23,7 @@ import {
   fetchWorldBankIndicator, fetchEvdsSeries, hasEvdsKey, EvdsSeries, TcmbRate, WbValue,
   fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
   fetchBinanceBtcYearly, EurostatValue, fetchOpetFuel, fetchIzmirHal,
+  fetchTcmbInflationPage, fetchEnagFromNews,
 } from "./sources";
 
 /** Panelden girilen aylık bülten değerleri — yoksa registry'deki gömülü son değer. */
@@ -81,11 +82,12 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   const registry = buildRegistry();
   const now = new Date();
 
-  // Manuel girilmiş bülten değerleri gömülü sabitleri ezer.
-  const tuikVal = manual?.tuik
+  // Yedek zincirin son halkaları: panelden girilmiş değer > gömülü sabit.
+  // Birincil kaynaklar (EVDS / TCMB sayfası / haber taraması) fetch'ten sonra çözülür.
+  const tuikFallback = manual?.tuik
     ? { ...manual.tuik, source: `TÜİK ${manual.tuik.period} bülteni (panelden)` }
     : TUIK_LATEST;
-  const enagVal = manual?.enag
+  const enagFallback = manual?.enag
     ? { ...manual.enag, source: `ENAG ${manual.enag.period} açıklaması (panelden)` }
     : ENAG_LATEST;
   // Rapor bir önceki ayın verisine aittir (TÜİK/ENAG o ayı açıklamış olur).
@@ -122,12 +124,29 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     Promise.all(evdsCodes.map((c) => fetchEvdsSeries(c).then((r) => [c, r] as const))),
   ]);
 
-  // Geçim kalemleri: Opet pompa + İzmir hal (paralel, hataya dayanıklı)
-  const [opetFuel, izmirHal] = await Promise.all([fetchOpetFuel(), fetchIzmirHal()]);
+  // Geçim kalemleri + otomatik bülten değerleri (paralel, hataya dayanıklı)
+  const [opetFuel, izmirHal, tcmbPage, enagNews] = await Promise.all([
+    fetchOpetFuel(),
+    fetchIzmirHal(),
+    fetchTcmbInflationPage(),
+    fetchEnagFromNews(),
+  ]);
+
+  // ENAG: haber taraması (otomatik) → panel girişi → gömülü sabit.
+  const enagVal = enagNews
+    ? {
+        yearly: enagNews.yearly,
+        monthly: enagNews.monthly ?? enagFallback.monthly,
+        period: enagNews.period,
+        source: `ENAG ${enagNews.period} (haber taraması, otomatik)`,
+        live: true,
+      }
+    : { ...enagFallback, live: false };
+  if (!enagNews) notes.push("ENAG haber taraması sonuç vermedi — son bilinen değer kullanıldı.");
 
   const evds = new Map<string, EvdsSeries | null>(evdsResults);
   const evdsKeyPresent = hasEvdsKey();
-  if (!evdsKeyPresent) notes.push("EVDS_API_KEY tanımlı değil — EVDS serileri beklemede; resmi TÜFE bülten değerinden, harcama grupları Eurostat'tan besleniyor. Anahtar eklenince tümü aylık seriye devrolur.");
+  if (!evdsKeyPresent) notes.push("EVDS_API_KEY tanımlı değil — resmi TÜFE, TCMB sayfasından otomatik çekiliyor; harcama grupları Eurostat'tan. Anahtar eklenirse konut endeksi ve faiz serileri de canlanır.");
   if (!ratesNow) notes.push("TCMB güncel kur bülteni alınamadı.");
   if (!ratesYearAgo) notes.push("TCMB 1 yıl önceki kur arşivi alınamadı — kur yıllık değişimleri hesaplanamadı.");
   if (!wbCpi) notes.push("World Bank yanıt vermedi — ülke enflasyonlarında Eurostat + IMF WEO yedeği kullanıldı.");
@@ -143,9 +162,9 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     }
   }
 
-  // Resmi TÜFE çözümleme sırası: EVDS aylık seri (en iyi) → TÜİK son bülten
-  // (elle güncellenen güncel değer) → Eurostat TR HICP (~7 ay gecikmeli) →
-  // World Bank yıllık.
+  // Resmi TÜFE çözümleme sırası (TAM OTOMATİK): EVDS aylık seri → TCMB resmi
+  // enflasyon sayfası (anahtarsız, her ay otomatik) → panel girişi/gömülü sabit
+  // → Eurostat TR HICP → World Bank.
   const tufe = evds.get("TP.FG.J0") || null;
   const wbTurCpi = wbCpi?.get("TUR") || null;
   const esTrGenel = eurostatTR?.get("CP00") || null;
@@ -156,10 +175,15 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     officialYearly = tufe.yearlyPct;
     officialMonthly = tufe.monthlyPct;
     officialSource = "TÜİK/EVDS aylık seri";
+  } else if (tcmbPage) {
+    officialYearly = tcmbPage.yearly;
+    officialMonthly = tcmbPage.monthly;
+    officialSource = `TCMB resmi enflasyon sayfası (${tcmbPage.period}, otomatik)`;
   } else {
-    officialYearly = tuikVal.yearly;
-    officialMonthly = tuikVal.monthly;
-    officialSource = tuikVal.source;
+    officialYearly = tuikFallback.yearly;
+    officialMonthly = tuikFallback.monthly;
+    officialSource = tuikFallback.source;
+    notes.push("TCMB enflasyon sayfası okunamadı — resmi TÜFE için son bilinen değer kullanıldı.");
     if (officialYearly == null) {
       officialYearly = esTrGenel?.value ?? wbTurCpi?.value ?? null;
       officialSource = esTrGenel ? `Eurostat HICP ${esTrGenel.period}` : wbTurCpi ? `World Bank ${wbTurCpi.year}` : null;
@@ -373,7 +397,7 @@ interface Ctx {
   binanceBtc: { last: number; yearlyPct: number } | null;
   gramAltinYillik: number | null;
   usdDeltaVal: number | null;
-  enagVal: { yearly: number; monthly: number; period: string; source: string };
+  enagVal: { yearly: number; monthly: number; period: string; source: string; live: boolean };
   basketLive: Map<string, { value: number; yearlyPct: number | null; srcLabel: string }>;
 }
 
@@ -444,8 +468,8 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
   if (def.source === "static") {
     if (def.key === "asgari-net") return mk("static", ctx.mwNow.net, `${ctx.mwNow.year} yılı`);
     if (def.key === "asgari-brut") return mk("static", ctx.mwNow.gross, `${ctx.mwNow.year} yılı`);
-    if (def.key === "enag-yillik") return mk("static", ctx.enagVal.yearly, ctx.enagVal.period);
-    if (def.key === "enag-aylik") return mk("static", ctx.enagVal.monthly, ctx.enagVal.period);
+    if (def.key === "enag-yillik") return mk(ctx.enagVal.live ? "live" : "static", ctx.enagVal.yearly, ctx.enagVal.source);
+    if (def.key === "enag-aylik") return mk(ctx.enagVal.live ? "live" : "static", ctx.enagVal.monthly, ctx.enagVal.source);
     const fact = STATIC_FACTS.find((f) => f.key === def.key);
     if (fact) return mk("static", fact.value);
     if (def.key.startsWith("ithalat-pay-")) {

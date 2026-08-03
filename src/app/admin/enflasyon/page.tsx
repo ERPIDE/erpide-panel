@@ -482,7 +482,7 @@ export default function EnflasyonPage() {
             <h2 className="text-white font-semibold flex items-center gap-2 mb-1">
               <PenLine size={16} className="text-blue-400" /> Aylık Bülten Girişi
             </h2>
-            <p className="text-xs text-gray-500 mb-4">TÜİK ve ENAG her ayın 3&apos;ünde açıklar — buraya gir, deploy gerekmez.</p>
+            <p className="text-xs text-gray-500 mb-4">Normalde OTOMATİK çekilir (TCMB sayfası + haber taraması). Bu kart yalnızca otomatik kaynak bozulursa acil yedek.</p>
             {(["tuik", "enag"] as const).map((key) => {
               const f = manualForm[key];
               if (!f) return null;
