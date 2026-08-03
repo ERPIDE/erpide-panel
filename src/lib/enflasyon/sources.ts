@@ -341,6 +341,9 @@ export function hasEvdsKey(): boolean {
  * Tek EVDS serisi çeker, son değer + aylık/yıllık % değişim hesaplar.
  * Anahtar yoksa veya seri kodu ölüyse null (motor "waiting-key"/"veri yok" yazar).
  */
+// EVDS 2026'da evds3.tcmb.gov.tr'ye taşındı; eski host yedek olarak denenir.
+const EVDS_HOSTS = ["https://evds3.tcmb.gov.tr", "https://evds2.tcmb.gov.tr"];
+
 export async function fetchEvdsSeries(code: string): Promise<EvdsSeries | null> {
   const key = process.env.EVDS_API_KEY;
   if (!key) return null;
@@ -349,16 +352,27 @@ export async function fetchEvdsSeries(code: string): Promise<EvdsSeries | null> 
     const start = new Date(now.getFullYear() - 2, now.getMonth(), 1);
     const fmt = (d: Date) =>
       `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
-    const url =
-      `https://evds2.tcmb.gov.tr/service/evds/series=${encodeURIComponent(code)}` +
-      `&startDate=${fmt(start)}&endDate=${fmt(now)}&type=json`;
-    const r = await fetch(url, {
-      headers: { ...FETCH_OPTS.headers, key },
-      cache: "no-store",
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const json = (await r.json()) as { items?: Record<string, string | null>[] };
+
+    let json: { items?: Record<string, string | null>[] } | null = null;
+    for (const host of EVDS_HOSTS) {
+      try {
+        const url =
+          `${host}/service/evds/series=${encodeURIComponent(code)}` +
+          `&startDate=${fmt(start)}&endDate=${fmt(now)}&type=json`;
+        const r = await fetch(url, {
+          headers: { ...FETCH_OPTS.headers, key },
+          cache: "no-store",
+          redirect: "manual", // evds2, anahtarsız istekleri SPA'ya 302'ler — takip etme
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!r.ok) continue;
+        const parsed = (await r.json()) as { items?: Record<string, string | null>[] };
+        if (parsed && Array.isArray(parsed.items)) { json = parsed; break; }
+      } catch {
+        // JSON değil (SPA HTML'i) veya ağ hatası → sıradaki host
+      }
+    }
+    if (!json) throw new Error("hiçbir EVDS host'u geçerli yanıt vermedi");
     const field = code.replace(/[.-]/g, "_");
     const points: { date: string; value: number }[] = [];
     for (const item of json.items || []) {
