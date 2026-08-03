@@ -567,8 +567,23 @@ export function hasEvdsKey(): boolean {
  * Tek EVDS serisi çeker, son değer + aylık/yıllık % değişim hesaplar.
  * Anahtar yoksa veya seri kodu ölüyse null (motor "waiting-key"/"veri yok" yazar).
  */
-// EVDS 2026'da evds3.tcmb.gov.tr'ye taşındı; eski host yedek olarak denenir.
-const EVDS_HOSTS = ["https://evds3.tcmb.gov.tr", "https://evds2.tcmb.gov.tr"];
+// EVDS3 gerçek servis adresi (2026): /igmevdsms-dis/ — eski /service/evds
+// yolu artık SPA'ya düşüyor. Anahtar header'da gider.
+const EVDS_BASES = [
+  "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+  "https://evds2.tcmb.gov.tr/service/evds/", // eski altyapı geri gelirse diye yedek
+];
+
+/** EVDS Tarih etiketini Date'e çevirir: "2026-7" (aylık), "24-07-2026" (günlük/haftalık), "2026" (yıllık). */
+export function parseEvdsDate(s: string): Date | null {
+  let m = s.match(/^(\d{4})-(\d{1,2})$/);
+  if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, 15);
+  m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+  m = s.match(/^(\d{4})$/);
+  if (m) return new Date(parseInt(m[1], 10), 6, 1);
+  return null;
+}
 
 export async function fetchEvdsSeries(code: string): Promise<EvdsSeries | null> {
   const key = process.env.EVDS_API_KEY;
@@ -580,43 +595,58 @@ export async function fetchEvdsSeries(code: string): Promise<EvdsSeries | null> 
       `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 
     let json: { items?: Record<string, string | null>[] } | null = null;
-    for (const host of EVDS_HOSTS) {
+    for (const base of EVDS_BASES) {
       try {
         const url =
-          `${host}/service/evds/series=${encodeURIComponent(code)}` +
+          `${base}series=${encodeURIComponent(code)}` +
           `&startDate=${fmt(start)}&endDate=${fmt(now)}&type=json`;
         const r = await fetch(url, {
           headers: { ...FETCH_OPTS.headers, key },
           cache: "no-store",
-          redirect: "manual", // evds2, anahtarsız istekleri SPA'ya 302'ler — takip etme
+          redirect: "manual", // anahtarsız/hatalı istekler SPA'ya 302'lenir — takip etme
           signal: AbortSignal.timeout(12000),
         });
         if (!r.ok) continue;
         const parsed = (await r.json()) as { items?: Record<string, string | null>[] };
         if (parsed && Array.isArray(parsed.items)) { json = parsed; break; }
       } catch {
-        // JSON değil (SPA HTML'i) veya ağ hatası → sıradaki host
+        // JSON değil (SPA HTML'i) veya ağ hatası → sıradaki base
       }
     }
-    if (!json) throw new Error("hiçbir EVDS host'u geçerli yanıt vermedi");
+    if (!json) throw new Error("hiçbir EVDS servisi geçerli yanıt vermedi");
     const field = code.replace(/[.-]/g, "_");
-    const points: { date: string; value: number }[] = [];
+    const points: { date: string; d: Date | null; value: number }[] = [];
     for (const item of json.items || []) {
       const raw = item[field];
       if (raw == null || raw === "") continue;
       const v = parseFloat(String(raw));
       if (!isFinite(v)) continue;
-      points.push({ date: String(item["Tarih"] ?? ""), value: v });
+      const dateStr = String(item["Tarih"] ?? "");
+      points.push({ date: dateStr, d: parseEvdsDate(dateStr), value: v });
     }
     if (points.length === 0) return null;
     const last = points[points.length - 1];
-    const prevMonth = points.length >= 2 ? points[points.length - 2] : null;
-    const prevYear = points.length >= 13 ? points[points.length - 13] : null;
+
+    // Değişimler tarih bazlı hesaplanır — seri aylık/haftalık/günlük olabilir,
+    // sabit index kaydırma (12 nokta geriye) haftalık seride yanlış olur.
+    const closestTo = (target: number, tolDays: number): number | null => {
+      let best: { diff: number; value: number } | null = null;
+      for (const p of points) {
+        if (!p.d) continue;
+        const diff = Math.abs(p.d.getTime() - target);
+        if (diff <= tolDays * 86_400_000 && (!best || diff < best.diff)) best = { diff, value: p.value };
+      }
+      return best?.value ?? null;
+    };
+    const lastTime = last.d?.getTime() ?? null;
+    const yearAgoVal = lastTime != null ? closestTo(lastTime - 365 * 86_400_000, 60) : null;
+    const monthAgoVal = lastTime != null ? closestTo(lastTime - 30 * 86_400_000, 20) : null;
+
     return {
       latest: last.value,
       latestDate: last.date,
-      monthlyPct: prevMonth ? ((last.value / prevMonth.value) - 1) * 100 : null,
-      yearlyPct: prevYear ? ((last.value / prevYear.value) - 1) * 100 : null,
+      monthlyPct: monthAgoVal != null && monthAgoVal !== 0 ? ((last.value / monthAgoVal) - 1) * 100 : null,
+      yearlyPct: yearAgoVal != null && yearAgoVal !== 0 ? ((last.value / yearAgoVal) - 1) * 100 : null,
     };
   } catch (e) {
     console.error(`[enflasyon] EVDS serisi alınamadı (${code}):`, e);

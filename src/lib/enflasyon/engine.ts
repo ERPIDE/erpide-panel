@@ -23,7 +23,7 @@ import {
   fetchWorldBankIndicator, fetchEvdsSeries, hasEvdsKey, EvdsSeries, TcmbRate, WbValue,
   fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
   fetchBinanceBtcYearly, EurostatValue, fetchOpetFuel, fetchIzmirHal,
-  fetchTcmbInflationPage, fetchEnagFromNews,
+  fetchTcmbInflationPage, fetchEnagFromNews, parseEvdsDate,
 } from "./sources";
 
 /** Panelden girilen aylık bülten değerleri — yoksa registry'deki gömülü son değer. */
@@ -165,7 +165,13 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   // Resmi TÜFE çözümleme sırası (TAM OTOMATİK): EVDS aylık seri → TCMB resmi
   // enflasyon sayfası (anahtarsız, her ay otomatik) → panel girişi/gömülü sabit
   // → Eurostat TR HICP → World Bank.
-  const tufe = evds.get("TP.FG.J0") || null;
+  // Yeni baz yılı serisi (2025=100); 120 günden bayat EVDS verisi resmi katmana
+  // sokulmaz — baz yılı değişiminde eski serinin donması bir kez yaşandı.
+  const tufeRaw = evds.get("TP.TUKFIY2025.GENEL") || null;
+  const tufeDate = tufeRaw ? parseEvdsDate(tufeRaw.latestDate) : null;
+  const tufeFresh = tufeDate != null && Date.now() - tufeDate.getTime() < 120 * 86_400_000;
+  const tufe = tufeFresh ? tufeRaw : null;
+  if (tufeRaw && !tufeFresh) notes.push(`EVDS TÜFE serisi bayat görünüyor (son: ${tufeRaw.latestDate}) — resmi katman TCMB sayfasından alındı.`);
   const wbTurCpi = wbCpi?.get("TUR") || null;
   const esTrGenel = eurostatTR?.get("CP00") || null;
   let officialYearly: number | null;
@@ -273,14 +279,14 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   if (opetFuel?.benzin != null) basketLive.set("madde-31", { value: opetFuel.benzin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
   if (opetFuel?.motorin != null) basketLive.set("madde-32", { value: opetFuel.motorin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
 
-  const kfe = evds.get("TP.HKFE01") || null;
+  const kfe = evds.get("TP.KFE.TR") || null;
   const faizIhtiyac = evds.get("TP.KTF10")?.latest ?? null;
   const faizMevduat = evds.get("TP.TRY.MT02")?.latest ?? null;
-  const m2 = evds.get("TP.PR.ARZ13") || null;
+  const m2 = evds.get("TP.HPBITABLO1.11") || null;
 
   // ── 3. Katmanlar + kompozit ─────────────────────────────────────
   const layerValues: Record<string, { value: number | null; detail?: string }> = {
-    "katman-resmi":  { value: officialYearly, detail: officialSource ?? undefined },
+    "katman-resmi":  { value: officialYearly != null ? round2(officialYearly) : null, detail: officialSource ?? undefined },
     "katman-ithal":  { value: importWeighted != null ? round2(importWeighted) : null, detail: `${importContrib.size} ülke, ithalat payı ağırlıklı` },
     "katman-gecim":  { value: gecim != null ? round2(gecim) : null, detail: `Gıda %60 + konut/kira %40${gecimSrc ? ` (${gecimSrc})` : ""}` },
     "katman-varlik": { value: kfe?.yearlyPct != null ? round2(kfe.yearlyPct) : null, detail: "TCMB Konut Fiyat Endeksi yıllık" },
@@ -511,6 +517,7 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
       case "kfe-tr-yillik": return mk("derived", ctx.kfe?.yearlyPct ?? null);
       case "konut-grubu-tufe": return mk("derived", ctx.gecimKonut);
       case "m2-yillik": return mk("derived", ctx.m2?.yearlyPct ?? null);
+      case "kk-harcama-yillik": return mk("derived", ctx.evds.get("TP.KKHARTUT.KT1")?.yearlyPct ?? null);
       case "reel-faiz":
         return ctx.faizMevduat != null && ctx.officialYearly != null
           ? mk("derived", ctx.faizMevduat - ctx.officialYearly)

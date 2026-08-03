@@ -122,22 +122,53 @@ export const PARTNERS: {
   { wb: "ISR", name: "İsrail",        currency: "USD", importShare: 0.3,  exportShare: 1.5, weo2025: 3.2 },
 ];
 
-// ── TÜFE ana grupları (COICOP, EVDS) ─────────────────────────────
-// Seri kodları EVDS anahtarı bağlanınca doğrulanır; ölü çıkan kod UI'da görünür.
+// ── TÜFE ana grupları (COICOP, EVDS — 2025=100 yeni baz) ─────────
+// TÜİK Ocak 2026'da baz yılını değiştirdi; eski TP.FG.J* serileri arşivlendi.
+// Yeni seriler 2025-01'den başlar, yıllık değişim hesaplanabilir.
 export const COICOP_GROUPS: { no: string; label: string; evds: string }[] = [
-  { no: "01", label: "Gıda ve alkolsüz içecekler",      evds: "TP.FG.J01" },
-  { no: "02", label: "Alkollü içecekler ve tütün",      evds: "TP.FG.J02" },
-  { no: "03", label: "Giyim ve ayakkabı",               evds: "TP.FG.J03" },
-  { no: "04", label: "Konut, su, elektrik, gaz (kira)", evds: "TP.FG.J04" },
-  { no: "05", label: "Ev eşyası",                       evds: "TP.FG.J05" },
-  { no: "06", label: "Sağlık",                          evds: "TP.FG.J06" },
-  { no: "07", label: "Ulaştırma",                       evds: "TP.FG.J07" },
-  { no: "08", label: "Haberleşme",                      evds: "TP.FG.J08" },
-  { no: "09", label: "Eğlence ve kültür",               evds: "TP.FG.J09" },
-  { no: "10", label: "Eğitim",                          evds: "TP.FG.J10" },
-  { no: "11", label: "Lokanta ve oteller",              evds: "TP.FG.J11" },
-  { no: "12", label: "Çeşitli mal ve hizmetler",        evds: "TP.FG.J12" },
+  { no: "01", label: "Gıda ve alkolsüz içecekler",      evds: "TP.TUKFIY2025.01" },
+  { no: "02", label: "Alkollü içecekler ve tütün",      evds: "TP.TUKFIY2025.02" },
+  { no: "03", label: "Giyim ve ayakkabı",               evds: "TP.TUKFIY2025.03" },
+  { no: "04", label: "Konut, su, elektrik, gaz (kira)", evds: "TP.TUKFIY2025.04" },
+  { no: "05", label: "Ev eşyası",                       evds: "TP.TUKFIY2025.05" },
+  { no: "06", label: "Sağlık",                          evds: "TP.TUKFIY2025.06" },
+  { no: "07", label: "Ulaştırma",                       evds: "TP.TUKFIY2025.07" },
+  { no: "08", label: "Haberleşme",                      evds: "TP.TUKFIY2025.08" },
+  { no: "09", label: "Eğlence ve kültür",               evds: "TP.TUKFIY2025.09" },
+  { no: "10", label: "Eğitim",                          evds: "TP.TUKFIY2025.10" },
+  { no: "11", label: "Lokanta ve oteller",              evds: "TP.TUKFIY2025.11" },
+  { no: "12", label: "Çeşitli mal ve hizmetler",        evds: "TP.TUKFIY2025.12" },
 ];
+
+// ── Geçim kalemleri → TÜFE madde endeksi eşleşmesi (2025=100) ────
+// Fiyat değil endeks: seviye anlamsız, yıllık/aylık DEĞİŞİM anlamlı.
+// index = BASKET_ITEMS'taki 1-bazlı sıra numarası.
+export const BASKET_EVDS: Record<number, { code: string; note: string }> = {
+  1:  { code: "TP.TUKFIY2025.01113", note: "Ekmek ve unlu mamuller madde endeksi" },
+  2:  { code: "TP.TUKFIY2025.01111", note: "Tahıllar (pirinç dahil) madde endeksi" },
+  3:  { code: "TP.TUKFIY2025.01112", note: "Tahıl unları madde endeksi" },
+  4:  { code: "TP.TUKFIY2025.01115", note: "Makarna ürünleri madde endeksi" },
+  5:  { code: "TP.TUKFIY2025.01141", note: "Çiğ ve tam yağlı süt madde endeksi" },
+  6:  { code: "TP.TUKFIY2025.01146", note: "Yoğurt ve benzeri madde endeksi" },
+  7:  { code: "TP.TUKFIY2025.01145", note: "Peynir madde endeksi" },
+  8:  { code: "TP.TUKFIY2025.01148", note: "Yumurta madde endeksi" },
+  9:  { code: "TP.TUKFIY2025.01122", note: "Taze et madde endeksi" },
+  10: { code: "TP.TUKFIY2025.0112",  note: "Et ürünleri grup endeksi" },
+  12: { code: "TP.TUKFIY2025.01131", note: "Taze balık madde endeksi" },
+  15: { code: "TP.TUKFIY2025.01152", note: "Tereyağı madde endeksi" },
+  16: { code: "TP.TUKFIY2025.01181", note: "Şeker madde endeksi" },
+  17: { code: "TP.TUKFIY2025.01230", note: "Çay madde endeksi" },
+  18: { code: "TP.TUKFIY2025.01220", note: "Kahve madde endeksi" },
+  25: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
+  26: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
+  27: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
+  34: { code: "TP.TUKFIY2025.0452",  note: "Gaz (doğalgaz) grup endeksi" },
+  35: { code: "TP.TUKFIY2025.04510", note: "Elektrik madde endeksi" },
+  40: { code: "TP.TUKFIY2025.0230",  note: "Tütün ürünleri grup endeksi" },
+  45: { code: "TP.TUKFIY2025.04110", note: "Kiracıların ödediği gerçek kira endeksi" },
+  46: { code: "TP.TUKFIY2025.05311", note: "Büyük mutfak eşyaları (buzdolabı) endeksi" },
+  47: { code: "TP.TUKFIY2025.05312", note: "Çamaşır/kurutma makineleri endeksi" },
+};
 
 // ── 50 temel geçim kalemi ─────────────────────────────────────────
 // TÜİK "madde ortalama fiyatları" yayınından bağlanacak; kaynak bağlanana kadar
@@ -253,14 +284,29 @@ function coicopParams(): ParamDef[] {
 }
 
 function basketParams(): ParamDef[] {
-  return BASKET_ITEMS.map((label, i) => ({
-    key: `madde-${String(i + 1).padStart(2, "0")}`,
-    label,
-    category: "gecim-madde" as const,
-    source: "pending" as const,
-    unit: "TRY" as const,
-    note: "TÜİK madde ortalama fiyatları bağlanacak",
-  }));
+  return BASKET_ITEMS.map((label, i) => {
+    const evdsMap = BASKET_EVDS[i + 1];
+    if (evdsMap) {
+      // TÜFE madde endeksi (2025=100): seviye değil değişim anlamlı.
+      return {
+        key: `madde-${String(i + 1).padStart(2, "0")}`,
+        label,
+        category: "gecim-madde" as const,
+        source: "evds" as const,
+        code: evdsMap.code,
+        unit: "endeks" as const,
+        note: evdsMap.note,
+      };
+    }
+    return {
+      key: `madde-${String(i + 1).padStart(2, "0")}`,
+      label,
+      category: "gecim-madde" as const,
+      source: "pending" as const,
+      unit: "TRY" as const,
+      note: "Canlı fiyat kaynağı bağlanacak",
+    };
+  });
 }
 
 /** Tam parametre listesi — motor ve UI bunu gezer. */
@@ -276,7 +322,7 @@ export function buildRegistry(): ParamDef[] {
     { key: "katman-enag",     label: "Katman F — ENAG E-TÜFE",           category: "kompozit", source: "derived", unit: "%" },
 
     // Resmi göstergeler
-    { key: "tufe-endeks",   label: "TÜFE endeksi (2003=100)",        category: "resmi", source: "evds", code: "TP.FG.J0", unit: "endeks" },
+    { key: "tufe-endeks",   label: "TÜFE endeksi (2025=100)",        category: "resmi", source: "evds", code: "TP.TUKFIY2025.GENEL", unit: "endeks" },
     { key: "tufe-yillik",   label: "TÜFE yıllık enflasyon",          category: "resmi", source: "derived", unit: "%" },
     { key: "tufe-aylik",    label: "TÜFE aylık enflasyon",           category: "resmi", source: "derived", unit: "%" },
     { key: "yiufe-endeks",  label: "Yİ-ÜFE endeksi",                 category: "resmi", source: "evds", code: "TP.TUFE1YI.T1", unit: "endeks" },
@@ -297,13 +343,13 @@ export function buildRegistry(): ParamDef[] {
     ...basketParams(),
 
     // Varlık fiyatları
-    { key: "kfe-tr",        label: "Konut Fiyat Endeksi (Türkiye)",   category: "varlik", source: "evds", code: "TP.HKFE01", unit: "endeks" },
+    { key: "kfe-tr",        label: "Konut Fiyat Endeksi (Türkiye)",   category: "varlik", source: "evds", code: "TP.KFE.TR", unit: "endeks" },
     { key: "kfe-tr-yillik", label: "Konut fiyatları yıllık değişim",  category: "varlik", source: "derived", unit: "%" },
-    { key: "kfe-ist",       label: "KFE — İstanbul",                  category: "varlik", source: "evds", code: "TP.HKFE02", unit: "endeks" },
-    { key: "kfe-ank",       label: "KFE — Ankara",                    category: "varlik", source: "evds", code: "TP.HKFE03", unit: "endeks" },
-    { key: "kfe-izm",       label: "KFE — İzmir",                     category: "varlik", source: "evds", code: "TP.HKFE04", unit: "endeks" },
-    { key: "konut-satis",   label: "Konut satış adedi (aylık)",       category: "varlik", source: "evds", code: "TP.AKONUTSAT01", unit: "adet" },
-    { key: "konut-ipotek",  label: "İpotekli konut satışı",           category: "varlik", source: "pending", unit: "adet", note: "TÜİK konut satış istatistikleri bağlanacak" },
+    { key: "kfe-ist",       label: "KFE — İstanbul",                  category: "varlik", source: "evds", code: "TP.KFE.TR10", unit: "endeks" },
+    { key: "kfe-ank",       label: "KFE — Ankara",                    category: "varlik", source: "evds", code: "TP.KFE.TR51", unit: "endeks" },
+    { key: "kfe-izm",       label: "KFE — İzmir",                     category: "varlik", source: "evds", code: "TP.KFE.TR31", unit: "endeks" },
+    { key: "konut-satis",   label: "Konut satış adedi (aylık)",       category: "varlik", source: "evds", code: "TP.AKONUTSAT1.KTRTOPLAM", unit: "adet" },
+    { key: "konut-ipotek",  label: "İpotekli konut satışı",           category: "varlik", source: "evds", code: "TP.AKONUTSAT2.KTRTOPLAM", unit: "adet" },
     { key: "araba-sifir",   label: "Sıfır araç ortalama fiyatı",      category: "varlik", source: "pending", unit: "TRY", note: "ODMD/otomotiv distribütörleri verisi bağlanacak" },
     { key: "araba-ikinci",  label: "İkinci el araç fiyat endeksi",    category: "varlik", source: "pending", unit: "endeks", note: "Kaynak bağlanacak" },
     { key: "arsa-m2",       label: "Arsa m² birim değeri",            category: "varlik", source: "pending", unit: "TRY", note: "TÜİK/Tapu verisi bağlanacak" },
@@ -318,11 +364,11 @@ export function buildRegistry(): ParamDef[] {
     { key: "faiz-mevduat",  label: "TL mevduat faizi (3 aya kadar)",  category: "kredi", source: "evds", code: "TP.TRY.MT02", unit: "%" },
     { key: "faiz-politika", label: "TCMB ort. fonlama maliyeti",      category: "kredi", source: "evds", code: "TP.APIFON4", unit: "%" },
     { key: "kk-azami-akdi", label: "Kredi kartı azami akdi faiz (aylık)", category: "kredi", source: "pending", unit: "%", note: "TCMB üç aylık tebliğ — EVDS serisi bağlanacak" },
-    { key: "kk-harcama",    label: "Kredi kartı harcama hacmi",       category: "kredi", source: "pending", unit: "TRY", note: "BKM aylık verisi bağlanacak" },
-    { key: "kk-harcama-yillik", label: "Kart harcaması yıllık artış", category: "kredi", source: "pending", unit: "%", note: "BKM verisi bağlanınca türetilecek" },
+    { key: "kk-harcama",    label: "Banka+kredi kartı harcama (haftalık akım)", category: "kredi", source: "evds", code: "TP.KKHARTUT.KT1", unit: "TRY", note: "TCMB/BKM haftalık akım, bin TL" },
+    { key: "kk-harcama-yillik", label: "Kart harcaması yıllık artış", category: "kredi", source: "derived", unit: "%", note: "Kart harcama akımının 1 yıl önceye göre değişimi" },
     { key: "bireysel-kredi", label: "Bireysel kredi hacmi",           category: "kredi", source: "pending", unit: "TRY", note: "BDDK haftalık bülten bağlanacak" },
     { key: "takip-oran",    label: "Takipteki krediler oranı",        category: "kredi", source: "pending", unit: "%", note: "BDDK verisi bağlanacak" },
-    { key: "m2-arz",        label: "M2 para arzı",                    category: "kredi", source: "evds", code: "TP.PR.ARZ13", unit: "TRY" },
+    { key: "m2-arz",        label: "M2 para arzı",                    category: "kredi", source: "evds", code: "TP.HPBITABLO1.11", unit: "TRY", note: "TCMB haftalık, bin TL" },
     { key: "m2-yillik",     label: "M2 yıllık genişleme",             category: "kredi", source: "derived", unit: "%" },
     { key: "reel-faiz",     label: "Reel faiz (mevduat − TÜFE)",      category: "kredi", source: "derived", unit: "%" },
 
@@ -360,8 +406,9 @@ export function buildRegistry(): ParamDef[] {
     { key: "enag-yillik",   label: "ENAG E-TÜFE (yıllık)",            category: "alternatif", source: "static", unit: "%", note: ENAG_LATEST.source },
     { key: "enag-aylik",    label: "ENAG E-TÜFE (aylık)",             category: "alternatif", source: "static", unit: "%", note: ENAG_LATEST.source },
     { key: "resmi-enag-fark", label: "Resmi − ENAG makası",           category: "alternatif", source: "derived", unit: "%" },
-    { key: "ito-gecim",     label: "İTO İstanbul geçinme endeksi",    category: "alternatif", source: "pending", unit: "%", note: "İTO aylık yayını bağlanacak" },
-    { key: "beklenti-12ay", label: "12 ay sonrası enflasyon beklentisi", category: "alternatif", source: "evds", code: "TP.BEK.S01.A", unit: "%", note: "TCMB piyasa katılımcıları anketi" },
+    { key: "ito-gecim",     label: "İTO İstanbul geçinme endeksi",    category: "alternatif", source: "evds", code: "TP.FG.IST1.23", unit: "endeks", note: "İTO 2023=100, İstanbul ücretliler geçinme" },
+    { key: "beklenti-12ay", label: "12 ay sonrası enflasyon beklentisi", category: "alternatif", source: "evds", code: "TP.ENFBEK.PKA12ENF", unit: "%", note: "TCMB piyasa katılımcıları anketi" },
+    { key: "beklenti-hane", label: "Hanehalkı 12 ay enflasyon beklentisi", category: "alternatif", source: "evds", code: "TP.ENFBEK.HBA12ENF", unit: "%", note: "Hanehalkının hissettiği beklenti — resmi rakamla makasa bak" },
   ];
 }
 
