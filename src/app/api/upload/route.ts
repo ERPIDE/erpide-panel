@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { r2, R2_BUCKET, R2_PUBLIC_URL, R2_CONFIGURED, keyFromPublicUrl } from "@/lib/r2";
+
+export const runtime = "nodejs";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const ORG = "ERPIDE";
@@ -9,8 +12,19 @@ const repoMap: Record<string, string> = {
   "1C ERP": "erpide-1c-erp",
 };
 
-// POST /api/upload — upload a file to Vercel Blob
+/** Object key / URL için güvenli hale getir (boşluk ve özel karakterleri temizle). */
+const sanitize = (s: string) =>
+  (s || "").replace(/[^\w.\-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+
+// POST /api/upload — dosyayı Cloudflare R2'ye yükle (S3-uyumlu)
 export async function POST(request: NextRequest) {
+  if (!R2_CONFIGURED || !r2) {
+    return NextResponse.json(
+      { error: "R2 depolama yapilandirilmamis (R2_* env eksik)" },
+      { status: 500 }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -44,13 +58,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const folder = project ? `tasks/${project}/${taskId}` : `tasks/${taskId}`;
-    const filename = `${folder}/${Date.now()}-${file.name}`;
+    const folder = project
+      ? `tasks/${sanitize(project)}/${sanitize(taskId)}`
+      : `tasks/${sanitize(taskId)}`;
+    const key = `${folder}/${Date.now()}-${sanitize(file.name)}`;
 
-    const blob = await put(filename, file, {
-      access: "public",
-      addRandomSuffix: false,
-    });
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: bytes,
+        ContentType: file.type,
+      })
+    );
+    const url = `${R2_PUBLIC_URL}/${key}`;
 
     // Determine attachment type
     let type: "image" | "document" | "screenshot" = "document";
@@ -61,8 +83,8 @@ export async function POST(request: NextRequest) {
     if (ghRepo && taskId && GITHUB_TOKEN) {
       const isImage = file.type.startsWith("image/");
       const commentBody = isImage
-        ? `**Ek Dosya:** ${file.name}\n\n![${file.name}](${blob.url})`
-        : `**Ek Dosya:** [${file.name}](${blob.url})`;
+        ? `**Ek Dosya:** ${file.name}\n\n![${file.name}](${url})`
+        : `**Ek Dosya:** [${file.name}](${url})`;
 
       await fetch(
         `https://api.github.com/repos/${ORG}/${ghRepo}/issues/${taskId}/comments`,
@@ -79,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      url: blob.url,
+      url,
       name: file.name,
       type,
       size: file.size,
@@ -91,8 +113,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/upload?url=xxx — delete a blob
+// DELETE /api/upload?url=xxx — R2'den sil
 export async function DELETE(request: NextRequest) {
+  if (!R2_CONFIGURED || !r2) {
+    return NextResponse.json({ error: "R2 yapilandirilmamis" }, { status: 500 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const url = searchParams.get("url");
@@ -101,7 +127,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "URL gerekli" }, { status: 400 });
     }
 
-    await del(url);
+    const key = keyFromPublicUrl(url);
+    if (!key) {
+      // R2 dışı (eski Vercel Blob) URL — sessizce geç, hata verme.
+      return NextResponse.json({ message: "R2 disi URL, atlandi" });
+    }
+
+    await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
     return NextResponse.json({ message: "Dosya silindi" });
   } catch (error) {
     console.error("Delete error:", error);
