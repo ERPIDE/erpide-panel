@@ -150,6 +150,28 @@ export function buildInflationEmailHtml(run: RunData): string {
         ].filter(Boolean).join("")}
       </table>
 
+      ${(() => {
+        const rows = [
+          { ad: "Gram altın (TL)", nom: p("gram-altin-yillik"), reel: p("altin-reel-getiri") },
+          { ad: "ABD Doları (TL)", nom: p("kur-usd-yillik"), reel: p("usd-reel-getiri") },
+          { ad: "BIST 100", nom: p("bist100-yillik"), reel: p("bist100-reel") },
+          { ad: "Bitcoin (USD)", nom: p("btc-yillik"), reel: undefined },
+        ].filter((r) => r.nom?.value != null);
+        if (rows.length === 0) return "";
+        return `
+      ${sectionTitle("Parayı Nerede Tutsaydın? (Son 1 Yıl)")}
+      <table cellpadding="0" cellspacing="0" width="100%">
+        ${row(["Araç", "Nominal getiri", "Gerçek enflasyona göre"], true)}
+        ${rows.map((r) => row([
+          r.ad,
+          `<b>${fmtValue(r.nom!)}</b>`,
+          r.reel?.value != null
+            ? `<b style="color:${signColor(r.reel.value, true)}">${r.reel.value > 0 ? "+" : ""}${fmtNum(r.reel.value)} puan</b>`
+            : `<span style="color:#94a3b8">—</span>`,
+        ])).join("")}
+      </table>`;
+      })()}
+
       <div style="margin-top:24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px">
         <p style="font-size:12px;color:#475569;margin:0 0 6px"><b>Kapsam:</b> ${run.stats.total} parametre — ${run.stats.live} canlı, ${run.stats.static} resmi statik seri, ${run.stats.derived} türetilmiş${run.stats.waitingKey > 0 ? `, ${run.stats.waitingKey} EVDS anahtarı bekliyor` : ""}${run.stats.pending > 0 ? `, ${run.stats.pending} kaynak bağlanacak` : ""}.</p>
         ${run.notes.map((n) => `<p style="font-size:11px;color:#94a3b8;margin:4px 0 0">• ${n}</p>`).join("")}

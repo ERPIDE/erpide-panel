@@ -81,37 +81,57 @@ export async function fetchTcmbArchive(target: Date): Promise<Map<string, TcmbRa
 }
 
 // ── World Bank API (anahtarsız) ──────────────────────────────────
+// Not: api.worldbank.org zaman zaman çok yavaşlıyor/kesiliyor (2026-08'de
+// yaşandı). Bu yüzden: küçük ülke grupları halinde paralel + 2 deneme.
+// Tamamen çökerse motor Eurostat + statik WEO yedeğine düşer.
 
 export interface WbValue {
   value: number;
   year: number;
 }
 
+async function fetchWbBatch(wbCodes: string[], attempt: number): Promise<Map<string, WbValue>> {
+  const url =
+    `https://api.worldbank.org/v2/country/${wbCodes.join(";")}` +
+    `/indicator/FP.CPI.TOTL.ZG?format=json&per_page=400&date=2019:2026`;
+  const r = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(attempt === 0 ? 12000 : 18000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const json = (await r.json()) as unknown[];
+  const rows = (json[1] || []) as { countryiso3code: string; date: string; value: number | null }[];
+  const out = new Map<string, WbValue>();
+  for (const row of rows) {
+    if (row.value == null) continue;
+    const year = parseInt(row.date, 10);
+    const prev = out.get(row.countryiso3code);
+    if (!prev || year > prev.year) out.set(row.countryiso3code, { value: row.value, year });
+  }
+  return out;
+}
+
 /**
- * Çok ülkeli tek çağrı: en güncel dolu yılın TÜFE enflasyonu (FP.CPI.TOTL.ZG).
- * Dönen map: wbCode → { value, year }.
+ * En güncel dolu yılın TÜFE enflasyonu (FP.CPI.TOTL.ZG), wbCode → {value, year}.
+ * 8'erli gruplar paralel, grup başına 2 deneme; kısmi sonuç da döner.
  */
 export async function fetchWorldBankCPI(wbCodes: string[]): Promise<Map<string, WbValue> | null> {
-  try {
-    const url =
-      `https://api.worldbank.org/v2/country/${wbCodes.join(";")}` +
-      `/indicator/FP.CPI.TOTL.ZG?format=json&per_page=800&date=2019:2026`;
-    const r = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const json = (await r.json()) as unknown[];
-    const rows = (json[1] || []) as { countryiso3code: string; date: string; value: number | null }[];
-    const out = new Map<string, WbValue>();
-    for (const row of rows) {
-      if (row.value == null) continue;
-      const year = parseInt(row.date, 10);
-      const prev = out.get(row.countryiso3code);
-      if (!prev || year > prev.year) out.set(row.countryiso3code, { value: row.value, year });
-    }
-    return out.size > 0 ? out : null;
-  } catch (e) {
-    console.error("[enflasyon] World Bank CPI alınamadı:", e);
-    return null;
-  }
+  const batches: string[][] = [];
+  for (let i = 0; i < wbCodes.length; i += 8) batches.push(wbCodes.slice(i, i + 8));
+
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          return await fetchWbBatch(batch, attempt);
+        } catch (e) {
+          if (attempt === 1) console.error("[enflasyon] WB batch başarısız:", batch.join(","), e);
+        }
+      }
+      return new Map<string, WbValue>();
+    })
+  );
+
+  const out = new Map<string, WbValue>();
+  for (const m of results) for (const [k, v] of m) out.set(k, v);
+  return out.size > 0 ? out : null;
 }
 
 /** Tek ülke + tek indikatör (TUR makro serileri için). */
@@ -131,6 +151,175 @@ export async function fetchWorldBankIndicator(country: string, indicator: string
     return null;
   } catch (e) {
     console.error(`[enflasyon] World Bank ${indicator} alınamadı:`, e);
+    return null;
+  }
+}
+
+// ── Eurostat HICP (anahtarsız, resmi) ────────────────────────────
+// Türkiye dahil tüm ülkelerin uyumlaştırılmış TÜFE'si (yıllık % değişim),
+// COICOP harcama grubu kırılımıyla. Veri seti ~6-7 ay gecikmeli yayınlanıyor
+// (2026-08 itibarıyla son dönem 2025-12) — dönem etiketi mutlaka gösterilir.
+
+export interface EurostatValue {
+  value: number;
+  period: string; // "2025-12"
+}
+
+/** JSON-stat 2.0 çok boyutlu index çözücü: her kategori kombinasyonu için düz index hesaplar. */
+function jsonStatLatest(
+  data: {
+    id: string[];
+    size: number[];
+    value: Record<string, number>;
+    dimension: Record<string, { category: { index: Record<string, number> } }>;
+  },
+  varyDim: string
+): Map<string, EurostatValue> {
+  const { id, size, value, dimension } = data;
+  const strides: number[] = new Array(id.length);
+  let acc = 1;
+  for (let i = id.length - 1; i >= 0; i--) { strides[i] = acc; acc *= size[i]; }
+
+  const varyIdx = id.indexOf(varyDim);
+  const timeIdx = id.indexOf("time");
+  if (varyIdx < 0 || timeIdx < 0) return new Map();
+
+  const timeCats = Object.entries(dimension["time"].category.index).sort((a, b) => a[1] - b[1]);
+  const out = new Map<string, EurostatValue>();
+
+  for (const [cat, catPos] of Object.entries(dimension[varyDim].category.index)) {
+    // Diğer boyutlar tek kategorili (freq/unit sabit) — pozisyonları 0.
+    let base = 0;
+    for (let i = 0; i < id.length; i++) {
+      if (i === varyIdx) base += catPos * strides[i];
+      else if (i !== timeIdx) base += 0;
+    }
+    // En yeni dolu dönemi bul (sondan geriye).
+    for (let t = timeCats.length - 1; t >= 0; t--) {
+      const v = value[String(base + timeCats[t][1] * strides[timeIdx])];
+      if (v != null && isFinite(v)) { out.set(cat, { value: v, period: timeCats[t][0] }); break; }
+    }
+  }
+  return out;
+}
+
+/** Türkiye HICP: genel + 12 COICOP grubu tek çağrıda. Dönen map: "CP00".."CP12" → değer. */
+export async function fetchEurostatTR(): Promise<Map<string, EurostatValue> | null> {
+  try {
+    const coicops = ["CP00", "CP01", "CP02", "CP03", "CP04", "CP05", "CP06", "CP07", "CP08", "CP09", "CP10", "CP11", "CP12"];
+    const url =
+      "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_manr" +
+      `?format=JSON&lang=EN&geo=TR&lastTimePeriod=4&` + coicops.map((c) => `coicop=${c}`).join("&");
+    const r = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const map = jsonStatLatest(await r.json(), "coicop");
+    return map.size > 0 ? map : null;
+  } catch (e) {
+    console.error("[enflasyon] Eurostat TR alınamadı:", e);
+    return null;
+  }
+}
+
+/** AB üyesi ticaret ortaklarının genel HICP'si. Dönen map: geo kodu ("DE") → değer. */
+export async function fetchEurostatPartners(geos: string[]): Promise<Map<string, EurostatValue> | null> {
+  try {
+    const url =
+      "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_manr" +
+      `?format=JSON&lang=EN&coicop=CP00&lastTimePeriod=4&` + geos.map((g) => `geo=${g}`).join("&");
+    const r = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const map = jsonStatLatest(await r.json(), "geo");
+    return map.size > 0 ? map : null;
+  } catch (e) {
+    console.error("[enflasyon] Eurostat ortak ülkeler alınamadı:", e);
+    return null;
+  }
+}
+
+// ── Truncgil (anahtarsız) — canlı altın/gümüş TL fiyatları ───────
+
+export interface TruncgilPrices {
+  gramAltin: number | null;
+  onsAltinUsd: number | null;
+  gumusGram: number | null;
+}
+
+/** "4.094,50" biçimli TR sayısını parse eder. */
+function parseTrNumber(s: unknown): number | null {
+  if (typeof s !== "string") return null;
+  const v = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  return isFinite(v) ? v : null;
+}
+
+export async function fetchTruncgil(): Promise<TruncgilPrices | null> {
+  try {
+    const r = await fetch("https://finans.truncgil.com/today.json", {
+      ...FETCH_OPTS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = (await r.json()) as Record<string, { ["Satış"]?: string } | undefined>;
+    return {
+      gramAltin: parseTrNumber(json["gram-altin"]?.["Satış"]),
+      onsAltinUsd: parseTrNumber(json["ons"]?.["Satış"]),
+      gumusGram: parseTrNumber(json["gumus"]?.["Satış"]),
+    };
+  } catch (e) {
+    console.error("[enflasyon] Truncgil alınamadı:", e);
+    return null;
+  }
+}
+
+// ── Yahoo Finance chart (anahtarsız) — 1 yıllık değişim ──────────
+// GC=F (altın ons), SI=F (gümüş ons), XU100.IS (BIST 100) için kullanılır.
+
+export interface YearlySeries {
+  last: number;
+  yearlyPct: number;
+}
+
+export async function fetchYahooYearly(symbol: string): Promise<YearlySeries | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1mo`;
+    const r = await fetch(url, {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = (await r.json()) as {
+      chart?: { result?: { indicators?: { quote?: { close?: (number | null)[] }[] } }[] };
+    };
+    const closes = (json.chart?.result?.[0]?.indicators?.quote?.[0]?.close || []).filter(
+      (x): x is number => x != null && isFinite(x)
+    );
+    if (closes.length < 2) return null;
+    const first = closes[0], last = closes[closes.length - 1];
+    if (first <= 0) return null;
+    return { last, yearlyPct: (last / first - 1) * 100 };
+  } catch (e) {
+    console.error(`[enflasyon] Yahoo ${symbol} alınamadı:`, e);
+    return null;
+  }
+}
+
+// ── Binance (anahtarsız) — BTC yıllık değişim ────────────────────
+
+export async function fetchBinanceBtcYearly(): Promise<YearlySeries | null> {
+  try {
+    const r = await fetch("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1M&limit=13", {
+      ...FETCH_OPTS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const rows = (await r.json()) as [number, string, string, string, string][];
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+    const firstClose = parseFloat(rows[0][4]);
+    const lastClose = parseFloat(rows[rows.length - 1][4]);
+    if (!isFinite(firstClose) || !isFinite(lastClose) || firstClose <= 0) return null;
+    return { last: lastClose, yearlyPct: (lastClose / firstClose - 1) * 100 };
+  } catch (e) {
+    console.error("[enflasyon] Binance BTC alınamadı:", e);
     return null;
   }
 }

@@ -16,11 +16,13 @@
 
 import {
   buildRegistry, CURRENCIES, PARTNERS, COICOP_GROUPS, MIN_WAGE_SERIES,
-  ENAG_LATEST, STATIC_FACTS, LAYER_WEIGHTS, ParamDef,
+  ENAG_LATEST, TUIK_LATEST, STATIC_FACTS, LAYER_WEIGHTS, ParamDef,
 } from "./registry";
 import {
   fetchTcmbToday, fetchTcmbArchive, fetchWorldBankCPI,
   fetchWorldBankIndicator, fetchEvdsSeries, hasEvdsKey, EvdsSeries, TcmbRate, WbValue,
+  fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
+  fetchBinanceBtcYearly, EurostatValue,
 } from "./sources";
 
 export type ParamStatus = "live" | "static" | "derived" | "waiting-key" | "no-data" | "pending";
@@ -75,26 +77,39 @@ export async function runInflationEngine(): Promise<RunData> {
   // ── 1. Kaynakları paralel topla ─────────────────────────────────
   const evdsCodes = [...new Set(registry.filter((p) => p.source === "evds" && p.code).map((p) => p.code as string))];
 
-  const [ratesNow, ratesYearAgo, wbCpi, wbTurCpiSeries, wbGdp, wbUnemp, wbGdpPc, wbGini, wbPpp, evdsResults] =
-    await Promise.all([
-      fetchTcmbToday(),
-      fetchTcmbArchive(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())),
-      fetchWorldBankCPI([...PARTNERS.map((p) => p.wb), "TUR"]),
-      fetchWorldBankSeriesAll("TUR", "FP.CPI.TOTL.ZG"),
-      fetchWorldBankIndicator("TUR", "NY.GDP.MKTP.KD.ZG"),
-      fetchWorldBankIndicator("TUR", "SL.UEM.TOTL.ZS"),
-      fetchWorldBankIndicator("TUR", "NY.GDP.PCAP.CD"),
-      fetchWorldBankIndicator("TUR", "SI.POV.GINI"),
-      fetchWorldBankIndicator("TUR", "PA.NUS.PPP"),
-      Promise.all(evdsCodes.map((c) => fetchEvdsSeries(c).then((r) => [c, r] as const))),
-    ]);
+  const eurostatGeos = PARTNERS.filter((p) => p.eurostat).map((p) => p.eurostat as string);
+
+  const [
+    ratesNow, ratesYearAgo, wbCpi, wbTurCpiSeries, wbGdp, wbUnemp, wbGdpPc, wbGini, wbPpp,
+    eurostatTR, eurostatPartners, truncgil, yahooGold, yahooSilver, yahooBist, binanceBtc,
+    evdsResults,
+  ] = await Promise.all([
+    fetchTcmbToday(),
+    fetchTcmbArchive(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())),
+    fetchWorldBankCPI([...PARTNERS.map((p) => p.wb), "TUR"]),
+    fetchWorldBankSeriesAll("TUR", "FP.CPI.TOTL.ZG"),
+    fetchWorldBankIndicator("TUR", "NY.GDP.MKTP.KD.ZG"),
+    fetchWorldBankIndicator("TUR", "SL.UEM.TOTL.ZS"),
+    fetchWorldBankIndicator("TUR", "NY.GDP.PCAP.CD"),
+    fetchWorldBankIndicator("TUR", "SI.POV.GINI"),
+    fetchWorldBankIndicator("TUR", "PA.NUS.PPP"),
+    fetchEurostatTR(),
+    fetchEurostatPartners(eurostatGeos),
+    fetchTruncgil(),
+    fetchYahooYearly("GC=F"),
+    fetchYahooYearly("SI=F"),
+    fetchYahooYearly("XU100.IS"),
+    fetchBinanceBtcYearly(),
+    Promise.all(evdsCodes.map((c) => fetchEvdsSeries(c).then((r) => [c, r] as const))),
+  ]);
 
   const evds = new Map<string, EvdsSeries | null>(evdsResults);
   const evdsKeyPresent = hasEvdsKey();
-  if (!evdsKeyPresent) notes.push("EVDS_API_KEY tanımlı değil — TCMB EVDS serileri (TÜFE endeksi, konut endeksi, faizler) beklemede. Anahtar eklenince otomatik canlanır.");
+  if (!evdsKeyPresent) notes.push("EVDS_API_KEY tanımlı değil — EVDS serileri beklemede; resmi TÜFE bülten değerinden, harcama grupları Eurostat'tan besleniyor. Anahtar eklenince tümü aylık seriye devrolur.");
   if (!ratesNow) notes.push("TCMB güncel kur bülteni alınamadı.");
   if (!ratesYearAgo) notes.push("TCMB 1 yıl önceki kur arşivi alınamadı — kur yıllık değişimleri hesaplanamadı.");
-  if (!wbCpi) notes.push("World Bank ülke enflasyonları alınamadı — ithal enflasyon katmanı eksik kaldı.");
+  if (!wbCpi) notes.push("World Bank yanıt vermedi — ülke enflasyonlarında Eurostat + IMF WEO yedeği kullanıldı.");
+  if (!eurostatTR) notes.push("Eurostat Türkiye HICP alınamadı.");
 
   // ── 2. Ara hesaplar ─────────────────────────────────────────────
   const kurDelta = new Map<string, number>(); // döviz kodu → yıllık % değişim
@@ -106,11 +121,39 @@ export async function runInflationEngine(): Promise<RunData> {
     }
   }
 
-  // TÜFE: EVDS varsa aylık seri, yoksa World Bank yıllık serisi (gecikmeli).
+  // Resmi TÜFE çözümleme sırası: EVDS aylık seri (en iyi) → TÜİK son bülten
+  // (elle güncellenen güncel değer) → Eurostat TR HICP (~7 ay gecikmeli) →
+  // World Bank yıllık.
   const tufe = evds.get("TP.FG.J0") || null;
   const wbTurCpi = wbCpi?.get("TUR") || null;
-  const officialYearly = tufe?.yearlyPct ?? wbTurCpi?.value ?? null;
-  const officialSource = tufe?.yearlyPct != null ? "EVDS aylık seri" : wbTurCpi ? `World Bank ${wbTurCpi.year} yıllık` : null;
+  const esTrGenel = eurostatTR?.get("CP00") || null;
+  let officialYearly: number | null;
+  let officialMonthly: number | null;
+  let officialSource: string | null;
+  if (tufe?.yearlyPct != null) {
+    officialYearly = tufe.yearlyPct;
+    officialMonthly = tufe.monthlyPct;
+    officialSource = "TÜİK/EVDS aylık seri";
+  } else {
+    officialYearly = TUIK_LATEST.yearly;
+    officialMonthly = TUIK_LATEST.monthly;
+    officialSource = TUIK_LATEST.source;
+    if (officialYearly == null) {
+      officialYearly = esTrGenel?.value ?? wbTurCpi?.value ?? null;
+      officialSource = esTrGenel ? `Eurostat HICP ${esTrGenel.period}` : wbTurCpi ? `World Bank ${wbTurCpi.year}` : null;
+    }
+  }
+
+  // Ülke enflasyonları çözümleme sırası: World Bank → Eurostat → IMF WEO yedeği.
+  // Her partner için mutlaka bir değer bulunur (kaynak etiketiyle) — "veri yok" kalmaz.
+  const partnerCpi = new Map<string, { value: number; srcLabel: string; live: boolean }>();
+  for (const p of PARTNERS) {
+    const wb = wbCpi?.get(p.wb);
+    const es = p.eurostat ? eurostatPartners?.get(p.eurostat) : null;
+    if (wb) partnerCpi.set(p.wb, { value: wb.value, srcLabel: `World Bank ${wb.year}`, live: true });
+    else if (es) partnerCpi.set(p.wb, { value: es.value, srcLabel: `Eurostat ${es.period}`, live: true });
+    else partnerCpi.set(p.wb, { value: p.weo2025, srcLabel: "IMF WEO 2025 (yedek)", live: false });
+  }
 
   // İthal enflasyon: Σ pay × (kur Δ + ülke TÜFE) / Σ pay
   const importContrib = new Map<string, number>(); // wb → katkı puanı
@@ -119,7 +162,7 @@ export async function runInflationEngine(): Promise<RunData> {
     let num = 0, den = 0;
     for (const p of PARTNERS) {
       if (p.importShare == null || p.importShare < 0.5) continue;
-      const cpi = wbCpi?.get(p.wb)?.value;
+      const cpi = partnerCpi.get(p.wb)?.value;
       const delta = kurDelta.get(p.currency);
       if (cpi == null && delta == null) continue;
       const combined = (delta ?? 0) + (cpi ?? 0);
@@ -130,10 +173,27 @@ export async function runInflationEngine(): Promise<RunData> {
     if (den > 0) importWeighted = num / den;
   }
 
+  // COICOP harcama grupları: EVDS (güncel) → Eurostat TR (gecikmeli, resmi).
+  const coicopVals = new Map<string, { value: number; srcLabel: string }>();
+  for (const g of COICOP_GROUPS) {
+    const ev = evds.get(g.evds)?.yearlyPct;
+    if (ev != null) { coicopVals.set(g.no, { value: ev, srcLabel: "EVDS yıllık" }); continue; }
+    const es = eurostatTR?.get(`CP${g.no}`);
+    if (es) coicopVals.set(g.no, { value: es.value, srcLabel: `Eurostat ${es.period}` });
+  }
+
   // Geçim sepeti: gıda %60 + konut(kira) %40 — dar gelirli hane ağırlıkları.
-  const gida = evds.get("TP.FG.J01")?.yearlyPct ?? null;
-  const konutGrubu = evds.get("TP.FG.J04")?.yearlyPct ?? null;
+  const gida = coicopVals.get("01")?.value ?? null;
+  const konutGrubu = coicopVals.get("04")?.value ?? null;
   const gecim = gida != null && konutGrubu != null ? gida * 0.6 + konutGrubu * 0.4 : gida ?? konutGrubu;
+  const gecimSrc = coicopVals.get("01")?.srcLabel;
+
+  // Tasarruf araçları: gram altın TL yıllık = (1+ons Δ) × (1+USD/TL Δ) − 1.
+  const usdDeltaVal = kurDelta.get("USD") ?? null;
+  const gramAltinYillik =
+    yahooGold && usdDeltaVal != null
+      ? ((1 + yahooGold.yearlyPct / 100) * (1 + usdDeltaVal / 100) - 1) * 100
+      : null;
 
   const kfe = evds.get("TP.HKFE01") || null;
   const faizIhtiyac = evds.get("TP.KTF10")?.latest ?? null;
@@ -144,7 +204,7 @@ export async function runInflationEngine(): Promise<RunData> {
   const layerValues: Record<string, { value: number | null; detail?: string }> = {
     "katman-resmi":  { value: officialYearly, detail: officialSource ?? undefined },
     "katman-ithal":  { value: importWeighted != null ? round2(importWeighted) : null, detail: `${importContrib.size} ülke, ithalat payı ağırlıklı` },
-    "katman-gecim":  { value: gecim != null ? round2(gecim) : null, detail: "Gıda %60 + konut/kira %40" },
+    "katman-gecim":  { value: gecim != null ? round2(gecim) : null, detail: `Gıda %60 + konut/kira %40${gecimSrc ? ` (${gecimSrc})` : ""}` },
     "katman-varlik": { value: kfe?.yearlyPct != null ? round2(kfe.yearlyPct) : null, detail: "TCMB Konut Fiyat Endeksi yıllık" },
     "katman-kredi":  { value: faizIhtiyac != null ? round2(faizIhtiyac) : null, detail: "İhtiyaç kredisi yıllık faizi" },
     "katman-enag":   { value: ENAG_LATEST.yearly, detail: ENAG_LATEST.source },
@@ -189,10 +249,12 @@ export async function runInflationEngine(): Promise<RunData> {
   // ── 5. Parametre sonuçları ──────────────────────────────────────
   const params: ParamResult[] = registry.map((def) => resolveParam(def, {
     ratesNow, kurDelta, wbCpi, evds, evdsKeyPresent, layerValues, composite,
-    officialYearly, officialSource, importContrib,
+    officialYearly, officialMonthly, officialSource, importContrib,
+    partnerCpi, coicopVals, esTrGenel,
     wbGdp, wbUnemp, wbGdpPc, wbGini, wbPpp, tufe, kfe, m2,
     faizIhtiyac, faizMevduat, gecimKonut: konutGrubu,
     mwNow, mwPrev, asgariArtis, asgariUsd, asgariUsdPrev, alimGucuEndeks, usdNow,
+    truncgil, yahooGold, yahooSilver, yahooBist, binanceBtc, gramAltinYillik, usdDeltaVal,
   }));
 
   const stats = {
@@ -235,8 +297,12 @@ interface Ctx {
   layerValues: Record<string, { value: number | null; detail?: string }>;
   composite: number | null;
   officialYearly: number | null;
+  officialMonthly: number | null;
   officialSource: string | null;
   importContrib: Map<string, number>;
+  partnerCpi: Map<string, { value: number; srcLabel: string; live: boolean }>;
+  coicopVals: Map<string, { value: number; srcLabel: string }>;
+  esTrGenel: EurostatValue | null;
   wbGdp: WbValue | null; wbUnemp: WbValue | null; wbGdpPc: WbValue | null;
   wbGini: WbValue | null; wbPpp: WbValue | null;
   tufe: EvdsSeries | null; kfe: EvdsSeries | null; m2: EvdsSeries | null;
@@ -245,12 +311,31 @@ interface Ctx {
   mwPrev: { year: number; net: number; gross: number };
   asgariArtis: number; asgariUsd: number | null; asgariUsdPrev: number | null;
   alimGucuEndeks: number | null; usdNow: number | null;
+  truncgil: { gramAltin: number | null; onsAltinUsd: number | null; gumusGram: number | null } | null;
+  yahooGold: { last: number; yearlyPct: number } | null;
+  yahooSilver: { last: number; yearlyPct: number } | null;
+  yahooBist: { last: number; yearlyPct: number } | null;
+  binanceBtc: { last: number; yearlyPct: number } | null;
+  gramAltinYillik: number | null;
+  usdDeltaVal: number | null;
 }
 
 function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
   const base = { key: def.key, label: def.label, category: def.category, unit: def.unit, note: def.note };
   const mk = (status: ParamStatus, value: number | null, extra?: string): ParamResult =>
     ({ ...base, status, value: value != null ? round2(value) : null, extra });
+
+  // Piyasa kaynakları (Truncgil / Yahoo / Binance) — kur branşından önce ele alınır.
+  if (def.code?.includes(":")) {
+    switch (def.key) {
+      case "gram-altin": return ctx.truncgil?.gramAltin != null ? mk("live", ctx.truncgil.gramAltin) : mk("no-data", null);
+      case "ons-altin":  return ctx.truncgil?.onsAltinUsd != null ? mk("live", ctx.truncgil.onsAltinUsd) : mk("no-data", null);
+      case "gumus-gram": return ctx.truncgil?.gumusGram != null ? mk("live", ctx.truncgil.gumusGram) : mk("no-data", null);
+      case "bist100":    return ctx.yahooBist ? mk("live", ctx.yahooBist.last) : mk("no-data", null);
+      case "btc-usd":    return ctx.binanceBtc ? mk("live", ctx.binanceBtc.last) : mk("no-data", null);
+    }
+    return mk("no-data", null);
+  }
 
   // Döviz kurları
   if (def.source === "tcmb-xml" && def.code) {
@@ -276,17 +361,26 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
       const v = map[def.code.split("|")[1]] ?? null;
       return v ? mk("live", v.value, `${v.year} verisi`) : mk("no-data", null);
     }
-    const v = def.code ? ctx.wbCpi?.get(def.code) : null;
-    return v ? mk("live", v.value, `${v.year} verisi`) : mk("no-data", null);
+    // Partner ülke TÜFE'si: WB → Eurostat → WEO yedeği sırası partnerCpi'de çözülmüş durumda.
+    const pc = def.code ? ctx.partnerCpi.get(def.code) : null;
+    if (pc) return mk(pc.live ? "live" : "static", pc.value, pc.srcLabel);
+    return mk("no-data", null);
   }
 
   // EVDS
   if (def.source === "evds" && def.code) {
+    const s = ctx.evdsKeyPresent ? ctx.evds.get(def.code) : null;
+    if (s) {
+      const extra = s.yearlyPct != null ? `yıllık %${round1(s.yearlyPct)}` : s.latestDate;
+      return mk("live", s.latest, extra);
+    }
+    // COICOP grubu ise Eurostat'tan resmi (gecikmeli) değer kullanılır.
+    if (def.key.startsWith("tufe-grup-")) {
+      const g = ctx.coicopVals.get(def.key.replace("tufe-grup-", ""));
+      if (g) return mk("live", g.value, g.srcLabel);
+    }
     if (!ctx.evdsKeyPresent) return mk("waiting-key", null);
-    const s = ctx.evds.get(def.code);
-    if (!s) return mk("no-data", null, "seri kodu doğrulanacak");
-    const extra = s.yearlyPct != null ? `yıllık %${round1(s.yearlyPct)}` : s.latestDate;
-    return mk("live", s.latest, extra);
+    return mk("no-data", null, "seri kodu doğrulanacak");
   }
 
   // Statik seriler
@@ -318,7 +412,20 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
         return mk("derived", lv?.value ?? null, lv?.detail);
       }
       case "tufe-yillik": return mk("derived", ctx.officialYearly, ctx.officialSource ?? undefined);
-      case "tufe-aylik": return mk("derived", ctx.tufe?.monthlyPct ?? null);
+      case "tufe-aylik": return mk("derived", ctx.officialMonthly, ctx.officialSource ?? undefined);
+      case "eurostat-tr-hicp":
+        return ctx.esTrGenel ? mk("derived", ctx.esTrGenel.value, ctx.esTrGenel.period) : mk("no-data", null);
+      case "ons-altin-yillik": return ctx.yahooGold ? mk("derived", ctx.yahooGold.yearlyPct) : mk("no-data", null);
+      case "gumus-yillik": return ctx.yahooSilver ? mk("derived", ctx.yahooSilver.yearlyPct) : mk("no-data", null);
+      case "gram-altin-yillik": return mk("derived", ctx.gramAltinYillik);
+      case "bist100-yillik": return ctx.yahooBist ? mk("derived", ctx.yahooBist.yearlyPct) : mk("no-data", null);
+      case "bist100-reel":
+        return ctx.yahooBist && ctx.composite != null ? mk("derived", ctx.yahooBist.yearlyPct - ctx.composite) : mk("no-data", null);
+      case "btc-yillik": return ctx.binanceBtc ? mk("derived", ctx.binanceBtc.yearlyPct) : mk("no-data", null);
+      case "altin-reel-getiri":
+        return ctx.gramAltinYillik != null && ctx.composite != null ? mk("derived", ctx.gramAltinYillik - ctx.composite) : mk("no-data", null);
+      case "usd-reel-getiri":
+        return ctx.usdDeltaVal != null && ctx.composite != null ? mk("derived", ctx.usdDeltaVal - ctx.composite) : mk("no-data", null);
       case "yiufe-yillik": return mk("derived", ctx.evds.get("TP.TUFE1YI.T1")?.yearlyPct ?? null);
       case "kfe-tr-yillik": return mk("derived", ctx.kfe?.yearlyPct ?? null);
       case "konut-grubu-tufe": return mk("derived", ctx.gecimKonut);

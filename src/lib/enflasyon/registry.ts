@@ -28,6 +28,7 @@ export type CategoryKey =
   | "varlik"
   | "kredi"
   | "gelir"
+  | "tasarruf"
   | "alternatif";
 
 export const CATEGORIES: { key: CategoryKey; label: string; desc: string }[] = [
@@ -42,6 +43,7 @@ export const CATEGORIES: { key: CategoryKey; label: string; desc: string }[] = [
   { key: "varlik",      label: "Varlık Fiyatları",         desc: "Konut, araç, arsa fiyat ve erişilebilirlik" },
   { key: "kredi",       label: "Kredi & Bankacılık",       desc: "Faizler, kart kullanımı, kredi genişlemesi" },
   { key: "gelir",       label: "Gelir & Alım Gücü",        desc: "Asgari ücret ve alım gücü türetmeleri" },
+  { key: "tasarruf",    label: "Tasarruf Araçları",        desc: "Altın, gümüş, borsa, kripto — TL'nin alternatiflere karşı değer kaybı" },
   { key: "alternatif",  label: "Alternatif Ölçümler",      desc: "ENAG, İTO ve beklenti anketleri" },
 ];
 
@@ -85,35 +87,39 @@ export const CURRENCIES: { code: string; name: string }[] = [
 // ── Ticaret ortakları ─────────────────────────────────────────────
 // Paylar: TÜİK 2024 dış ticaret istatistikleri, yaklaşık % (yılda bir güncellenir).
 // currency: o ülkeyle ticarette baskın fatura para birimi (kur etkisi için).
+// eurostat: HICP geo kodu (varsa Eurostat'tan canlı çekilir).
+// weo2025: 2025 yıllık TÜFE yedeği (IMF WEO / ulusal istatistik, yaklaşık) —
+// World Bank ve Eurostat'ın İKİSİ de çökerse kullanılır, kaynak etiketiyle.
 export const PARTNERS: {
   wb: string; name: string; currency: string;
   importShare: number | null; exportShare: number | null;
+  eurostat?: string; weo2025: number;
 }[] = [
-  { wb: "CHN", name: "Çin",           currency: "CNY", importShare: 13.1, exportShare: 1.0 },
-  { wb: "RUS", name: "Rusya",         currency: "USD", importShare: 12.8, exportShare: 3.5 }, // enerji faturası USD
-  { wb: "DEU", name: "Almanya",       currency: "EUR", importShare: 7.8,  exportShare: 8.0 },
-  { wb: "USA", name: "ABD",           currency: "USD", importShare: 4.7,  exportShare: 6.2 },
-  { wb: "ITA", name: "İtalya",        currency: "EUR", importShare: 3.9,  exportShare: 4.9 },
-  { wb: "FRA", name: "Fransa",        currency: "EUR", importShare: 2.7,  exportShare: 3.6 },
-  { wb: "KOR", name: "Güney Kore",    currency: "KRW", importShare: 2.6,  exportShare: 0.6 },
-  { wb: "IND", name: "Hindistan",     currency: "USD", importShare: 2.4,  exportShare: 0.5 },
-  { wb: "ESP", name: "İspanya",       currency: "EUR", importShare: 2.0,  exportShare: 3.7 },
-  { wb: "GBR", name: "Birleşik Krallık", currency: "GBP", importShare: 1.6, exportShare: 5.6 },
-  { wb: "JPN", name: "Japonya",       currency: "JPY", importShare: 1.4,  exportShare: 0.5 },
-  { wb: "POL", name: "Polonya",       currency: "EUR", importShare: 1.4,  exportShare: 2.0 },
-  { wb: "NLD", name: "Hollanda",      currency: "EUR", importShare: 1.5,  exportShare: 3.1 },
-  { wb: "BEL", name: "Belçika",       currency: "EUR", importShare: 1.3,  exportShare: 1.5 },
-  { wb: "ROU", name: "Romanya",       currency: "RON", importShare: 1.2,  exportShare: 2.3 },
-  { wb: "CHE", name: "İsviçre",       currency: "CHF", importShare: 1.5,  exportShare: 0.8 },
-  { wb: "IRQ", name: "Irak",          currency: "USD", importShare: 0.3,  exportShare: 4.7 },
-  { wb: "ARE", name: "BAE",           currency: "USD", importShare: 1.5,  exportShare: 2.0 },
-  { wb: "EGY", name: "Mısır",         currency: "USD", importShare: 0.9,  exportShare: 1.7 },
-  { wb: "SAU", name: "Suudi Arabistan", currency: "USD", importShare: 0.8, exportShare: 1.9 },
-  { wb: "AZE", name: "Azerbaycan",    currency: "AZN", importShare: 0.9,  exportShare: 1.3 },
-  { wb: "UKR", name: "Ukrayna",       currency: "USD", importShare: 0.8,  exportShare: 0.9 },
-  { wb: "GRC", name: "Yunanistan",    currency: "EUR", importShare: 0.8,  exportShare: 1.2 },
-  { wb: "BGR", name: "Bulgaristan",   currency: "BGN", importShare: 0.7,  exportShare: 1.4 },
-  { wb: "ISR", name: "İsrail",        currency: "USD", importShare: 0.3,  exportShare: 1.5 },
+  { wb: "CHN", name: "Çin",           currency: "CNY", importShare: 13.1, exportShare: 1.0, weo2025: 0.2 },
+  { wb: "RUS", name: "Rusya",         currency: "USD", importShare: 12.8, exportShare: 3.5, weo2025: 9.5 }, // enerji faturası USD
+  { wb: "DEU", name: "Almanya",       currency: "EUR", importShare: 7.8,  exportShare: 8.0, eurostat: "DE", weo2025: 2.2 },
+  { wb: "USA", name: "ABD",           currency: "USD", importShare: 4.7,  exportShare: 6.2, weo2025: 3.0 },
+  { wb: "ITA", name: "İtalya",        currency: "EUR", importShare: 3.9,  exportShare: 4.9, eurostat: "IT", weo2025: 1.7 },
+  { wb: "FRA", name: "Fransa",        currency: "EUR", importShare: 2.7,  exportShare: 3.6, eurostat: "FR", weo2025: 1.3 },
+  { wb: "KOR", name: "Güney Kore",    currency: "KRW", importShare: 2.6,  exportShare: 0.6, weo2025: 1.9 },
+  { wb: "IND", name: "Hindistan",     currency: "USD", importShare: 2.4,  exportShare: 0.5, weo2025: 4.0 },
+  { wb: "ESP", name: "İspanya",       currency: "EUR", importShare: 2.0,  exportShare: 3.7, eurostat: "ES", weo2025: 2.4 },
+  { wb: "GBR", name: "Birleşik Krallık", currency: "GBP", importShare: 1.6, exportShare: 5.6, weo2025: 3.4 },
+  { wb: "JPN", name: "Japonya",       currency: "JPY", importShare: 1.4,  exportShare: 0.5, weo2025: 3.0 },
+  { wb: "POL", name: "Polonya",       currency: "EUR", importShare: 1.4,  exportShare: 2.0, eurostat: "PL", weo2025: 3.8 },
+  { wb: "NLD", name: "Hollanda",      currency: "EUR", importShare: 1.5,  exportShare: 3.1, eurostat: "NL", weo2025: 3.0 },
+  { wb: "BEL", name: "Belçika",       currency: "EUR", importShare: 1.3,  exportShare: 1.5, eurostat: "BE", weo2025: 2.8 },
+  { wb: "ROU", name: "Romanya",       currency: "RON", importShare: 1.2,  exportShare: 2.3, eurostat: "RO", weo2025: 5.0 },
+  { wb: "CHE", name: "İsviçre",       currency: "CHF", importShare: 1.5,  exportShare: 0.8, eurostat: "CH", weo2025: 0.3 },
+  { wb: "IRQ", name: "Irak",          currency: "USD", importShare: 0.3,  exportShare: 4.7, weo2025: 3.0 },
+  { wb: "ARE", name: "BAE",           currency: "USD", importShare: 1.5,  exportShare: 2.0, weo2025: 2.0 },
+  { wb: "EGY", name: "Mısır",         currency: "USD", importShare: 0.9,  exportShare: 1.7, weo2025: 20.0 },
+  { wb: "SAU", name: "Suudi Arabistan", currency: "USD", importShare: 0.8, exportShare: 1.9, weo2025: 2.0 },
+  { wb: "AZE", name: "Azerbaycan",    currency: "AZN", importShare: 0.9,  exportShare: 1.3, weo2025: 5.5 },
+  { wb: "UKR", name: "Ukrayna",       currency: "USD", importShare: 0.8,  exportShare: 0.9, weo2025: 13.0 },
+  { wb: "GRC", name: "Yunanistan",    currency: "EUR", importShare: 0.8,  exportShare: 1.2, eurostat: "EL", weo2025: 2.8 },
+  { wb: "BGR", name: "Bulgaristan",   currency: "BGN", importShare: 0.7,  exportShare: 1.4, eurostat: "BG", weo2025: 2.5 },
+  { wb: "ISR", name: "İsrail",        currency: "USD", importShare: 0.3,  exportShare: 1.5, weo2025: 3.2 },
 ];
 
 // ── TÜFE ana grupları (COICOP, EVDS) ─────────────────────────────
@@ -171,6 +177,17 @@ export const ENAG_LATEST = {
   yearly: 50.49,
   monthly: 3.07,
   source: "ENAG Temmuz 2026 açıklaması (03.08.2026)",
+};
+
+// ── TÜİK son açıklanan resmi TÜFE ────────────────────────────────
+// EVDS anahtarı yokken resmi katmanın GÜNCEL kaynağı (Eurostat ~7 ay geriden
+// geliyor). ENAG ile birlikte her ayın 3'ünde elle güncellenir; EVDS anahtarı
+// gelince otomatik seriye devrolur.
+export const TUIK_LATEST = {
+  period: "2026-07",
+  yearly: 31.75,
+  monthly: 1.78,
+  source: "TÜİK Temmuz 2026 TÜFE bülteni (03.08.2026)",
 };
 
 // ── Statik referans değerler (kaynak + yıl etiketli) ─────────────
@@ -270,6 +287,7 @@ export function buildRegistry(): ParamDef[] {
     { key: "wb-tur-gdppc",  label: "Kişi başı GSYH",                 category: "resmi", source: "worldbank", code: "TUR|NY.GDP.PCAP.CD", unit: "USD" },
     { key: "wb-tur-gini",   label: "Gini katsayısı (eşitsizlik)",    category: "resmi", source: "worldbank", code: "TUR|SI.POV.GINI", unit: "endeks" },
     { key: "wb-tur-ppp",    label: "Satın alma gücü paritesi (PPP)", category: "resmi", source: "worldbank", code: "TUR|PA.NUS.PPP", unit: "oran" },
+    { key: "eurostat-tr-hicp", label: "Türkiye HICP (Eurostat, yıllık)", category: "resmi", source: "derived", unit: "%", note: "AB uyumlaştırılmış TÜFE — resmi çapraz kontrol, ~7 ay gecikmeli" },
 
     ...kurParams(),
     ...partnerParams(),
@@ -318,6 +336,22 @@ export function buildRegistry(): ParamDef[] {
     { key: "alim-gucu-gunluk", label: "Günlük alım gücü (net/30)",    category: "gelir", source: "derived", unit: "TRY" },
     { key: "alim-gucu-endeks", label: "Alım gücü endeksi (2016=100)", category: "gelir", source: "derived", unit: "endeks", note: "Asgari ücret endeksi / TÜFE endeksi" },
     { key: "asgari-ekmek",  label: "Asgari ücretle alınan ekmek (adet/ay)", category: "gelir", source: "pending", unit: "adet", note: "Madde fiyatları bağlanınca hesaplanacak" },
+
+    // Tasarruf araçları — TL'nin alternatiflere karşı 1 yıllık performansı.
+    // Enflasyonun "hissedilen" tarafı: parayı nerede tutsaydın ne olurdu.
+    { key: "gram-altin",        label: "Gram altın (canlı)",             category: "tasarruf", source: "tcmb-xml", code: "TRUNCGIL:gram", unit: "TRY", note: "Truncgil canlı piyasa" },
+    { key: "ons-altin",         label: "Ons altın (USD)",                category: "tasarruf", source: "tcmb-xml", code: "TRUNCGIL:ons", unit: "USD" },
+    { key: "gumus-gram",        label: "Gram gümüş (canlı)",             category: "tasarruf", source: "tcmb-xml", code: "TRUNCGIL:gumus", unit: "TRY" },
+    { key: "ons-altin-yillik",  label: "Ons altın yıllık değişim (USD)", category: "tasarruf", source: "derived", unit: "%", note: "Yahoo Finance GC=F" },
+    { key: "gram-altin-yillik", label: "Gram altın yıllık değişim (TL)", category: "tasarruf", source: "derived", unit: "%", note: "Ons değişimi × kur değişimi bileşkesi" },
+    { key: "gumus-yillik",      label: "Gümüş yıllık değişim (USD)",     category: "tasarruf", source: "derived", unit: "%", note: "Yahoo Finance SI=F" },
+    { key: "bist100",           label: "BIST 100 endeksi",               category: "tasarruf", source: "tcmb-xml", code: "YAHOO:XU100.IS", unit: "endeks" },
+    { key: "bist100-yillik",    label: "BIST 100 yıllık getiri",         category: "tasarruf", source: "derived", unit: "%" },
+    { key: "bist100-reel",      label: "BIST 100 reel getiri",           category: "tasarruf", source: "derived", unit: "%", note: "Gerçek enflasyon düşülmüş" },
+    { key: "btc-usd",           label: "Bitcoin (USD)",                  category: "tasarruf", source: "tcmb-xml", code: "BINANCE:BTC", unit: "USD" },
+    { key: "btc-yillik",        label: "Bitcoin yıllık değişim (USD)",   category: "tasarruf", source: "derived", unit: "%" },
+    { key: "altin-reel-getiri", label: "Altın reel getiri (TL)",         category: "tasarruf", source: "derived", unit: "%", note: "Gram altın değişimi − gerçek enflasyon" },
+    { key: "usd-reel-getiri",   label: "Dolar reel getiri (TL)",         category: "tasarruf", source: "derived", unit: "%", note: "Kur değişimi − gerçek enflasyon" },
 
     // Statik referanslar (BKM, TCMB FİR, emekli aylığı)
     ...STATIC_FACTS.map((f) => ({ key: f.key, label: f.label, category: f.category, source: "static" as const, unit: f.unit, note: f.note })),

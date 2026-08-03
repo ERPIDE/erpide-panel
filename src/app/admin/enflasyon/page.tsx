@@ -87,6 +87,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   varlik: "Varlık Fiyatları",
   kredi: "Kredi & Bankacılık",
   gelir: "Gelir & Alım Gücü",
+  tasarruf: "Tasarruf Araçları",
   alternatif: "Alternatif Ölçümler",
 };
 
