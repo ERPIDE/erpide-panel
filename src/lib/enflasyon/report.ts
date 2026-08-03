@@ -120,6 +120,12 @@ export function buildInflationEmailHtml(run: RunData): string {
         ])).join("")}
       </table>` : ""}
 
+      ${(run.profiles?.length ?? 0) > 0 ? `
+      ${sectionTitle("Senin Enflasyonun Kaç? — Hane Profilleri")}
+      <table cellpadding="0" cellspacing="0" width="100%"><tr>
+        ${run.profiles!.map((p) => bigCard(p.label, p.value != null ? `%${fmtNum(p.value)}` : "—", "#dc2626")).join("")}
+      </tr></table>` : ""}
+
       ${sectionTitle(`Genel Kompozit Katmanları${h.real != null ? ` (ekonomi geneli: %${fmtNum(h.real)})` : ""}`)}
       <table cellpadding="0" cellspacing="0" width="100%">
         ${row(["Katman", "Değer", "Ağırlık", "Açıklama"], true)}

@@ -74,6 +74,8 @@ export interface RunData {
   };
   layers: LayerResult[];
   feltLayers: LayerResult[];
+  /** Profil bazlı hissedilen enflasyon: genel / kiracı / kredi çeviren / asgari ücretli. */
+  profiles: { key: string; label: string; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -348,6 +350,27 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     ? round1(feltLayers.reduce((s, l) => s + (l.value != null && l.effectiveWeight != null ? l.value * l.effectiveWeight : 0), 0))
     : null;
 
+  // Profil bazlı hissedilen: aynı bileşenler, farklı hane bütçesi ağırlıkları.
+  // "Senin enflasyonun kaç?" sorusunun cevabı profile göre değişir — borç
+  // çeviren %50+ yaşarken borçsuz asgari ücretli %40 bandında yaşar.
+  const feltValues: Record<string, number | null> = {
+    enag: enagVal.yearly, kira: kiraGercek, gida, borc: faizIhtiyac, enerji, ulasim,
+  };
+  const FELT_PROFILES: { key: string; label: string; weights: Record<string, number> }[] = [
+    { key: "genel",  label: "Genel (borçlu-kiracı karma)", weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
+    { key: "kiraci", label: "Kiracı (borçsuz)",            weights: { enag: 0.20, kira: 0.30, gida: 0.25, borc: 0,    enerji: 0.10, ulasim: 0.15 } },
+    { key: "borclu", label: "Kredi çeviren",               weights: { enag: 0.25, kira: 0.10, gida: 0.15, borc: 0.35, enerji: 0.10, ulasim: 0.05 } },
+    { key: "asgari", label: "Asgari ücretli (borçsuz)",    weights: { enag: 0.10, kira: 0.25, gida: 0.35, borc: 0,    enerji: 0.15, ulasim: 0.15 } },
+  ];
+  const profiles = FELT_PROFILES.map((p) => {
+    let num = 0, den = 0;
+    for (const [k, w] of Object.entries(p.weights)) {
+      const v = feltValues[k];
+      if (v != null && w > 0) { num += v * w; den += w; }
+    }
+    return { key: p.key, label: p.label, value: den > 0 ? round1(num / den) : null };
+  });
+
   // ── 4. Alım gücü türetmeleri ────────────────────────────────────
   const mwNow = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 1];
   const mwPrev = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 2];
@@ -407,6 +430,7 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     },
     layers,
     feltLayers,
+    profiles,
     params,
     stats,
     notes,
