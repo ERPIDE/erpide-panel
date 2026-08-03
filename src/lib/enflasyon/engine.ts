@@ -22,8 +22,19 @@ import {
   fetchTcmbToday, fetchTcmbArchive, fetchWorldBankCPI,
   fetchWorldBankIndicator, fetchEvdsSeries, hasEvdsKey, EvdsSeries, TcmbRate, WbValue,
   fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
-  fetchBinanceBtcYearly, EurostatValue,
+  fetchBinanceBtcYearly, EurostatValue, fetchOpetFuel, fetchIzmirHal,
 } from "./sources";
+
+/** Panelden girilen aylık bülten değerleri — yoksa registry'deki gömülü son değer. */
+export interface ManualEntry {
+  yearly: number;
+  monthly: number;
+  period: string; // "2026-07"
+}
+export interface ManualValues {
+  tuik?: ManualEntry | null;
+  enag?: ManualEntry | null;
+}
 
 export type ParamStatus = "live" | "static" | "derived" | "waiting-key" | "no-data" | "pending";
 
@@ -66,9 +77,17 @@ export interface RunData {
 const round1 = (v: number) => Math.round(v * 10) / 10;
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
-export async function runInflationEngine(): Promise<RunData> {
+export async function runInflationEngine(manual?: ManualValues): Promise<RunData> {
   const registry = buildRegistry();
   const now = new Date();
+
+  // Manuel girilmiş bülten değerleri gömülü sabitleri ezer.
+  const tuikVal = manual?.tuik
+    ? { ...manual.tuik, source: `TÜİK ${manual.tuik.period} bülteni (panelden)` }
+    : TUIK_LATEST;
+  const enagVal = manual?.enag
+    ? { ...manual.enag, source: `ENAG ${manual.enag.period} açıklaması (panelden)` }
+    : ENAG_LATEST;
   // Rapor bir önceki ayın verisine aittir (TÜİK/ENAG o ayı açıklamış olur).
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const period = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
@@ -103,6 +122,9 @@ export async function runInflationEngine(): Promise<RunData> {
     Promise.all(evdsCodes.map((c) => fetchEvdsSeries(c).then((r) => [c, r] as const))),
   ]);
 
+  // Geçim kalemleri: Opet pompa + İzmir hal (paralel, hataya dayanıklı)
+  const [opetFuel, izmirHal] = await Promise.all([fetchOpetFuel(), fetchIzmirHal()]);
+
   const evds = new Map<string, EvdsSeries | null>(evdsResults);
   const evdsKeyPresent = hasEvdsKey();
   if (!evdsKeyPresent) notes.push("EVDS_API_KEY tanımlı değil — EVDS serileri beklemede; resmi TÜFE bülten değerinden, harcama grupları Eurostat'tan besleniyor. Anahtar eklenince tümü aylık seriye devrolur.");
@@ -135,9 +157,9 @@ export async function runInflationEngine(): Promise<RunData> {
     officialMonthly = tufe.monthlyPct;
     officialSource = "TÜİK/EVDS aylık seri";
   } else {
-    officialYearly = TUIK_LATEST.yearly;
-    officialMonthly = TUIK_LATEST.monthly;
-    officialSource = TUIK_LATEST.source;
+    officialYearly = tuikVal.yearly;
+    officialMonthly = tuikVal.monthly;
+    officialSource = tuikVal.source;
     if (officialYearly == null) {
       officialYearly = esTrGenel?.value ?? wbTurCpi?.value ?? null;
       officialSource = esTrGenel ? `Eurostat HICP ${esTrGenel.period}` : wbTurCpi ? `World Bank ${wbTurCpi.year}` : null;
@@ -195,6 +217,38 @@ export async function runInflationEngine(): Promise<RunData> {
       ? ((1 + yahooGold.yearlyPct / 100) * (1 + usdDeltaVal / 100) - 1) * 100
       : null;
 
+  // Geçim kalemleri canlı bağlantısı: İzmir hal (sebze-meyve, resmi açık veri,
+  // toptan) + Opet pompa fiyatları. Hal'de aynı MalId 1 yıl önceyle kıyaslanıp
+  // yıllık değişim üretilir.
+  const basketLive = new Map<string, { value: number; yearlyPct: number | null; srcLabel: string }>();
+  if (izmirHal) {
+    const HAL_MAP: { key: string; kws: string[] }[] = [
+      { key: "madde-19", kws: ["DOMATES"] },
+      { key: "madde-20", kws: ["PATATES"] },
+      { key: "madde-21", kws: ["SOĞAN", "SOGAN"] },
+      { key: "madde-22", kws: ["ELMA"] },
+      { key: "madde-23", kws: ["MUZ"] },
+      { key: "madde-24", kws: ["LİMON", "LIMON"] },
+    ];
+    for (const m of HAL_MAP) {
+      const candidates = [...izmirHal.now.values()].filter((i) =>
+        m.kws.some((k) => i.ad.toLocaleUpperCase("tr-TR").includes(k))
+      );
+      if (candidates.length === 0) continue;
+      // En kısa ad = en genel çeşit ("DOMATES" > "DOMATES PEMBE").
+      candidates.sort((a, b) => a.ad.length - b.ad.length);
+      const item = candidates[0];
+      const old = izmirHal.yearAgo?.get(item.malId);
+      basketLive.set(m.key, {
+        value: item.fiyat,
+        yearlyPct: old && old.fiyat > 0 ? (item.fiyat / old.fiyat - 1) * 100 : null,
+        srcLabel: "İzmir hal (toptan)",
+      });
+    }
+  }
+  if (opetFuel?.benzin != null) basketLive.set("madde-31", { value: opetFuel.benzin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
+  if (opetFuel?.motorin != null) basketLive.set("madde-32", { value: opetFuel.motorin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
+
   const kfe = evds.get("TP.HKFE01") || null;
   const faizIhtiyac = evds.get("TP.KTF10")?.latest ?? null;
   const faizMevduat = evds.get("TP.TRY.MT02")?.latest ?? null;
@@ -207,7 +261,7 @@ export async function runInflationEngine(): Promise<RunData> {
     "katman-gecim":  { value: gecim != null ? round2(gecim) : null, detail: `Gıda %60 + konut/kira %40${gecimSrc ? ` (${gecimSrc})` : ""}` },
     "katman-varlik": { value: kfe?.yearlyPct != null ? round2(kfe.yearlyPct) : null, detail: "TCMB Konut Fiyat Endeksi yıllık" },
     "katman-kredi":  { value: faizIhtiyac != null ? round2(faizIhtiyac) : null, detail: "İhtiyaç kredisi yıllık faizi" },
-    "katman-enag":   { value: ENAG_LATEST.yearly, detail: ENAG_LATEST.source },
+    "katman-enag":   { value: enagVal.yearly, detail: enagVal.source },
   };
 
   const availableWeight = LAYER_WEIGHTS.reduce(
@@ -255,6 +309,7 @@ export async function runInflationEngine(): Promise<RunData> {
     faizIhtiyac, faizMevduat, gecimKonut: konutGrubu,
     mwNow, mwPrev, asgariArtis, asgariUsd, asgariUsdPrev, alimGucuEndeks, usdNow,
     truncgil, yahooGold, yahooSilver, yahooBist, binanceBtc, gramAltinYillik, usdDeltaVal,
+    enagVal, basketLive,
   }));
 
   const stats = {
@@ -276,7 +331,7 @@ export async function runInflationEngine(): Promise<RunData> {
     headline: {
       real: composite,
       official: officialYearly != null ? round1(officialYearly) : null,
-      enag: ENAG_LATEST.yearly,
+      enag: enagVal.yearly,
       gap: composite != null && officialYearly != null ? round1(composite - officialYearly) : null,
     },
     layers,
@@ -318,6 +373,8 @@ interface Ctx {
   binanceBtc: { last: number; yearlyPct: number } | null;
   gramAltinYillik: number | null;
   usdDeltaVal: number | null;
+  enagVal: { yearly: number; monthly: number; period: string; source: string };
+  basketLive: Map<string, { value: number; yearlyPct: number | null; srcLabel: string }>;
 }
 
 function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
@@ -387,8 +444,8 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
   if (def.source === "static") {
     if (def.key === "asgari-net") return mk("static", ctx.mwNow.net, `${ctx.mwNow.year} yılı`);
     if (def.key === "asgari-brut") return mk("static", ctx.mwNow.gross, `${ctx.mwNow.year} yılı`);
-    if (def.key === "enag-yillik") return mk("static", ENAG_LATEST.yearly, ENAG_LATEST.period);
-    if (def.key === "enag-aylik") return mk("static", ENAG_LATEST.monthly, ENAG_LATEST.period);
+    if (def.key === "enag-yillik") return mk("static", ctx.enagVal.yearly, ctx.enagVal.period);
+    if (def.key === "enag-aylik") return mk("static", ctx.enagVal.monthly, ctx.enagVal.period);
     const fact = STATIC_FACTS.find((f) => f.key === def.key);
     if (fact) return mk("static", fact.value);
     if (def.key.startsWith("ithalat-pay-")) {
@@ -435,7 +492,7 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
           ? mk("derived", ctx.faizMevduat - ctx.officialYearly)
           : mk("no-data", null);
       case "resmi-enag-fark":
-        return ctx.officialYearly != null ? mk("derived", ctx.officialYearly - ENAG_LATEST.yearly) : mk("no-data", null);
+        return ctx.officialYearly != null ? mk("derived", ctx.officialYearly - ctx.enagVal.yearly) : mk("no-data", null);
       case "asgari-artis": return mk("derived", ctx.asgariArtis, `${ctx.mwPrev.year}→${ctx.mwNow.year}`);
       case "asgari-reel":
         return ctx.composite != null ? mk("derived", ctx.asgariArtis - ctx.composite, "gerçek enflasyona göre") : mk("no-data", null);
@@ -456,7 +513,15 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
     return mk("no-data", null);
   }
 
-  // Kaynağı bağlanmamışlar
+  // Kaynağı bağlanmamışlar — canlı bağlantısı yapılanlar (hal/akaryakıt) hariç.
+  const live = ctx.basketLive.get(def.key);
+  if (live) {
+    const extra = [
+      live.yearlyPct != null ? `yıllık %${round1(live.yearlyPct)}` : null,
+      live.srcLabel,
+    ].filter(Boolean).join(" · ");
+    return mk("live", live.value, extra);
+  }
   return mk("pending", null);
 }
 

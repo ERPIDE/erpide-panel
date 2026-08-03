@@ -324,6 +324,94 @@ export async function fetchBinanceBtcYearly(): Promise<YearlySeries | null> {
   }
 }
 
+// ── Opet akaryakıt API (anahtarsız, resmi olmayan ama istikrarlı) ─
+
+export interface FuelPrices {
+  benzin: number | null;  // Kurşunsuz 95 (A100)
+  motorin: number | null; // Motorin UltraForce (A121)
+}
+
+export async function fetchOpetFuel(): Promise<FuelPrices | null> {
+  try {
+    const r = await fetch("https://api.opet.com.tr/api/fuelprices/prices?ProvinceCode=034&IncludeAllProducts=true", {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = (await r.json()) as { prices?: { productCode: string; amount: number }[] }[];
+    const prices = json?.[0]?.prices || [];
+    const pick = (code: string) => {
+      const p = prices.find((x) => x.productCode === code);
+      return p && isFinite(p.amount) && p.amount > 0 ? p.amount : null;
+    };
+    const out = { benzin: pick("A100"), motorin: pick("A121") };
+    return out.benzin != null || out.motorin != null ? out : null;
+  } catch (e) {
+    console.error("[enflasyon] Opet akaryakıt alınamadı:", e);
+    return null;
+  }
+}
+
+// ── İzmir Büyükşehir açık veri: hal fiyatları (anahtarsız, resmi) ─
+// https://openapi.izmir.bel.tr/api/ibb/halfiyatlari/sebzemeyve/{yyyy-MM-dd}
+// Toptan hal fiyatı — market rafından düşük ama resmi ve günlük. Tarihli
+// istek desteklediği için 1 yıl öncesiyle kıyas yapıp yıllık değişim üretir.
+
+export interface HalItem {
+  malId: number;
+  ad: string;
+  fiyat: number; // OrtalamaUcret
+}
+
+async function fetchIzmirHalAt(target: Date): Promise<Map<number, HalItem> | null> {
+  // Pazar/tatil günleri bülten yok — 4 güne kadar geriye yürü (süre bütçesi:
+  // cron maxDuration 60 sn, en kötü durumda burada takılıp kalmayalım).
+  for (let back = 0; back < 4; back++) {
+    const d = new Date(target.getTime() - back * 86_400_000);
+    const iso = d.toISOString().slice(0, 10);
+    try {
+      const r = await fetch(`https://openapi.izmir.bel.tr/api/ibb/halfiyatlari/sebzemeyve/${iso}`, {
+        headers: { "user-agent": "ERPIDE/1.0" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!r.ok) continue;
+      const json = (await r.json()) as { HalFiyatListesi?: { MalId: number; MalAdi: string; OrtalamaUcret: number }[] };
+      const list = json.HalFiyatListesi || [];
+      if (list.length === 0) continue;
+      const out = new Map<number, HalItem>();
+      for (const x of list) {
+        if (isFinite(x.OrtalamaUcret) && x.OrtalamaUcret > 0) {
+          out.set(x.MalId, { malId: x.MalId, ad: x.MalAdi, fiyat: x.OrtalamaUcret });
+        }
+      }
+      if (out.size > 0) return out;
+    } catch {
+      // sıradaki günü dene
+    }
+  }
+  return null;
+}
+
+export interface HalCompare {
+  now: Map<number, HalItem>;
+  yearAgo: Map<number, HalItem> | null;
+}
+
+export async function fetchIzmirHal(): Promise<HalCompare | null> {
+  const now = new Date();
+  const [current, yearAgo] = await Promise.all([
+    fetchIzmirHalAt(now),
+    fetchIzmirHalAt(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())),
+  ]);
+  if (!current) {
+    console.error("[enflasyon] İzmir hal fiyatları alınamadı");
+    return null;
+  }
+  return { now: current, yearAgo };
+}
+
 // ── TCMB EVDS API (EVDS_API_KEY gerekir) ─────────────────────────
 
 export interface EvdsSeries {

@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Loader2, RefreshCw, Send, TrendingUp, Mail, Trash2, Plus,
-  ChevronDown, ChevronRight, AlertTriangle, Calculator,
+  ChevronDown, ChevronRight, AlertTriangle, Calculator, PenLine,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
@@ -75,6 +75,18 @@ interface ApiPayload {
   env: { evdsKey: boolean; resendKey: boolean };
 }
 
+interface ManualEntry {
+  yearly: number;
+  monthly: number;
+  period: string;
+}
+
+interface ManualPayload {
+  tuik: ManualEntry | null;
+  enag: ManualEntry | null;
+  defaults: { tuik: ManualEntry; enag: ManualEntry };
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   kompozit: "Kompozit Endeks",
   resmi: "Resmi Göstergeler",
@@ -128,12 +140,24 @@ export default function EnflasyonPage() {
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({ kompozit: true });
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
+  // Aylık bülten girişi formu — key bazlı alan değerleri string tutulur (input).
+  const [manualForm, setManualForm] = useState<Record<string, { yearly: string; monthly: string; period: string }>>({});
+  const [manualSaving, setManualSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/enflasyon", { cache: "no-store" });
       if (!res.ok) throw new Error();
       setPayload(await res.json());
+      const mres = await fetch("/api/admin/enflasyon/manuel", { cache: "no-store" });
+      if (mres.ok) {
+        const m = (await mres.json()) as ManualPayload;
+        const toForm = (e: ManualEntry) => ({ yearly: String(e.yearly), monthly: String(e.monthly), period: e.period });
+        setManualForm({
+          tuik: toForm(m.tuik ?? m.defaults.tuik),
+          enag: toForm(m.enag ?? m.defaults.enag),
+        });
+      }
     } catch {
       toast("error", "Veriler yüklenemedi");
     } finally {
@@ -201,6 +225,31 @@ export default function EnflasyonPage() {
       await load();
     } catch (e) {
       toast("error", e instanceof Error && e.message ? e.message : "Eklenemedi");
+    }
+  }
+
+  async function handleManualSave(key: "tuik" | "enag") {
+    const f = manualForm[key];
+    if (!f) return;
+    setManualSaving(key);
+    try {
+      const res = await fetch("/api/admin/enflasyon/manuel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key,
+          yearly: parseFloat(f.yearly.replace(",", ".")),
+          monthly: parseFloat(f.monthly.replace(",", ".")),
+          period: f.period.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast("success", `${key === "tuik" ? "TÜİK" : "ENAG"} değerleri kaydedildi — sonraki hesaplamada kullanılır`);
+    } catch (e) {
+      toast("error", e instanceof Error && e.message ? e.message : "Kaydedilemedi");
+    } finally {
+      setManualSaving(null);
     }
   }
 
@@ -427,6 +476,46 @@ export default function EnflasyonPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="bg-[#111118] border border-white/5 rounded-2xl p-5">
+            <h2 className="text-white font-semibold flex items-center gap-2 mb-1">
+              <PenLine size={16} className="text-blue-400" /> Aylık Bülten Girişi
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">TÜİK ve ENAG her ayın 3&apos;ünde açıklar — buraya gir, deploy gerekmez.</p>
+            {(["tuik", "enag"] as const).map((key) => {
+              const f = manualForm[key];
+              if (!f) return null;
+              const set = (field: "yearly" | "monthly" | "period", v: string) =>
+                setManualForm((s) => ({ ...s, [key]: { ...s[key], [field]: v } }));
+              const inputCls = "w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50";
+              return (
+                <div key={key} className="mb-3 bg-white/[0.03] rounded-xl p-3">
+                  <p className="text-sm font-medium text-gray-200 mb-2">{key === "tuik" ? "TÜİK TÜFE" : "ENAG E-TÜFE"}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase">Yıllık %</label>
+                      <input value={f.yearly} onChange={(e) => set("yearly", e.target.value)} className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase">Aylık %</label>
+                      <input value={f.monthly} onChange={(e) => set("monthly", e.target.value)} className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase">Dönem</label>
+                      <input value={f.period} onChange={(e) => set("period", e.target.value)} placeholder="2026-07" className={inputCls} />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleManualSave(key)}
+                    disabled={manualSaving === key}
+                    className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition text-xs disabled:opacity-50"
+                  >
+                    {manualSaving === key ? <Loader2 size={12} className="animate-spin" /> : null} Kaydet
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           <div className="bg-[#111118] border border-white/5 rounded-2xl p-5">

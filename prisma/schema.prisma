@@ -363,6 +363,15 @@ model InflationSubscriber {
   createdAt DateTime @default(now())
 }
 
+/// Panelden girilen aylık manuel değerler (TÜİK/ENAG bülten rakamları).
+/// key: "tuik" | "enag" — data: { yearly, monthly, period }.
+/// Kayıt yoksa registry.ts'teki gömülü son değerler kullanılır.
+model InflationOverride {
+  key       String   @id
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
 model InflationRun {
   id           String    @id @default(cuid())
   period       String    // "2026-08" — raporun ait olduğu ay

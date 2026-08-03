@@ -9,13 +9,42 @@
 
 import { Resend } from "resend";
 import { getPrisma } from "@/lib/db";
-import { runInflationEngine, RunData } from "./engine";
+import { runInflationEngine, RunData, ManualValues, ManualEntry } from "./engine";
 import { buildInflationEmailHtml, periodLabel } from "./report";
+
+// ── Manuel bülten değerleri (TÜİK/ENAG) ──────────────────────────
+
+function parseManualEntry(v: unknown): ManualEntry | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.yearly !== "number" || typeof o.monthly !== "number" || typeof o.period !== "string") return null;
+  return { yearly: o.yearly, monthly: o.monthly, period: o.period };
+}
+
+export async function getManualValues(): Promise<ManualValues> {
+  const rows = await getPrisma().inflationOverride.findMany({ where: { key: { in: ["tuik", "enag"] } } });
+  const out: ManualValues = {};
+  for (const r of rows) {
+    const entry = parseManualEntry(r.data);
+    if (r.key === "tuik") out.tuik = entry;
+    if (r.key === "enag") out.enag = entry;
+  }
+  return out;
+}
+
+export async function setManualValue(key: "tuik" | "enag", entry: ManualEntry) {
+  await getPrisma().inflationOverride.upsert({
+    where: { key },
+    create: { key, data: entry as unknown as object },
+    update: { data: entry as unknown as object },
+  });
+}
 
 // ── Koşular ──────────────────────────────────────────────────────
 
 export async function createRun(trigger: "cron" | "manual"): Promise<{ id: string; data: RunData }> {
-  const data = await runInflationEngine();
+  const manual = await getManualValues().catch(() => ({} as ManualValues));
+  const data = await runInflationEngine(manual);
   const run = await getPrisma().inflationRun.create({
     data: {
       period: data.period,
