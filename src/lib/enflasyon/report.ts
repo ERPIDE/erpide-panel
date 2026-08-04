@@ -121,10 +121,21 @@ export function buildInflationEmailHtml(run: RunData): string {
       </table>` : ""}
 
       ${(run.profiles?.length ?? 0) > 0 ? `
-      ${sectionTitle("Senin Enflasyonun Kaç? — Hane Profilleri")}
-      <table cellpadding="0" cellspacing="0" width="100%"><tr>
-        ${run.profiles!.map((p) => bigCard(p.label, p.value != null ? `%${fmtNum(p.value)}` : "—", "#dc2626")).join("")}
-      </tr></table>` : ""}
+      ${sectionTitle("Senin Enflasyonun Kaç? — Sınıf Profilleri")}
+      <p style="font-size:12px;color:#64748b;margin:0 0 8px">Aynı veri, farklı bütçe ağırlıkları — herkesin enflasyonu kendi sepetinde.</p>
+      <table cellpadding="0" cellspacing="0" width="100%">
+        ${row(["Profil", "Yıllık enflasyon"], true)}
+        ${row([`<b style="color:#64748b;font-size:11px;text-transform:uppercase">Hane</b>`, ""])}
+        ${run.profiles!.filter((p) => (p.group ?? "hane") === "hane").map((p) => row([
+          p.label,
+          p.value != null ? `<b style="color:#dc2626">%${fmtNum(p.value)}</b>` : "—",
+        ])).join("")}
+        ${row([`<b style="color:#64748b;font-size:11px;text-transform:uppercase">İş dünyası (maliyet enflasyonu)</b>`, ""])}
+        ${run.profiles!.filter((p) => p.group === "is").map((p) => row([
+          p.label,
+          p.value != null ? `<b style="color:#d97706">%${fmtNum(p.value)}</b>` : "—",
+        ])).join("")}
+      </table>` : ""}
 
       ${sectionTitle(`Genel Kompozit Katmanları${h.real != null ? ` (ekonomi geneli: %${fmtNum(h.real)})` : ""}`)}
       <table cellpadding="0" cellspacing="0" width="100%">

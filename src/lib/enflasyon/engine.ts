@@ -74,8 +74,8 @@ export interface RunData {
   };
   layers: LayerResult[];
   feltLayers: LayerResult[];
-  /** Profil bazlı hissedilen enflasyon: genel / kiracı / kredi çeviren / asgari ücretli. */
-  profiles: { key: string; label: string; value: number | null }[];
+  /** Profil bazlı hissedilen enflasyon — hane ve iş dünyası sınıfları. */
+  profiles: { key: string; label: string; group: "hane" | "is"; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -350,17 +350,48 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     ? round1(feltLayers.reduce((s, l) => s + (l.value != null && l.effectiveWeight != null ? l.value * l.effectiveWeight : 0), 0))
     : null;
 
-  // Profil bazlı hissedilen: aynı bileşenler, farklı hane bütçesi ağırlıkları.
-  // "Senin enflasyonun kaç?" sorusunun cevabı profile göre değişir — borç
-  // çeviren %50+ yaşarken borçsuz asgari ücretli %40 bandında yaşar.
+  // Profil bazlı hissedilen: aynı bileşen havuzu, sınıfa göre bütçe ağırlıkları.
+  // Hane profilleri tüketici bileşenlerini, iş dünyası profilleri maliyet
+  // bileşenlerini (Yİ-ÜFE, işgücü, ticari kredi, ithal girdi) kullanır.
+  const mwL = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 1];
+  const mwP = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 2];
+  const asgariArtisRaw = (mwL.net / mwP.net - 1) * 100;
+
   const feltValues: Record<string, number | null> = {
-    enag: enagVal.yearly, kira: kiraGercek, gida, borc: faizIhtiyac, enerji, ulasim,
+    // Tüketici bileşenleri
+    enag: enagVal.yearly,
+    kira: kiraGercek,                                    // gerçek kira (işyeri kirasına da proxy)
+    gida,
+    borc: faizIhtiyac,                                   // bireysel borç servisi
+    enerji,
+    ulasim,
+    lokanta: coicopVals.get("11")?.value ?? null,        // lokanta-otel (dışarıda yeme)
+    egitim: coicopVals.get("10")?.value ?? null,         // özel okul/kurs
+    saglik: coicopVals.get("06")?.value ?? null,
+    eglence: coicopVals.get("09")?.value ?? null,
+    giyim: coicopVals.get("03")?.value ?? null,
+    evesyasi: coicopVals.get("05")?.value ?? null,       // ev sahibinin bakım/eşya kalemi
+    // İş dünyası bileşenleri
+    uretici: evds.get("TP.TUFE1YI.T1")?.yearlyPct ?? null, // Yİ-ÜFE: girdi maliyeti
+    isgucu: asgariArtisRaw,                              // işgücü maliyeti (asgari ücret artışı)
+    ticariKredi: evds.get("TP.KTF17")?.latest ?? null,   // ticari kredi faizi
+    ithalGirdi: importWeighted != null ? round2(importWeighted) : null, // kur+partner enflasyonu
   };
-  const FELT_PROFILES: { key: string; label: string; weights: Record<string, number> }[] = [
-    { key: "genel",  label: "Genel (borçlu-kiracı karma)", weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
-    { key: "kiraci", label: "Kiracı (borçsuz)",            weights: { enag: 0.20, kira: 0.30, gida: 0.25, borc: 0,    enerji: 0.10, ulasim: 0.15 } },
-    { key: "borclu", label: "Kredi çeviren",               weights: { enag: 0.25, kira: 0.10, gida: 0.15, borc: 0.35, enerji: 0.10, ulasim: 0.05 } },
-    { key: "asgari", label: "Asgari ücretli (borçsuz)",    weights: { enag: 0.10, kira: 0.25, gida: 0.35, borc: 0,    enerji: 0.15, ulasim: 0.15 } },
+
+  const FELT_PROFILES: { key: string; label: string; group: "hane" | "is"; weights: Record<string, number> }[] = [
+    // ── Hane profilleri ──
+    { key: "genel",     label: "Genel (borçlu-kiracı karma)",        group: "hane", weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
+    { key: "asgari",    label: "Asgari ücretli (kiracı, borçsuz)",   group: "hane", weights: { enag: 0.10, kira: 0.25, gida: 0.35, enerji: 0.15, ulasim: 0.15 } },
+    { key: "kiraci",    label: "Kiracı (borçsuz)",                   group: "hane", weights: { enag: 0.20, kira: 0.30, gida: 0.25, enerji: 0.10, ulasim: 0.15 } },
+    { key: "borclu",    label: "Kredi çeviren",                      group: "hane", weights: { enag: 0.25, kira: 0.10, gida: 0.15, borc: 0.35, enerji: 0.10, ulasim: 0.05 } },
+    { key: "beyazyaka", label: "Beyaz yaka (kiracı, arabalı)",       group: "hane", weights: { enag: 0.18, kira: 0.25, gida: 0.14, ulasim: 0.13, lokanta: 0.13, eglence: 0.06, giyim: 0.06, borc: 0.05 } },
+    { key: "evli-mulk", label: "Evi-arabası olan (borçsuz)",         group: "hane", weights: { enag: 0.28, gida: 0.24, enerji: 0.18, ulasim: 0.14, saglik: 0.08, evesyasi: 0.08 } },
+    { key: "yonetici",  label: "Yönetici (mülklü, özel okul)",       group: "hane", weights: { egitim: 0.20, lokanta: 0.15, enag: 0.18, ulasim: 0.14, saglik: 0.10, eglence: 0.08, giyim: 0.08, enerji: 0.07 } },
+    // ── İş dünyası profilleri ──
+    { key: "esnaf",       label: "Esnaf / dükkânı kiralık",          group: "is", weights: { kira: 0.25, isgucu: 0.20, uretici: 0.20, ticariKredi: 0.15, enerji: 0.15, ulasim: 0.05 } },
+    { key: "fabrika-mulk", label: "Üretici / fabrikası kendine ait", group: "is", weights: { uretici: 0.30, isgucu: 0.25, ticariKredi: 0.20, enerji: 0.15, ithalGirdi: 0.10 } },
+    { key: "fabrika-kira", label: "Üretici / fabrikası kiralık",     group: "is", weights: { uretici: 0.25, isgucu: 0.20, kira: 0.15, ticariKredi: 0.20, enerji: 0.10, ithalGirdi: 0.10 } },
+    { key: "holding",     label: "Holding ölçeği (finansman ağır)",  group: "is", weights: { ticariKredi: 0.30, isgucu: 0.20, uretici: 0.20, ithalGirdi: 0.20, enerji: 0.10 } },
   ];
   const profiles = FELT_PROFILES.map((p) => {
     let num = 0, den = 0;
@@ -368,7 +399,7 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
       const v = feltValues[k];
       if (v != null && w > 0) { num += v * w; den += w; }
     }
-    return { key: p.key, label: p.label, value: den > 0 ? round1(num / den) : null };
+    return { key: p.key, label: p.label, group: p.group, value: den > 0.5 ? round1(num / den) : null };
   });
 
   // ── 4. Alım gücü türetmeleri ────────────────────────────────────

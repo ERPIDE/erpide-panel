@@ -50,7 +50,7 @@ interface RunData {
   };
   layers: LayerResult[];
   feltLayers?: LayerResult[];
-  profiles?: { key: string; label: string; value: number | null }[];
+  profiles?: { key: string; label: string; group?: "hane" | "is"; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -386,16 +386,27 @@ export default function EnflasyonPage() {
                 ))}
               </div>
               {(data.profiles?.length ?? 0) > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <p className="text-xs text-gray-500 mb-3">Senin enflasyonun kaç? Hane profiline göre:</p>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {data.profiles!.map((p) => (
-                      <div key={p.key} className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2.5 text-center">
-                        <p className="text-lg font-bold text-red-300">{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{p.label}</p>
+                <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                  {([
+                    { g: "hane", title: "Senin enflasyonun kaç? — Hane profilleri", cls: "text-red-300" },
+                    { g: "is", title: "İş dünyası — maliyet enflasyonu profilleri", cls: "text-amber-300" },
+                  ] as const).map(({ g, title, cls }) => {
+                    const items = data.profiles!.filter((p) => (p.group ?? "hane") === g);
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={g}>
+                        <p className="text-xs text-gray-500 mb-3">{title}</p>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                          {items.map((p) => (
+                            <div key={p.key} className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2.5 text-center">
+                              <p className={`text-lg font-bold ${cls}`}>{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
+                              <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{p.label}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
