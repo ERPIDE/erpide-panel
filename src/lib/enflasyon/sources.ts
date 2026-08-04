@@ -471,8 +471,15 @@ export interface FuelPrices {
 
 export async function fetchOpetFuel(): Promise<FuelPrices | null> {
   try {
+    // Tam tarayıcı başlıkları: Opet, veri merkezi isteklerini UA'ya göre eleyebiliyor
+    // (lokalden çalışıp Vercel'den boş dönmesinin muhtemel sebebi).
     const r = await fetch("https://api.opet.com.tr/api/fuelprices/prices?ProvinceCode=034&IncludeAllProducts=true", {
-      headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+      headers: {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        accept: "application/json, text/plain, */*",
+        referer: "https://www.opet.com.tr/akaryakit-fiyatlari",
+        origin: "https://www.opet.com.tr",
+      },
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
@@ -487,6 +494,50 @@ export async function fetchOpetFuel(): Promise<FuelPrices | null> {
     return out.benzin != null || out.motorin != null ? out : null;
   } catch (e) {
     console.error("[enflasyon] Opet akaryakıt alınamadı:", e);
+    return null;
+  }
+}
+
+// ── Market Fiyatı (Ticaret Bakanlığı) — zincir market raf fiyatları ─
+// Devletin resmi fiyat karşılaştırma uygulamasının API'si: A101, BİM, Migros,
+// ŞOK, CarrefourSA fiyatlarını toplar. Kalem başına arama yapılır, birim fiyat
+// (varsa) yoksa ambalaj fiyatının MEDYANI alınır — uç ürünler medyanı bozmaz.
+
+export interface MarketPrice {
+  median: number;
+  count: number;
+}
+
+export async function fetchMarketFiyati(keyword: string): Promise<MarketPrice | null> {
+  try {
+    const r = await fetch("https://api.marketfiyati.org.tr/api/v2/search", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)",
+      },
+      body: JSON.stringify({ keywords: keyword, pages: 0, size: 12 }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = (await r.json()) as {
+      content?: { productDepotInfoList?: { price?: number; unitPrice?: number }[] }[];
+    };
+    const prices: number[] = [];
+    for (const c of json.content || []) {
+      for (const p of c.productDepotInfoList || []) {
+        const v = p.unitPrice != null && isFinite(p.unitPrice) && p.unitPrice > 0 ? p.unitPrice : p.price;
+        if (v != null && isFinite(v) && v > 0) prices.push(v);
+      }
+    }
+    if (prices.length < 3) return null; // tek tük sonuçla medyan güvenilmez
+    prices.sort((a, b) => a - b);
+    const mid = Math.floor(prices.length / 2);
+    const median = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
+    return { median: Math.round(median * 100) / 100, count: prices.length };
+  } catch (e) {
+    console.error(`[enflasyon] Market Fiyatı alınamadı (${keyword}):`, e);
     return null;
   }
 }

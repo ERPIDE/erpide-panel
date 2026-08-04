@@ -23,7 +23,7 @@ import {
   fetchWorldBankIndicator, fetchEvdsSeries, hasEvdsKey, EvdsSeries, TcmbRate, WbValue,
   fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
   fetchBinanceBtcYearly, EurostatValue, fetchOpetFuel, fetchIzmirHal,
-  fetchTcmbInflationPage, fetchEnagFromNews, parseEvdsDate,
+  fetchTcmbInflationPage, fetchEnagFromNews, parseEvdsDate, fetchMarketFiyati,
 } from "./sources";
 
 /** Panelden girilen aylık bülten değerleri — yoksa registry'deki gömülü son değer. */
@@ -130,12 +130,28 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     Promise.all(evdsCodes.map((c) => fetchEvdsSeries(c).then((r) => [c, r] as const))),
   ]);
 
+  // Market Fiyatı (Ticaret Bakanlığı) — endeksi olmayan kalemlerin raf fiyatı.
+  // paramKey → arama terimi; birim/ambalaj medyanı alınır.
+  const MARKET_ITEMS: { key: string; keyword: string }[] = [
+    { key: "madde-11", keyword: "bütün piliç" },
+    { key: "madde-13", keyword: "ayçiçek yağı 1 lt" },
+    { key: "madde-14", keyword: "zeytinyağı 1 lt" },
+    { key: "madde-28", keyword: "su 5 lt" },
+    { key: "madde-29", keyword: "ayran 1 lt" },
+    { key: "madde-30", keyword: "siyah zeytin" },
+    { key: "madde-36", keyword: "toz deterjan" },
+    { key: "madde-37", keyword: "şampuan 500 ml" },
+    { key: "madde-38", keyword: "diş macunu" },
+    { key: "madde-39", keyword: "tuvalet kağıdı 8" },
+  ];
+
   // Geçim kalemleri + otomatik bülten değerleri (paralel, hataya dayanıklı)
-  const [opetFuel, izmirHal, tcmbPage, enagNews] = await Promise.all([
+  const [opetFuel, izmirHal, tcmbPage, enagNews, marketResults] = await Promise.all([
     fetchOpetFuel(),
     fetchIzmirHal(),
     fetchTcmbInflationPage(),
     fetchEnagFromNews(),
+    Promise.all(MARKET_ITEMS.map((m) => fetchMarketFiyati(m.keyword).then((r) => [m.key, r] as const))),
   ]);
 
   // ENAG: haber taraması (otomatik) → panel girişi → gömülü sabit.
@@ -284,6 +300,9 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   }
   if (opetFuel?.benzin != null) basketLive.set("madde-31", { value: opetFuel.benzin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
   if (opetFuel?.motorin != null) basketLive.set("madde-32", { value: opetFuel.motorin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
+  for (const [key, mp] of marketResults) {
+    if (mp) basketLive.set(key, { value: mp.median, yearlyPct: null, srcLabel: `Market Fiyatı medyanı (${mp.count} fiyat, Ticaret Bak.)` });
+  }
 
   const kfe = evds.get("TP.KFE.TR") || null;
   const faizIhtiyac = evds.get("TP.KTF10")?.latest ?? null;
@@ -329,13 +348,26 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   const enerji = enerjiVals.length > 0 ? enerjiVals.reduce((a, b) => a + b, 0) / enerjiVals.length : null;
   const ulasim = coicopVals.get("07")?.value ?? null;
 
+  // ENAG kalibrasyonu: ENAG, TÜİK'le AYNI sepeti bağımsız ölçüyor ve belirgin
+  // yüksek buluyor (2026-07: %50,49 vs %31,75). TÜİK'in serbest piyasa fiyatlı
+  // alt endeksleri de aynı ölçüm yöntemiyle üretildiğinden aynı oranda düşük
+  // kabul edilir ve bu katsayıyla ENAG paritesine çekilir. Katsayı her ay
+  // veriden türetilir. Tarifeli/regüle kalemler (elektrik, doğalgaz, toplu
+  // taşıma) ve faiz HARİÇ — onların fiyatı idari/piyasa, TÜİK birebir ölçer.
+  const enagFactor =
+    officialYearly != null && officialYearly > 0 && enagVal.yearly > officialYearly
+      ? Math.round((enagVal.yearly / officialYearly) * 100) / 100
+      : 1;
+  const cal = (v: number | null) => (v != null ? round2(v * enagFactor) : null);
+  if (enagFactor > 1) notes.push(`ENAG kalibrasyon katsayısı: ×${enagFactor.toLocaleString("tr-TR")} — TÜİK'in serbest piyasa alt endeksleri, ENAG'ın bağımsız ölçtüğü genel seviyeye çekildi (tarifeli kalemler ve faiz hariç).`);
+
   const FELT_DEF: { key: string; label: string; weight: number; value: number | null; detail: string }[] = [
     { key: "felt-enag",   label: "Raf fiyatları (ENAG)",        weight: 0.25, value: enagVal.yearly, detail: "Bağımsız fiyat ölçümü — market gerçeği" },
-    { key: "felt-kira",   label: "Gerçek kira",                 weight: 0.20, value: kiraGercek, detail: "Kiracıların fiilen ödediği kira (TÜİK madde endeksi)" },
-    { key: "felt-gida",   label: "Gıda",                        weight: 0.20, value: gida, detail: "Gıda ve alkolsüz içecekler, güncel" },
+    { key: "felt-kira",   label: "Gerçek kira",                 weight: 0.20, value: cal(kiraGercek), detail: `Kiracıların fiilen ödediği kira (ENAG-kalibreli, ×${enagFactor})` },
+    { key: "felt-gida",   label: "Gıda",                        weight: 0.20, value: cal(gida), detail: `Gıda ve alkolsüz içecekler (ENAG-kalibreli, ×${enagFactor})` },
     { key: "felt-borc",   label: "Borç servisi",                weight: 0.15, value: faizIhtiyac, detail: "İhtiyaç kredisi yıllık faizi — borç çevirenin maliyeti" },
-    { key: "felt-enerji", label: "Enerji (elektrik+doğalgaz)",  weight: 0.10, value: enerji != null ? round2(enerji) : null, detail: "Fatura kalemleri ortalaması" },
-    { key: "felt-ulasim", label: "Ulaştırma",                   weight: 0.10, value: ulasim, detail: "Akaryakıt + toplu taşıma grubu" },
+    { key: "felt-enerji", label: "Enerji (elektrik+doğalgaz)",  weight: 0.10, value: enerji != null ? round2(enerji) : null, detail: "Fatura kalemleri ortalaması (tarifeli, kalibresiz)" },
+    { key: "felt-ulasim", label: "Ulaştırma",                   weight: 0.10, value: ulasim, detail: "Akaryakıt + toplu taşıma grubu (kalibresiz)" },
   ];
   const feltAvailable = FELT_DEF.reduce((s, l) => s + (l.value != null ? l.weight : 0), 0);
   const feltLayers: LayerResult[] = FELT_DEF.map((l) => ({
@@ -358,20 +390,20 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
   const asgariArtisRaw = (mwL.net / mwP.net - 1) * 100;
 
   const feltValues: Record<string, number | null> = {
-    // Tüketici bileşenleri
+    // Tüketici bileşenleri — serbest fiyatlılar ENAG-kalibreli
     enag: enagVal.yearly,
-    kira: kiraGercek,                                    // gerçek kira (işyeri kirasına da proxy)
-    gida,
-    borc: faizIhtiyac,                                   // bireysel borç servisi
-    enerji,
-    ulasim,
-    lokanta: coicopVals.get("11")?.value ?? null,        // lokanta-otel (dışarıda yeme)
-    egitim: coicopVals.get("10")?.value ?? null,         // özel okul/kurs
-    saglik: coicopVals.get("06")?.value ?? null,
-    eglence: coicopVals.get("09")?.value ?? null,
-    giyim: coicopVals.get("03")?.value ?? null,
-    evesyasi: coicopVals.get("05")?.value ?? null,       // ev sahibinin bakım/eşya kalemi
-    yolcu: evds.get("TP.TUKFIY2025.0732")?.yearlyPct ?? null, // taksi/otobüs/uçak — arabasızın gerçeği
+    kira: cal(kiraGercek),                               // gerçek kira (işyeri kirasına da proxy)
+    gida: cal(gida),
+    borc: faizIhtiyac,                                   // faiz zaten piyasa fiyatı — kalibre edilmez
+    enerji,                                              // tarifeli — kalibre edilmez
+    ulasim,                                              // karma (tarifeli ağırlıklı) — kalibre edilmez
+    lokanta: cal(coicopVals.get("11")?.value ?? null),   // lokanta-otel (dışarıda yeme)
+    egitim: cal(coicopVals.get("10")?.value ?? null),    // özel okul/kurs
+    saglik: cal(coicopVals.get("06")?.value ?? null),
+    eglence: cal(coicopVals.get("09")?.value ?? null),
+    giyim: cal(coicopVals.get("03")?.value ?? null),
+    evesyasi: cal(coicopVals.get("05")?.value ?? null),  // ev sahibinin bakım/eşya kalemi
+    yolcu: evds.get("TP.TUKFIY2025.0732")?.yearlyPct ?? null, // taksi/otobüs/uçak — tarife karması, kalibresiz
     // İş dünyası bileşenleri
     uretici: evds.get("TP.TUFE1YI.T1")?.yearlyPct ?? null, // Yİ-ÜFE: girdi maliyeti
     isgucu: asgariArtisRaw,                              // işgücü maliyeti (asgari ücret artışı)
