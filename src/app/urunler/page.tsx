@@ -430,6 +430,20 @@ function MobileStoreCTA({ product }: { product: Product }) {
 function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?: string } }) {
   const { t } = useTranslation();
   const waMsg = encodeURIComponent(t("products.wa_message").replace("{name}", product.name));
+  // Ücretsiz veri ürünü: teklif/iletişim akışı yerine doğrudan rapora götür.
+  if (product.id === "enflasyon-raporu") {
+    return (
+      <Link
+        href="/enflasyon"
+        className="block p-6 rounded-2xl bg-gradient-to-br from-red-500/10 to-amber-500/5 border border-red-500/30 hover:border-red-500/60 transition"
+      >
+        <h3 className="font-bold text-white mb-1">Raporu Ücretsiz Görüntüle</h3>
+        <p className="text-xs text-gray-400 leading-relaxed">
+          Manşet ve kriz senaryoları herkese açık — tam döküm ve aylık e-posta raporu ücretsiz üyelikle.
+        </p>
+      </Link>
+    );
+  }
   return (
     <div className="grid md:grid-cols-3 gap-4">
       {product.demoUrl && (

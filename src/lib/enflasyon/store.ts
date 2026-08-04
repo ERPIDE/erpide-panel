@@ -98,6 +98,23 @@ export async function toggleSubscriber(id: string, active: boolean) {
   return getPrisma().inflationSubscriber.update({ where: { id }, data: { active } });
 }
 
+/** Site üyesinin abonelik durumu — e-posta üzerinden (üye maili = abone maili). */
+export async function getSubscriberByEmail(email: string) {
+  return getPrisma().inflationSubscriber.findUnique({ where: { email: email.trim().toLowerCase() } });
+}
+
+export async function setSubscriberActiveByEmail(email: string, active: boolean) {
+  const normalized = email.trim().toLowerCase();
+  if (active) {
+    return getPrisma().inflationSubscriber.upsert({
+      where: { email: normalized },
+      create: { email: normalized, active: true },
+      update: { active: true },
+    });
+  }
+  return getPrisma().inflationSubscriber.updateMany({ where: { email: normalized }, data: { active: false } });
+}
+
 // ── Gönderim ─────────────────────────────────────────────────────
 
 export async function sendReport(runId: string): Promise<{ sent: number; failed: number; skipped?: string }> {

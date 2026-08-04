@@ -14,6 +14,8 @@ const PREFIX: Record<ProductId, string> = {
   "1c-erp": "ERP",
   "1c-drive": "DRV",
   canias: "CAN",
+  // Ucretsiz veri urunu - lisans akisina hic girmez, Record tamligi icin.
+  "enflasyon-raporu": "ENF",
 };
 
 export function generateLicenseKey(productId: ProductId): string {

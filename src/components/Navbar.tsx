@@ -39,6 +39,7 @@ export default function Navbar() {
     { href: "/urunler", label: t("nav.products") },
     { href: "/hizmetler", label: t("nav.services") },
     { href: "/gundem", label: t("nav.gundem") },
+    { href: "/enflasyon", label: t("nav.enflasyon") },
     { href: "/hakkimizda", label: t("nav.about") },
     { href: "/iletisim", label: t("nav.contact") },
   ];

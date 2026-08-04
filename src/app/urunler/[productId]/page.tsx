@@ -296,6 +296,14 @@ function Inner({ productId }: { productId: string }) {
             )}
 
             <div className="flex flex-wrap gap-3">
+              {product.id === "enflasyon-raporu" && (
+                <Link
+                  href="/enflasyon"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm text-white font-semibold hover:from-blue-500 hover:to-indigo-500 transition"
+                >
+                  Raporu Ücretsiz Görüntüle
+                </Link>
+              )}
               {product.demoUrl && (
                 <a
                   href={product.demoUrl}

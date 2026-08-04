@@ -1,4 +1,4 @@
-import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, Database, MessageCircle, type LucideIcon } from "lucide-react";
+import { Shield, Briefcase, Boxes, Truck, Sparkles, Wallet, Database, MessageCircle, TrendingUp, type LucideIcon } from "lucide-react";
 import type { Locale } from "./translations";
 
 /**
@@ -22,7 +22,8 @@ export type ProductId =
   | "dataengine"
   | "1c-erp"
   | "1c-drive"
-  | "canias";
+  | "canias"
+  | "enflasyon-raporu";
 export type BillingCycle = "monthly" | "yearly";
 export type Currency = "TRY" | "USD";
 
@@ -1291,6 +1292,44 @@ export const PRODUCTS: Product[] = [
     noTrial: true,
     demoUrl: "https://dataengine.erpide.com",
     skus: [],
+  },
+  {
+    // Ücretsiz veri ürünü: satış akışı yok (contactOnly + skus boş), detay
+    // sayfası /enflasyon'a yönlendirir. Aylık rapor aboneliği üyelikle gelir.
+    id: "enflasyon-raporu",
+    name: "Gerçek Enflasyon Raporu",
+    tagline: "Türkiye'nin hissedilen enflasyonu — 283 parametreli bağımsız endeks",
+    description:
+      "Resmi rakam ile cebindeki gerçek arasındaki farkı ölçen aylık rapor: hissedilen enflasyon, ENAG ve TÜİK karşılaştırması, 14 sınıf profili (kiracı, kredi çeviren, esnaf, üretici, holding...) ve 283 parametrelik tam döküm. TCMB, EVDS, Eurostat, World Bank ve zincir market verileriyle her ay otomatik hesaplanır. Üyelere tamamen ücretsiz — aylık e-posta raporu dahil.",
+    longDescription:
+      "ERPIDE Gerçek Enflasyon Raporu, tek bir resmi orana mahkum kalmadan enflasyonu katman katman ölçer: döviz kurları ve ticaret ortağı enflasyonlarından ithal fiyat baskısı, gerçek kira ve gıda endeksleri, borçlanma maliyeti, varlık fiyatları ve tasarruf araçlarının reel getirisi. ENAG kalibrasyonu ile serbest piyasa kalemleri bağımsız ölçüm seviyesine çekilir; elektrik-doğalgaz gibi tarifeli kalemler resmi verisiyle kalır. Sonuç: her sınıfın kendi enflasyonunu gördüğü, tamamen şeffaf ve her ayın 5'inde kendini güncelleyen bir endeks.",
+    icon: TrendingUp,
+    color: "from-red-500 via-orange-500 to-amber-400",
+    domain: "erpide.com/enflasyon",
+    category: "web",
+    marketScope: "TR",
+    contactOnly: true,
+    skus: [],
+    i18n: {
+      en: {
+        name: "Real Inflation Report",
+        tagline: "Türkiye's felt inflation — an independent 283-parameter index",
+        description:
+          "A monthly report measuring the gap between the official figure and what people actually experience: felt inflation, ENAG vs TUIK comparison, 14 class-based profiles and a full 283-parameter breakdown. Auto-computed monthly from TCMB, EVDS, Eurostat, World Bank and retail chain data. Free for members, monthly e-mail included.",
+      },
+      ru: {
+        name: "Отчёт о реальной инфляции",
+        tagline: "Ощущаемая инфляция Турции — независимый индекс из 283 параметров",
+        description:
+          "Ежемесячный отчёт о разнице между официальной цифрой и реальной жизнью: ощущаемая инфляция, сравнение ENAG и TUIK, 14 классовых профилей и полная сводка из 283 параметров. Рассчитывается автоматически. Бесплатно для участников.",
+      },
+      kk: {
+        name: "Нақты инфляция есебі",
+        tagline: "Түркияның сезілетін инфляциясы — 283 параметрлік тәуелсіз индекс",
+        description:
+          "Ресми көрсеткіш пен нақты өмір арасындағы айырманы өлшейтін ай сайынғы есеп: сезілетін инфляция, ENAG пен TUIK салыстыруы, 14 таптық профиль және 283 параметрлік толық талдау. Мүшелерге тегін.",
+      },
+    },
   },
   {
     // Rebrand 2026-06-15: LingoApp → WITMA. Id de "witma"ya geçti; eski

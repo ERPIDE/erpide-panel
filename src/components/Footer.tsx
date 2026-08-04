@@ -45,6 +45,7 @@ export default function Footer() {
               <Link href="/urunler?kategori=web" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_web")}</Link>
               <Link href="/urunler?kategori=mobile" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_mobile")}</Link>
               <Link href="/urunler?kategori=desktop-enterprise" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("footer.cat_enterprise")}</Link>
+              <Link href="/enflasyon" className="text-sm text-gray-400 hover:text-blue-400 transition">{t("nav.enflasyon")}</Link>
               <Link href="/urunler" className="text-sm text-gray-400 hover:text-white transition">{t("footer.all_products")}</Link>
               <Link href="/sepet" className="text-sm text-gray-400 hover:text-white transition">{t("footer.my_cart")}</Link>
             </div>

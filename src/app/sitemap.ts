@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/iletisim", priority: 0.7, changeFrequency: "monthly" },
     { path: "/fiyatlandirma", priority: 0.8, changeFrequency: "weekly" },
     { path: "/gundem", priority: 0.85, changeFrequency: "daily" },
+    { path: "/enflasyon", priority: 0.9, changeFrequency: "weekly" },
     { path: "/kunye", priority: 0.3, changeFrequency: "yearly" },
     { path: "/docs", priority: 0.6, changeFrequency: "weekly" },
     { path: "/docs/finanserpide", priority: 0.6, changeFrequency: "weekly" },
