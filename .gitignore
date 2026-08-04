@@ -9,3 +9,6 @@ next-env.d.ts
 .vercel
 .env*.local
 public/logo.png.bak
+
+# blob->R2 kurtarma icin cekilen prod env (secrets)
+.env.blob
