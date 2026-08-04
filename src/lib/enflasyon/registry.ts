@@ -74,14 +74,14 @@ export const CURRENCIES: { code: string; name: string }[] = [
   { code: "KWD", name: "Kuveyt Dinarı" },
   { code: "AZN", name: "Azerbaycan Manatı" },
   { code: "RON", name: "Rumen Leyi" },
-  { code: "BGN", name: "Bulgar Levası" },
+  // BGN kaldırıldı: Bulgaristan 01.01.2026'da euroya geçti, TCMB bülteninden çıktı.
   { code: "SEK", name: "İsveç Kronu" },
   { code: "NOK", name: "Norveç Kronu" },
   { code: "DKK", name: "Danimarka Kronu" },
   { code: "CAD", name: "Kanada Doları" },
   { code: "AUD", name: "Avustralya Doları" },
   { code: "PKR", name: "Pakistan Rupisi" },
-  { code: "IRR", name: "İran Riyali" },
+  // IRR kaldırıldı: TCMB günlük bülteninde İran Riyali kuru yayınlanmıyor.
 ];
 
 // ── Ticaret ortakları ─────────────────────────────────────────────
@@ -118,7 +118,7 @@ export const PARTNERS: {
   { wb: "AZE", name: "Azerbaycan",    currency: "AZN", importShare: 0.9,  exportShare: 1.3, weo2025: 5.5 },
   { wb: "UKR", name: "Ukrayna",       currency: "USD", importShare: 0.8,  exportShare: 0.9, weo2025: 13.0 },
   { wb: "GRC", name: "Yunanistan",    currency: "EUR", importShare: 0.8,  exportShare: 1.2, eurostat: "EL", weo2025: 2.8 },
-  { wb: "BGR", name: "Bulgaristan",   currency: "BGN", importShare: 0.7,  exportShare: 1.4, eurostat: "BG", weo2025: 2.5 },
+  { wb: "BGR", name: "Bulgaristan",   currency: "EUR", importShare: 0.7,  exportShare: 1.4, eurostat: "BG", weo2025: 2.5 }, // 2026'da euroya geçti
   { wb: "ISR", name: "İsrail",        currency: "USD", importShare: 0.3,  exportShare: 1.5, weo2025: 3.2 },
 ];
 
@@ -162,12 +162,20 @@ export const BASKET_EVDS: Record<number, { code: string; note: string }> = {
   25: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
   26: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
   27: { code: "TP.TUKFIY2025.01176", note: "Kuru baklagiller madde endeksi" },
+  33: { code: "TP.TUKFIY2025.0722",  note: "Yakıtlar ve yağlar grup endeksi (LPG dahil)" },
   34: { code: "TP.TUKFIY2025.0452",  note: "Gaz (doğalgaz) grup endeksi" },
   35: { code: "TP.TUKFIY2025.04510", note: "Elektrik madde endeksi" },
   40: { code: "TP.TUKFIY2025.0230",  note: "Tütün ürünleri grup endeksi" },
+  41: { code: "TP.TUKFIY2025.07321", note: "Karayolu yolcu taşımacılığı endeksi (otobüs/dolmuş)" },
+  42: { code: "TP.TUKFIY2025.07322", note: "Taksi hizmeti madde endeksi" },
+  43: { code: "TP.TUKFIY2025.13131", note: "Kuaförlük hizmetleri madde endeksi" },
+  44: { code: "TP.TUKFIY2025.13131", note: "Kuaförlük hizmetleri madde endeksi" },
   45: { code: "TP.TUKFIY2025.04110", note: "Kiracıların ödediği gerçek kira endeksi" },
   46: { code: "TP.TUKFIY2025.05311", note: "Büyük mutfak eşyaları (buzdolabı) endeksi" },
   47: { code: "TP.TUKFIY2025.05312", note: "Çamaşır/kurutma makineleri endeksi" },
+  48: { code: "TP.TUKFIY2025.08140", note: "Ses-görüntü ekipmanları (TV) madde endeksi" },
+  49: { code: "TP.TUKFIY2025.08120", note: "Mobil telefon ve ekipmanları madde endeksi" },
+  50: { code: "TP.TUKFIY2025.09610", note: "Sinema/tiyatro/konser hizmetleri madde endeksi" },
 };
 
 // ── 50 temel geçim kalemi ─────────────────────────────────────────
@@ -223,6 +231,7 @@ export const TUIK_LATEST = {
 
 // ── Statik referans değerler (kaynak + yıl etiketli) ─────────────
 export const STATIC_FACTS: { key: string; label: string; category: CategoryKey; value: number; unit: ParamDef["unit"]; note: string }[] = [
+  { key: "kk-azami-akdi",          label: "Kredi kartı azami akdi faiz (aylık)", category: "kredi", value: 3.75, unit: "%", note: "TCMB 01.01.2026 tebliği: 30 bin TL altı %3,25 / 30-180 bin %3,75 / üzeri %4,25" },
   { key: "bkm-kredi-karti-sayisi", label: "Kredi kartı sayısı",            category: "kredi", value: 123_000_000, unit: "adet", note: "BKM 2024 sonu (~123 milyon)" },
   { key: "bkm-banka-karti-sayisi", label: "Banka kartı sayısı",            category: "kredi", value: 195_000_000, unit: "adet", note: "BKM 2024 sonu (~195 milyon)" },
   { key: "hanehalki-borc-gsyh",    label: "Hanehalkı borcu / GSYH",        category: "kredi", value: 11.5,        unit: "%",    note: "TCMB Finansal İstikrar Raporu 2024 (~%11-12)" },
@@ -355,10 +364,12 @@ export function buildRegistry(): ParamDef[] {
     { key: "kfe-izm",       label: "KFE — İzmir",                     category: "varlik", source: "evds", code: "TP.KFE.TR31", unit: "endeks" },
     { key: "konut-satis",   label: "Konut satış adedi (aylık)",       category: "varlik", source: "evds", code: "TP.AKONUTSAT1.KTRTOPLAM", unit: "adet" },
     { key: "konut-ipotek",  label: "İpotekli konut satışı",           category: "varlik", source: "evds", code: "TP.AKONUTSAT2.KTRTOPLAM", unit: "adet" },
-    { key: "araba-sifir",   label: "Sıfır araç ortalama fiyatı",      category: "varlik", source: "pending", unit: "TRY", note: "ODMD/otomotiv distribütörleri verisi bağlanacak" },
-    { key: "araba-ikinci",  label: "İkinci el araç fiyat endeksi",    category: "varlik", source: "pending", unit: "endeks", note: "Kaynak bağlanacak" },
-    { key: "arsa-m2",       label: "Arsa m² birim değeri",            category: "varlik", source: "pending", unit: "TRY", note: "TÜİK/Tapu verisi bağlanacak" },
-    { key: "ev-erisim",     label: "Konut erişilebilirlik (yıl maaş/100m²)", category: "varlik", source: "derived", unit: "oran", note: "KFE + asgari ücretten türetilir" },
+    { key: "araba-sifir",   label: "Araç satın alma endeksi (sıfır ağırlıklı)", category: "varlik", source: "evds", code: "TP.TUKFIY2025.0711", unit: "endeks", note: "TÜFE motorlu taşıt alımı madde endeksi (2025=100)" },
+    { key: "araba-ikinci",  label: "Motorlu taşıtlar fiyat endeksi (genel)",    category: "varlik", source: "evds", code: "TP.TUKFIY2025.071", unit: "endeks", note: "Taşıt alımı grup endeksi — ikinci el dahil piyasa geneli" },
+    { key: "arsa-m2",       label: "Ticari dükkan m² birim fiyatı (TR)",        category: "varlik", source: "evds", code: "TP.DBFY.TR", unit: "TRY", note: "TCMB Dükkan Birim Fiyatları" },
+    { key: "konut-birim-tr", label: "Konut m² birim fiyatı (Türkiye)",          category: "varlik", source: "evds", code: "TP.BIRIMFIYAT.TR", unit: "TRY", note: "TCMB Konut Birim Fiyatları" },
+    { key: "konut-birim-ist", label: "Konut m² birim fiyatı (İstanbul)",        category: "varlik", source: "evds", code: "TP.BIRIMFIYAT.IST", unit: "TRY", note: "TCMB Konut Birim Fiyatları" },
+    { key: "ev-erisim",     label: "Konut erişilebilirlik (yıllık maaş / 100m²)", category: "varlik", source: "derived", unit: "oran", note: "100 m² konutun fiyatı ÷ yıllık net asgari ücret" },
     { key: "konut-grubu-tufe", label: "TÜFE konut grubu (kira dahil)", category: "varlik", source: "derived", unit: "%", note: "COICOP 04 grubundan" },
 
     // Kredi & bankacılık
@@ -368,11 +379,11 @@ export function buildRegistry(): ParamDef[] {
     { key: "faiz-ticari",   label: "Ticari kredi faizi",              category: "kredi", source: "evds", code: "TP.KTF17", unit: "%" },
     { key: "faiz-mevduat",  label: "TL mevduat faizi (3 aya kadar)",  category: "kredi", source: "evds", code: "TP.TRY.MT02", unit: "%" },
     { key: "faiz-politika", label: "TCMB ort. fonlama maliyeti",      category: "kredi", source: "evds", code: "TP.APIFON4", unit: "%" },
-    { key: "kk-azami-akdi", label: "Kredi kartı azami akdi faiz (aylık)", category: "kredi", source: "pending", unit: "%", note: "TCMB üç aylık tebliğ — EVDS serisi bağlanacak" },
+    // kk-azami-akdi STATIC_FACTS'ten gelir (çift kayıt olmasın).
     { key: "kk-harcama",    label: "Banka+kredi kartı harcama (haftalık akım)", category: "kredi", source: "evds", code: "TP.KKHARTUT.KT1", unit: "TRY", note: "TCMB/BKM haftalık akım, bin TL" },
     { key: "kk-harcama-yillik", label: "Kart harcaması yıllık artış", category: "kredi", source: "derived", unit: "%", note: "Kart harcama akımının 1 yıl önceye göre değişimi" },
-    { key: "bireysel-kredi", label: "Bireysel kredi hacmi",           category: "kredi", source: "pending", unit: "TRY", note: "BDDK haftalık bülten bağlanacak" },
-    { key: "takip-oran",    label: "Takipteki krediler oranı",        category: "kredi", source: "pending", unit: "%", note: "BDDK verisi bağlanacak" },
+    { key: "bireysel-kredi", label: "Tüketici kredileri hacmi",       category: "kredi", source: "evds", code: "TP.HPBITABLO6.2", unit: "TRY", note: "TCMB haftalık, bin TL — bankacılık sektörü yurt içi" },
+    { key: "takip-oran",    label: "Tasfiye olunacak (takipteki) krediler", category: "kredi", source: "evds", code: "TP.SEKBILATGA.GENEL", unit: "TRY", note: "TCMB sektör riski, bin TL, yıllık seri (~1 yıl gecikmeli) — batık kredi stoku" },
     { key: "m2-arz",        label: "M2 para arzı",                    category: "kredi", source: "evds", code: "TP.HPBITABLO1.11", unit: "TRY", note: "TCMB haftalık, bin TL" },
     { key: "m2-yillik",     label: "M2 yıllık genişleme",             category: "kredi", source: "derived", unit: "%" },
     { key: "reel-faiz",     label: "Reel faiz (mevduat − TÜFE)",      category: "kredi", source: "derived", unit: "%" },
@@ -386,7 +397,7 @@ export function buildRegistry(): ParamDef[] {
     { key: "asgari-usd-yillik", label: "USD bazlı asgari ücret değişimi", category: "gelir", source: "derived", unit: "%" },
     { key: "alim-gucu-gunluk", label: "Günlük alım gücü (net/30)",    category: "gelir", source: "derived", unit: "TRY" },
     { key: "alim-gucu-endeks", label: "Alım gücü endeksi (2016=100)", category: "gelir", source: "derived", unit: "endeks", note: "Asgari ücret endeksi / TÜFE endeksi" },
-    { key: "asgari-ekmek",  label: "Asgari ücretle alınan ekmek (adet/ay)", category: "gelir", source: "pending", unit: "adet", note: "Madde fiyatları bağlanınca hesaplanacak" },
+    { key: "asgari-ekmek",  label: "Asgari ücretle alınan ekmek (adet/ay)", category: "gelir", source: "derived", unit: "adet", note: "Net asgari ücret ÷ market ambalajlı ekmek medyanı" },
 
     // Tasarruf araçları — TL'nin alternatiflere karşı 1 yıllık performansı.
     // Enflasyonun "hissedilen" tarafı: parayı nerede tutsaydın ne olurdu.

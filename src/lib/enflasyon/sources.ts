@@ -244,10 +244,11 @@ export interface TruncgilPrices {
   gumusGram: number | null;
 }
 
-/** "4.094,50" biçimli TR sayısını parse eder. */
+/** "4.094,50" / "$4.060,30" biçimli TR sayısını parse eder (para sembollerini ayıklar). */
 function parseTrNumber(s: unknown): number | null {
   if (typeof s !== "string") return null;
-  const v = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  const cleaned = s.replace(/[^0-9.,]/g, "");
+  const v = parseFloat(cleaned.replace(/\./g, "").replace(",", "."));
   return isFinite(v) ? v : null;
 }
 
@@ -498,6 +499,39 @@ export async function fetchOpetFuel(): Promise<FuelPrices | null> {
   }
 }
 
+// ── Moil akaryakıt (statik HTML tablo — Opet'in Vercel yedeği) ───
+// moil.com.tr/akaryakit-fiyatlari: İstanbul ilçe bazlı statik tablo.
+// Kolonlar: İlçe | Kurşunsuz Benzin | Gaz Yağı | Motorin | ...
+
+export async function fetchMoilFuel(): Promise<FuelPrices | null> {
+  try {
+    const r = await fetch("https://moil.com.tr/akaryakit-fiyatlari", {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ERPIDE/1.0)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const html = await r.text();
+    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+    for (const row of rows) {
+      const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)]
+        .map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+      // İlk veri satırı: [İlçe, Benzin, Gazyağı, Motorin, ...]
+      if (cells.length >= 4 && /^[0-9]{2}[.,][0-9]{2}$/.test(cells[1] || "")) {
+        const benzin = parseFloat(cells[1].replace(",", "."));
+        const motorin = parseFloat(cells[3].replace(",", "."));
+        if (isFinite(benzin) && benzin > 10) {
+          return { benzin, motorin: isFinite(motorin) && motorin > 10 ? motorin : null };
+        }
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error("[enflasyon] Moil akaryakıt alınamadı:", e);
+    return null;
+  }
+}
+
 // ── Market Fiyatı (Ticaret Bakanlığı) — zincir market raf fiyatları ─
 // Devletin resmi fiyat karşılaştırma uygulamasının API'si: A101, BİM, Migros,
 // ŞOK, CarrefourSA fiyatlarını toplar. Kalem başına arama yapılır, birim fiyat
@@ -527,8 +561,11 @@ export async function fetchMarketFiyati(keyword: string): Promise<MarketPrice | 
     const prices: number[] = [];
     for (const c of json.content || []) {
       for (const p of c.productDepotInfoList || []) {
-        const v = p.unitPrice != null && isFinite(p.unitPrice) && p.unitPrice > 0 ? p.unitPrice : p.price;
-        if (v != null && isFinite(v) && v > 0) prices.push(v);
+        // API bazı alanları string dönebiliyor — sayıya zorla.
+        const unit = Number(p.unitPrice);
+        const plain = Number(p.price);
+        const v = isFinite(unit) && unit > 0 ? unit : plain;
+        if (isFinite(v) && v > 0) prices.push(v);
       }
     }
     if (prices.length < 3) return null; // tek tük sonuçla medyan güvenilmez
@@ -641,7 +678,9 @@ export async function fetchEvdsSeries(code: string): Promise<EvdsSeries | null> 
   if (!key) return null;
   try {
     const now = new Date();
-    const start = new Date(now.getFullYear() - 2, now.getMonth(), 1);
+    // 3 yıl: yıllık frekanslı seriler (ör. tasfiye kredileri) ~1 yıl gecikmeli
+    // yayınlanır — 2 yıllık pencerede tek nokta bile kaçabiliyordu.
+    const start = new Date(now.getFullYear() - 3, now.getMonth(), 1);
     const fmt = (d: Date) =>
       `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 

@@ -24,6 +24,7 @@ import {
   fetchEurostatTR, fetchEurostatPartners, fetchTruncgil, fetchYahooYearly,
   fetchBinanceBtcYearly, EurostatValue, fetchOpetFuel, fetchIzmirHal,
   fetchTcmbInflationPage, fetchEnagFromNews, parseEvdsDate, fetchMarketFiyati,
+  fetchMoilFuel,
 } from "./sources";
 
 /** Panelden girilen aylık bülten değerleri — yoksa registry'deki gömülü son değer. */
@@ -142,12 +143,15 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     { key: "madde-36", keyword: "toz deterjan" },
     { key: "madde-37", keyword: "şampuan 500 ml" },
     { key: "madde-38", keyword: "diş macunu" },
-    { key: "madde-39", keyword: "tuvalet kağıdı 8" },
+    { key: "madde-39", keyword: "tuvalet kağıdı" },
+    // Alım gücü türetmesi için: parametre değil, "asgari ücretle kaç ekmek" hesabına girer.
+    { key: "__ekmek", keyword: "ekmek 350" },
   ];
 
   // Geçim kalemleri + otomatik bülten değerleri (paralel, hataya dayanıklı)
-  const [opetFuel, izmirHal, tcmbPage, enagNews, marketResults] = await Promise.all([
+  const [opetFuel, moilFuel, izmirHal, tcmbPage, enagNews, marketResults] = await Promise.all([
     fetchOpetFuel(),
+    fetchMoilFuel(),
     fetchIzmirHal(),
     fetchTcmbInflationPage(),
     fetchEnagFromNews(),
@@ -298,11 +302,24 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
       });
     }
   }
-  if (opetFuel?.benzin != null) basketLive.set("madde-31", { value: opetFuel.benzin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
-  if (opetFuel?.motorin != null) basketLive.set("madde-32", { value: opetFuel.motorin, yearlyPct: null, srcLabel: "Opet İstanbul pompa" });
+  // Akaryakıt: Opet birincil, Moil yedek (Opet veri merkezi isteklerini eleyebiliyor).
+  const benzinFiyat = opetFuel?.benzin ?? moilFuel?.benzin ?? null;
+  const motorinFiyat = opetFuel?.motorin ?? moilFuel?.motorin ?? null;
+  const yakitSrc = opetFuel?.benzin != null ? "Opet İstanbul pompa" : "Moil İstanbul pompa";
+  if (benzinFiyat != null) basketLive.set("madde-31", { value: benzinFiyat, yearlyPct: null, srcLabel: yakitSrc });
+  if (motorinFiyat != null) basketLive.set("madde-32", { value: motorinFiyat, yearlyPct: null, srcLabel: yakitSrc });
+
+  let ekmekFiyat: number | null = null;
   for (const [key, mp] of marketResults) {
-    if (mp) basketLive.set(key, { value: mp.median, yearlyPct: null, srcLabel: `Market Fiyatı medyanı (${mp.count} fiyat, Ticaret Bak.)` });
+    if (!mp) continue;
+    if (key === "__ekmek") { ekmekFiyat = mp.median; continue; }
+    basketLive.set(key, { value: mp.median, yearlyPct: null, srcLabel: `Market Fiyatı medyanı (${mp.count} fiyat, Ticaret Bak.)` });
   }
+
+  // Konut erişilebilirlik: 100 m² konutun bedeli kaç yıllık net asgari ücret?
+  const konutBirim = evds.get("TP.BIRIMFIYAT.TR")?.latest ?? null;
+  const mwNetNow = MIN_WAGE_SERIES[MIN_WAGE_SERIES.length - 1].net;
+  const evErisim = konutBirim != null ? round1((konutBirim * 100) / (mwNetNow * 12)) : null;
 
   const kfe = evds.get("TP.KFE.TR") || null;
   const faizIhtiyac = evds.get("TP.KTF10")?.latest ?? null;
@@ -518,7 +535,7 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     faizIhtiyac, faizMevduat, gecimKonut: konutGrubu,
     mwNow, mwPrev, asgariArtis, asgariUsd, asgariUsdPrev, alimGucuEndeks, usdNow,
     truncgil, yahooGold, yahooSilver, yahooBist, binanceBtc, gramAltinYillik, usdDeltaVal,
-    enagVal, basketLive,
+    enagVal, basketLive, evErisim, ekmekFiyat,
   }));
 
   const stats = {
@@ -589,6 +606,8 @@ interface Ctx {
   usdDeltaVal: number | null;
   enagVal: { yearly: number; monthly: number; period: string; source: string; live: boolean };
   basketLive: Map<string, { value: number; yearlyPct: number | null; srcLabel: string }>;
+  evErisim: number | null;
+  ekmekFiyat: number | null;
 }
 
 function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
@@ -719,7 +738,14 @@ function resolveParam(def: ParamDef, ctx: Ctx): ParamResult {
           : mk("no-data", null);
       case "alim-gucu-gunluk": return mk("derived", ctx.mwNow.net / 30);
       case "alim-gucu-endeks": return mk("derived", ctx.alimGucuEndeks, "2016=100, resmi TÜFE ile");
-      case "ev-erisim": return mk("no-data", null, "ortalama konut fiyatı kaynağı bağlanınca");
+      case "ev-erisim":
+        return ctx.evErisim != null
+          ? mk("derived", ctx.evErisim, "yıl — TCMB konut birim fiyatı × 100m² ÷ yıllık net asgari ücret")
+          : mk("no-data", null);
+      case "asgari-ekmek":
+        return ctx.ekmekFiyat != null
+          ? mk("derived", Math.floor(ctx.mwNow.net / ctx.ekmekFiyat), "ambalajlı ekmek (~350g) market medyanına göre")
+          : mk("no-data", null);
     }
     if (def.key.startsWith("ithal-katki-")) {
       const wb = def.key.replace("ithal-katki-", "").toUpperCase();
