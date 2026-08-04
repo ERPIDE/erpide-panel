@@ -213,8 +213,13 @@ export function buildInflationEmailHtml(run: RunData): string {
         ${run.notes.map((n) => `<p style="font-size:11px;color:#94a3b8;margin:4px 0 0">• ${n}</p>`).join("")}
       </div>
 
-      <p style="font-size:12px;color:#64748b;margin:20px 0 0">
-        Tüm ${run.stats.total} parametrenin dökümü: <a href="https://erpide.com/admin/enflasyon" style="color:#3b82f6">ERPIDE Panel → Enflasyon</a>
+      <table cellpadding="0" cellspacing="0" style="margin:24px auto 0"><tr><td style="background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:10px">
+        <a href="https://erpide.com/enflasyon" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none">
+          Raporun Tamamını Görüntüle → erpide.com/enflasyon
+        </a>
+      </td></tr></table>
+      <p style="font-size:11px;color:#94a3b8;text-align:center;margin:10px 0 0">
+        Tüm ${run.stats.total} parametre, sınıf profilleri ve metodoloji — üyelere ücretsiz.
       </p>
 
       ${emailSignature}
