@@ -273,14 +273,18 @@ function importContributionParams(): ParamDef[] {
 }
 
 function coicopParams(): ParamDef[] {
-  return COICOP_GROUPS.map((g) => ({
-    key: `tufe-grup-${g.no}`,
-    label: `${g.label} (yıllık)`,
-    category: "gecim-grup" as const,
-    source: "evds" as const,
-    code: g.evds,
-    unit: "%" as const,
-  }));
+  return [
+    ...COICOP_GROUPS.map((g) => ({
+      key: `tufe-grup-${g.no}`,
+      label: `${g.label} (yıllık)`,
+      category: "gecim-grup" as const,
+      source: "evds" as const,
+      code: g.evds,
+      unit: "%" as const,
+    })),
+    // Arabasız hanenin gerçeği: taksi, dolmuş, otobüs, uçak — ayrı takip edilir.
+    { key: "yolcu-tasima", label: "Yolcu taşıma hizmetleri (taksi/otobüs/uçak)", category: "gecim-grup" as const, source: "evds" as const, code: "TP.TUKFIY2025.0732", unit: "endeks" as const, note: "COICOP 0732 alt grubu" },
+  ];
 }
 
 function basketParams(): ParamDef[] {

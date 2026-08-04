@@ -125,6 +125,12 @@ export function buildInflationEmailHtml(run: RunData): string {
       <p style="font-size:12px;color:#64748b;margin:0 0 8px">Aynı veri, farklı bütçe ağırlıkları — herkesin enflasyonu kendi sepetinde.</p>
       <table cellpadding="0" cellspacing="0" width="100%">
         ${row(["Profil", "Yıllık enflasyon"], true)}
+        ${run.profiles!.some((p) => p.group === "kriz") ? `
+        ${row([`<b style="color:#dc2626;font-size:11px;text-transform:uppercase">⚠ En sert vurulan senaryolar</b>`, ""])}
+        ${run.profiles!.filter((p) => p.group === "kriz").map((p) => row([
+          p.label,
+          p.value != null ? `<b style="color:#b91c1c;font-size:15px">%${fmtNum(p.value)}</b>` : "—",
+        ])).join("")}` : ""}
         ${row([`<b style="color:#64748b;font-size:11px;text-transform:uppercase">Hane</b>`, ""])}
         ${run.profiles!.filter((p) => (p.group ?? "hane") === "hane").map((p) => row([
           p.label,

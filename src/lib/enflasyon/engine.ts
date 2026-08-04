@@ -74,8 +74,8 @@ export interface RunData {
   };
   layers: LayerResult[];
   feltLayers: LayerResult[];
-  /** Profil bazlı hissedilen enflasyon — hane ve iş dünyası sınıfları. */
-  profiles: { key: string; label: string; group: "hane" | "is"; value: number | null }[];
+  /** Profil bazlı hissedilen enflasyon — kriz senaryoları, hane ve iş dünyası sınıfları. */
+  profiles: { key: string; label: string; group: "kriz" | "hane" | "is"; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -371,6 +371,7 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     eglence: coicopVals.get("09")?.value ?? null,
     giyim: coicopVals.get("03")?.value ?? null,
     evesyasi: coicopVals.get("05")?.value ?? null,       // ev sahibinin bakım/eşya kalemi
+    yolcu: evds.get("TP.TUKFIY2025.0732")?.yearlyPct ?? null, // taksi/otobüs/uçak — arabasızın gerçeği
     // İş dünyası bileşenleri
     uretici: evds.get("TP.TUFE1YI.T1")?.yearlyPct ?? null, // Yİ-ÜFE: girdi maliyeti
     isgucu: asgariArtisRaw,                              // işgücü maliyeti (asgari ücret artışı)
@@ -378,7 +379,14 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     ithalGirdi: importWeighted != null ? round2(importWeighted) : null, // kur+partner enflasyonu
   };
 
-  const FELT_PROFILES: { key: string; label: string; group: "hane" | "is"; weights: Record<string, number> }[] = [
+  const FELT_PROFILES: { key: string; label: string; group: "kriz" | "hane" | "is"; weights: Record<string, number> }[] = [
+    // ── Kriz senaryoları: enflasyonun en sert vurduğu haneler ──
+    // Ağırlıklar uydurma değil — bu profillerin bütçe gerçeğine dayanır:
+    // batık borç çevirenin gelirinin ~3/4'ü taksitlere gider, kalabalık kiracı
+    // ailenin bütçesi gıda+kira+okul, arabasızınki taşıma hizmetine akar.
+    { key: "borc-sarmali", label: "Borç sarmalı (batık kredileri çeviren)",        group: "kriz", weights: { borc: 0.75, gida: 0.10, kira: 0.10, enerji: 0.05 } },
+    { key: "arabasiz",     label: "Arabasız (taksi/araç kiralayan, kart borçlu)",  group: "kriz", weights: { yolcu: 0.30, borc: 0.25, kira: 0.20, gida: 0.15, enag: 0.10 } },
+    { key: "kalabalik",    label: "Kalabalık aile (3+ çocuk, üniversiteli, kiracı)", group: "kriz", weights: { borc: 0.25, gida: 0.22, kira: 0.20, egitim: 0.15, yolcu: 0.08, enerji: 0.05, enag: 0.05 } },
     // ── Hane profilleri ──
     { key: "genel",     label: "Genel (borçlu-kiracı karma)",        group: "hane", weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
     { key: "asgari",    label: "Asgari ücretli (kiracı, borçsuz)",   group: "hane", weights: { enag: 0.10, kira: 0.25, gida: 0.35, enerji: 0.15, ulasim: 0.15 } },
