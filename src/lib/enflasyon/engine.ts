@@ -75,7 +75,7 @@ export interface RunData {
   layers: LayerResult[];
   feltLayers: LayerResult[];
   /** Profil bazlı hissedilen enflasyon — kriz senaryoları, hane ve iş dünyası sınıfları. */
-  profiles: { key: string; label: string; group: "kriz" | "hane" | "is"; value: number | null }[];
+  profiles: { key: string; label: string; desc: string; formula: string; group: "kriz" | "hane" | "is"; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -411,27 +411,67 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
     ithalGirdi: importWeighted != null ? round2(importWeighted) : null, // kur+partner enflasyonu
   };
 
-  const FELT_PROFILES: { key: string; label: string; group: "kriz" | "hane" | "is"; weights: Record<string, number> }[] = [
+  // Bileşenlerin insan-okur adları — profil formül metni bunlardan OTOMATİK
+  // üretilir; tanım ile hesap asla birbirinden kopmaz.
+  const COMP_LABELS: Record<string, string> = {
+    enag: "ENAG raf fiyatları", kira: "gerçek kira", gida: "gıda",
+    borc: "bireysel kredi faizi", enerji: "enerji tarifeleri", ulasim: "ulaştırma",
+    lokanta: "yeme-içme", egitim: "özel eğitim", saglik: "sağlık",
+    eglence: "eğlence-kültür", giyim: "giyim", evesyasi: "ev eşyası",
+    yolcu: "taşıma hizmetleri (taksi/otobüs/uçak)",
+    uretici: "üretici girdi maliyeti (Yİ-ÜFE)", isgucu: "işgücü maliyeti",
+    ticariKredi: "ticari kredi faizi", ithalGirdi: "ithal girdi (kur+dış fiyat)",
+  };
+
+  const FELT_PROFILES: { key: string; label: string; desc: string; group: "kriz" | "hane" | "is"; weights: Record<string, number> }[] = [
     // ── Kriz senaryoları: enflasyonun en sert vurduğu haneler ──
-    // Ağırlıklar uydurma değil — bu profillerin bütçe gerçeğine dayanır:
-    // batık borç çevirenin gelirinin ~3/4'ü taksitlere gider, kalabalık kiracı
-    // ailenin bütçesi gıda+kira+okul, arabasızınki taşıma hizmetine akar.
-    { key: "borc-sarmali", label: "Borç sarmalı (batık kredileri çeviren)",        group: "kriz", weights: { borc: 0.75, gida: 0.10, kira: 0.10, enerji: 0.05 } },
-    { key: "arabasiz",     label: "Arabasız (taksi/araç kiralayan, kart borçlu)",  group: "kriz", weights: { yolcu: 0.30, borc: 0.25, kira: 0.20, gida: 0.15, enag: 0.10 } },
-    { key: "kalabalik",    label: "Kalabalık aile (3+ çocuk, üniversiteli, kiracı)", group: "kriz", weights: { borc: 0.25, gida: 0.22, kira: 0.20, egitim: 0.15, yolcu: 0.08, enerji: 0.05, enag: 0.05 } },
+    // Ağırlıklar bu profillerin bütçe gerçeğine dayanır: batık borç çevirenin
+    // gelirinin ~3/4'ü taksitlere gider, kalabalık kiracı ailenin bütçesi
+    // gıda+kira+okul, araçsız hanenin bütçesi taşıma hizmetine akar.
+    { key: "borc-sarmali", label: "Borç Sarmalındaki Hane", group: "kriz",
+      desc: "Geçmişte birikmiş kredi ve kart borçlarını yeni kredilerle çeviren; gelirinin yaklaşık dörtte üçü taksit, faiz ve gecikme bedellerine giden hane. Yeniden yapılandırma sürecindeki milyonlarca hanenin profili — enflasyonu fiilen faiz oranı üzerinden yaşar.",
+      weights: { borc: 0.75, gida: 0.10, kira: 0.10, enerji: 0.05 } },
+    { key: "arabasiz", label: "Araçsız Kent Hanesi", group: "kriz",
+      desc: "Otomobili olmayan; işe ve okula taksi, dolmuş, otobüs ile giden, gerektiğinde araç kiralayan, kredi kartı borcu taşıyan kiracı hane. Taşıma hizmetleri yıllık artışın en sert olduğu kalemlerden — araç sahibi olamamanın bedelini her gün öder.",
+      weights: { yolcu: 0.30, borc: 0.25, kira: 0.20, gida: 0.15, enag: 0.10 } },
+    { key: "kalabalik", label: "Kalabalık, Eğitim Yüklü Aile", group: "kriz",
+      desc: "Üç ve üzeri çocuklu, en az bir çocuğu üniversitede veya özel okulda okuyan, kirada oturan ve eğitim-geçim masrafı için krediye başvurmuş aile. Bütçenin üç büyük kalemi gıda, kira ve eğitim — üçü de ortalamanın üzerinde zamlanan gruplar.",
+      weights: { borc: 0.25, gida: 0.22, kira: 0.20, egitim: 0.15, yolcu: 0.08, enerji: 0.05, enag: 0.05 } },
     // ── Hane profilleri ──
-    { key: "genel",     label: "Genel (borçlu-kiracı karma)",        group: "hane", weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
-    { key: "asgari",    label: "Asgari ücretli (kiracı, borçsuz)",   group: "hane", weights: { enag: 0.10, kira: 0.25, gida: 0.35, enerji: 0.15, ulasim: 0.15 } },
-    { key: "kiraci",    label: "Kiracı (borçsuz)",                   group: "hane", weights: { enag: 0.20, kira: 0.30, gida: 0.25, enerji: 0.10, ulasim: 0.15 } },
-    { key: "borclu",    label: "Kredi çeviren",                      group: "hane", weights: { enag: 0.25, kira: 0.10, gida: 0.15, borc: 0.35, enerji: 0.10, ulasim: 0.05 } },
-    { key: "beyazyaka", label: "Beyaz yaka (kiracı, arabalı)",       group: "hane", weights: { enag: 0.18, kira: 0.25, gida: 0.14, ulasim: 0.13, lokanta: 0.13, eglence: 0.06, giyim: 0.06, borc: 0.05 } },
-    { key: "evli-mulk", label: "Evi-arabası olan (borçsuz)",         group: "hane", weights: { enag: 0.28, gida: 0.24, enerji: 0.18, ulasim: 0.14, saglik: 0.08, evesyasi: 0.08 } },
-    { key: "yonetici",  label: "Yönetici (mülklü, özel okul)",       group: "hane", weights: { egitim: 0.20, lokanta: 0.15, enag: 0.18, ulasim: 0.14, saglik: 0.10, eglence: 0.08, giyim: 0.08, enerji: 0.07 } },
-    // ── İş dünyası profilleri ──
-    { key: "esnaf",       label: "Esnaf / dükkânı kiralık",          group: "is", weights: { kira: 0.25, isgucu: 0.20, uretici: 0.20, ticariKredi: 0.15, enerji: 0.15, ulasim: 0.05 } },
-    { key: "fabrika-mulk", label: "Üretici / fabrikası kendine ait", group: "is", weights: { uretici: 0.30, isgucu: 0.25, ticariKredi: 0.20, enerji: 0.15, ithalGirdi: 0.10 } },
-    { key: "fabrika-kira", label: "Üretici / fabrikası kiralık",     group: "is", weights: { uretici: 0.25, isgucu: 0.20, kira: 0.15, ticariKredi: 0.20, enerji: 0.10, ithalGirdi: 0.10 } },
-    { key: "holding",     label: "Holding ölçeği (finansman ağır)",  group: "is", weights: { ticariKredi: 0.30, isgucu: 0.20, uretici: 0.20, ithalGirdi: 0.20, enerji: 0.10 } },
+    { key: "genel", label: "Türkiye Ortalaması (Borçlu-Kiracı)", group: "hane",
+      desc: "Kirada oturan, market alışverişi bütçenin ana kalemi olan ve bir ihtiyaç kredisi taksidi ödeyen tipik şehirli hane. Raporun ana manşeti bu profille hesaplanır.",
+      weights: { enag: 0.25, kira: 0.20, gida: 0.20, borc: 0.15, enerji: 0.10, ulasim: 0.10 } },
+    { key: "asgari", label: "Asgari Ücretli Hane", group: "hane",
+      desc: "Tek gelirli, asgari ücretle geçinen, kirada oturan ve borç kullanmayan hane. Bütçesinin üçte birinden fazlası gıdaya gider; gıda enflasyonundaki her sapmayı doğrudan sofrasında hisseder.",
+      weights: { enag: 0.10, kira: 0.25, gida: 0.35, enerji: 0.15, ulasim: 0.15 } },
+    { key: "kiraci", label: "Borçsuz Kiracı Hane", group: "hane",
+      desc: "Kredi yükü olmayan ancak en büyük gider kalemi kira olan hane. Kontrat yenileme dönemlerinde enflasyonu en sert hisseden gruplardan — kira endeksi genel enflasyonun belirgin üzerinde seyreder.",
+      weights: { enag: 0.20, kira: 0.30, gida: 0.25, enerji: 0.10, ulasim: 0.15 } },
+    { key: "borclu", label: "Kredi Kullanan Hane", group: "hane",
+      desc: "Konutunu ya da aracını krediyle almış veya düzenli ihtiyaç kredisi taksidi ödeyen hane. Bütçesinin yaklaşık üçte biri faiz ve taksitlere ayrılır; faiz düzeyi bu profilin enflasyonunu belirleyen ana değişkendir.",
+      weights: { enag: 0.25, kira: 0.10, gida: 0.15, borc: 0.35, enerji: 0.10, ulasim: 0.05 } },
+    { key: "beyazyaka", label: "Beyaz Yakalı Profesyonel", group: "hane",
+      desc: "Kirada oturan, özel aracıyla işe giden, dışarıda yemek yiyen ve düzenli sosyal harcaması olan ücretli çalışan. Hizmet enflasyonunu (yeme-içme, eğlence) ortalama haneden daha yoğun yaşar.",
+      weights: { enag: 0.18, kira: 0.25, gida: 0.14, ulasim: 0.13, lokanta: 0.13, eglence: 0.06, giyim: 0.06, borc: 0.05 } },
+    { key: "evli-mulk", label: "Konut ve Araç Sahibi Hane", group: "hane",
+      desc: "Oturduğu ev ve kullandığı araç kendine ait, kredi yükü olmayan hane. Kira ve faiz baskısı taşımadığı için enflasyonu market, fatura, akaryakıt ve sağlık üzerinden yaşar — göreli olarak en korunaklı hane profillerinden.",
+      weights: { enag: 0.28, gida: 0.24, enerji: 0.18, ulasim: 0.14, saglik: 0.08, evesyasi: 0.08 } },
+    { key: "yonetici", label: "Üst Gelir Grubu Hanesi", group: "hane",
+      desc: "Mülk sahibi, çocuğu özel okulda okuyan, sağlık ve yaşam tarzı harcamaları yüksek yönetici/profesyonel hanesi. Gıdanın bütçedeki payı düşük olduğundan manşet enflasyonun altında bir sepet yaşar; ana baskı kalemi özel eğitim.",
+      weights: { egitim: 0.20, lokanta: 0.15, enag: 0.18, ulasim: 0.14, saglik: 0.10, eglence: 0.08, giyim: 0.08, enerji: 0.07 } },
+    // ── İş dünyası profilleri (maliyet enflasyonu) ──
+    { key: "esnaf", label: "Kiracı Esnaf / KOBİ", group: "is",
+      desc: "Dükkânı veya ofisi kiralık, çalışan istihdam eden ve işletme kredisi kullanan küçük işletme. Maliyet enflasyonunun iki ana sürücüsü işyeri kirası ve işgücü; müşterisinin alım gücündeki erime bu tabloya ayrıca eklenir.",
+      weights: { kira: 0.25, isgucu: 0.20, uretici: 0.20, ticariKredi: 0.15, enerji: 0.15, ulasim: 0.05 } },
+    { key: "fabrika-mulk", label: "Sanayici (Tesis Sahibi)", group: "is",
+      desc: "Üretim tesisi kendi mülkü olan üretici. Maliyeti hammadde (Yİ-ÜFE), işçilik ve finansmandan oluşur; kira yükü taşımadığı ve ithal girdisi bu yıl ucuzladığı için maliyet enflasyonu en düşük profildir.",
+      weights: { uretici: 0.30, isgucu: 0.25, ticariKredi: 0.20, enerji: 0.15, ithalGirdi: 0.10 } },
+    { key: "fabrika-kira", label: "Sanayici (Kiracı Tesis)", group: "is",
+      desc: "Üretim tesisini veya deposunu kiralayan üretici. Mülk sahibi sanayiciyle aynı girdi yapısına ticari kira kalemi eklenir — aradaki fark, sanayide mülkiyetin maliyet avantajını gösterir.",
+      weights: { uretici: 0.25, isgucu: 0.20, kira: 0.15, ticariKredi: 0.20, enerji: 0.10, ithalGirdi: 0.10 } },
+    { key: "holding", label: "Büyük Ölçekli Grup (Holding)", group: "is",
+      desc: "Yüksek işletme sermayesi çeviren, finansman ağırlıklı çalışan, ithal girdi ve kur riski taşıyan büyük ölçekli şirket. Maliyet tablosunu ticari faiz ve kur-dış fiyat bileşkesi belirler.",
+      weights: { ticariKredi: 0.30, isgucu: 0.20, uretici: 0.20, ithalGirdi: 0.20, enerji: 0.10 } },
   ];
   const profiles = FELT_PROFILES.map((p) => {
     let num = 0, den = 0;
@@ -439,7 +479,13 @@ export async function runInflationEngine(manual?: ManualValues): Promise<RunData
       const v = feltValues[k];
       if (v != null && w > 0) { num += v * w; den += w; }
     }
-    return { key: p.key, label: p.label, group: p.group, value: den > 0.5 ? round1(num / den) : null };
+    // Formül metni ağırlıklardan otomatik: "gerçek kira %25 · işgücü maliyeti %20 · ..."
+    const formula = Object.entries(p.weights)
+      .filter(([, w]) => w > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, w]) => `${COMP_LABELS[k] ?? k} %${Math.round(w * 100)}`)
+      .join(" · ");
+    return { key: p.key, label: p.label, desc: p.desc, formula, group: p.group, value: den > 0.5 ? round1(num / den) : null };
   });
 
   // ── 4. Alım gücü türetmeleri ────────────────────────────────────

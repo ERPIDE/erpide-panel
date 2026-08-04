@@ -437,10 +437,8 @@ function ContactCTA({ product }: { product: { id: string; name: string; demoUrl?
         href="/enflasyon"
         className="block p-6 rounded-2xl bg-gradient-to-br from-red-500/10 to-amber-500/5 border border-red-500/30 hover:border-red-500/60 transition"
       >
-        <h3 className="font-bold text-white mb-1">Raporu Ücretsiz Görüntüle</h3>
-        <p className="text-xs text-gray-400 leading-relaxed">
-          Manşet ve kriz senaryoları herkese açık — tam döküm ve aylık e-posta raporu ücretsiz üyelikle.
-        </p>
+        <h3 className="font-bold text-white mb-1">{t("enflasyon.view_free")}</h3>
+        <p className="text-xs text-gray-400 leading-relaxed">{t("enflasyon.free_card_desc")}</p>
       </Link>
     );
   }

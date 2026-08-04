@@ -40,6 +40,22 @@ export async function GET() {
     }
   }
 
+  // Acil fren: ENFLASYON_TEASER_PUBLIC=false yapılırsa sayılar üye olmayana
+  // hiç gösterilmez (hukuki temkin modu) — kod değişikliği gerekmez.
+  const teaserPublic = process.env.ENFLASYON_TEASER_PUBLIC !== "false";
+
+  if (!member && !teaserPublic) {
+    return NextResponse.json({
+      ready: true,
+      member: false,
+      subscribed: false,
+      teaserHidden: true,
+      period: data.period,
+      computedAt: data.computedAt,
+      stats: data.stats,
+    });
+  }
+
   const base = {
     ready: true,
     member,

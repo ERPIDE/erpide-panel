@@ -50,7 +50,7 @@ interface RunData {
   };
   layers: LayerResult[];
   feltLayers?: LayerResult[];
-  profiles?: { key: string; label: string; group?: "kriz" | "hane" | "is"; value: number | null }[];
+  profiles?: { key: string; label: string; desc?: string; formula?: string; group?: "kriz" | "hane" | "is"; value: number | null }[];
   params: ParamResult[];
   stats: { total: number; live: number; static: number; derived: number; waitingKey: number; pending: number; noData: number };
   notes: string[];
@@ -397,11 +397,15 @@ export default function EnflasyonPage() {
                     return (
                       <div key={g}>
                         <p className="text-xs text-gray-500 mb-3">{title}</p>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                           {items.map((p) => (
-                            <div key={p.key} className={`rounded-xl px-3 py-2.5 text-center border ${g === "kriz" ? "bg-red-500/[0.06] border-red-500/25" : "bg-white/[0.03] border-white/5"}`}>
-                              <p className={`text-lg font-bold ${cls}`}>{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
-                              <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{p.label}</p>
+                            <div key={p.key} className={`rounded-xl p-3.5 border ${g === "kriz" ? "bg-red-500/[0.06] border-red-500/25" : "bg-white/[0.03] border-white/5"}`}>
+                              <div className="flex items-baseline justify-between gap-2 mb-1">
+                                <p className="text-sm font-semibold text-white">{p.label}</p>
+                                <p className={`text-lg font-bold whitespace-nowrap ${cls}`}>{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
+                              </div>
+                              {p.desc && <p className="text-xs text-gray-500 leading-relaxed mb-1.5">{p.desc}</p>}
+                              {p.formula && <p className="text-[10px] text-gray-600 leading-relaxed"><span className="text-gray-500">Sepet:</span> {p.formula}</p>}
                             </div>
                           ))}
                         </div>

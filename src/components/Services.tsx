@@ -63,7 +63,7 @@ export default function Services() {
                 <p className="text-gray-400 text-sm leading-relaxed mb-5">{getProductText(p, locale, "description")}</p>
                 <div className="flex items-baseline gap-2 mb-5">
                   {p.id === "enflasyon-raporu" ? (
-                    <span className="text-sm font-semibold text-emerald-400">Ücretsiz</span>
+                    <span className="text-sm font-semibold text-emerald-400">{t("enflasyon.free")}</span>
                   ) : p.contactOnly || !p.skus[0] ? (
                     <span className="text-sm font-semibold text-blue-400">{t("services.demo_quote")}</span>
                   ) : (

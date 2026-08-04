@@ -301,7 +301,7 @@ function Inner({ productId }: { productId: string }) {
                   href="/enflasyon"
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm text-white font-semibold hover:from-blue-500 hover:to-indigo-500 transition"
                 >
-                  Raporu Ücretsiz Görüntüle
+                  {t("enflasyon.view_free")}
                 </Link>
               )}
               {product.demoUrl && (

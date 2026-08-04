@@ -43,6 +43,8 @@ interface ParamResult {
 interface Profile {
   key: string;
   label: string;
+  desc?: string;
+  formula?: string;
   group?: "kriz" | "hane" | "is";
   value: number | null;
 }
@@ -51,12 +53,13 @@ interface ApiPayload {
   ready: boolean;
   member: boolean;
   subscribed: boolean;
+  teaserHidden?: boolean;
   period: string;
   computedAt: string;
-  headline: { felt?: number | null; real: number | null; official: number | null; enag: number; gap: number | null };
+  headline?: { felt?: number | null; real: number | null; official: number | null; enag: number; gap: number | null };
   stats: { total: number; live: number; static: number; derived: number; pending: number };
-  feltLayers: LayerResult[];
-  krizProfiles: Profile[];
+  feltLayers?: LayerResult[];
+  krizProfiles?: Profile[];
   profiles?: Profile[];
   layers?: LayerResult[];
   params?: ParamResult[];
@@ -167,7 +170,23 @@ export default function EnflasyonPublicPage() {
             <p className="text-center text-gray-500">Rapor hazırlanıyor — kısa süre sonra tekrar bak.</p>
           )}
 
-          {!loading && data?.ready && h && (
+          {/* Temkin modu: sayılar üye olmayana kapalı (ENFLASYON_TEASER_PUBLIC=false) */}
+          {!loading && data?.ready && data.teaserHidden && !data.member && (
+            <div className="bg-[#111118] border border-white/5 rounded-2xl p-10 text-center max-w-2xl mx-auto">
+              <Lock size={28} className="text-blue-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Rapor üyelere özeldir</h2>
+              <p className="text-gray-400 mb-6">
+                {data.stats.total} parametreli Gerçek Enflasyon Raporu&apos;nun tamamı — sınıf profilleri,
+                kompozit katmanlar ve aylık e-posta — ücretsiz üyelikle görüntülenir.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/uye-ol?next=/enflasyon" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-sm text-white font-semibold hover:opacity-90 transition">Ücretsiz Üye Ol</Link>
+                <Link href="/giris?next=/enflasyon" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition">Giriş Yap</Link>
+              </div>
+            </div>
+          )}
+
+          {!loading && data?.ready && !data.teaserHidden && h && (
             <>
               {/* Manşet kartları — herkese açık */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -186,17 +205,21 @@ export default function EnflasyonPublicPage() {
               </div>
 
               {/* Kriz senaryoları — herkese açık (viral kısım) */}
-              {data.krizProfiles.length > 0 && (
+              {(data.krizProfiles?.length ?? 0) > 0 && (
                 <div className="bg-[#111118] border border-red-500/25 rounded-2xl p-6 mb-8">
                   <h2 className="text-white font-semibold flex items-center gap-2 mb-1">
                     <AlertTriangle size={17} className="text-red-400" /> Enflasyonun en sert vurduğu senaryolar
                   </h2>
                   <p className="text-xs text-gray-500 mb-4">Aynı veri, farklı hayatlar — enflasyon herkese aynı oranda dokunmuyor.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {data.krizProfiles.map((p) => (
-                      <div key={p.key} className="bg-red-500/[0.06] border border-red-500/25 rounded-xl px-4 py-3 text-center">
-                        <p className="text-2xl font-bold text-red-400">{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
-                        <p className="text-xs text-gray-400 mt-1">{p.label}</p>
+                    {data.krizProfiles!.map((p) => (
+                      <div key={p.key} className="bg-red-500/[0.06] border border-red-500/25 rounded-xl p-4">
+                        <div className="flex items-baseline justify-between gap-2 mb-2">
+                          <p className="text-sm font-semibold text-white">{p.label}</p>
+                          <p className="text-2xl font-bold text-red-400 whitespace-nowrap">{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
+                        </div>
+                        {p.desc && <p className="text-xs text-gray-400 leading-relaxed mb-2">{p.desc}</p>}
+                        {p.formula && <p className="text-[10px] text-gray-600 leading-relaxed"><span className="text-gray-500">Sepet:</span> {p.formula}</p>}
                       </div>
                     ))}
                   </div>
@@ -204,11 +227,11 @@ export default function EnflasyonPublicPage() {
               )}
 
               {/* Hissedilen bileşenleri — herkese açık */}
-              {data.feltLayers.length > 0 && (
+              {(data.feltLayers?.length ?? 0) > 0 && (
                 <div className="bg-[#111118] border border-white/5 rounded-2xl p-6 mb-8">
                   <h2 className="text-white font-semibold mb-4">Hissedilen Enflasyonun Bileşenleri</h2>
                   <div className="space-y-2">
-                    {data.feltLayers.map((l) => (
+                    {data.feltLayers!.map((l) => (
                       <div key={l.key} className="flex items-center gap-3 text-sm">
                         <span className="w-52 shrink-0 text-gray-300">{l.label}</span>
                         <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
@@ -283,11 +306,15 @@ export default function EnflasyonPublicPage() {
                         return (
                           <div key={g} className="mb-4">
                             <p className="text-xs text-gray-500 mb-3">{title}</p>
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                               {items.map((p) => (
-                                <div key={p.key} className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2.5 text-center">
-                                  <p className={`text-lg font-bold ${cls}`}>{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
-                                  <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{p.label}</p>
+                                <div key={p.key} className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                  <div className="flex items-baseline justify-between gap-2 mb-2">
+                                    <p className="text-sm font-semibold text-white">{p.label}</p>
+                                    <p className={`text-xl font-bold whitespace-nowrap ${cls}`}>{p.value != null ? `%${p.value.toLocaleString("tr-TR")}` : "—"}</p>
+                                  </div>
+                                  {p.desc && <p className="text-xs text-gray-400 leading-relaxed mb-2">{p.desc}</p>}
+                                  {p.formula && <p className="text-[10px] text-gray-600 leading-relaxed"><span className="text-gray-500">Sepet:</span> {p.formula}</p>}
                                 </div>
                               ))}
                             </div>
@@ -368,10 +395,15 @@ export default function EnflasyonPublicPage() {
                 </>
               )}
 
-              <p className="text-center text-xs text-gray-600">
-                {data.stats.live} canlı veri kaynağı · ERPIDE Yazılım A.Ş. tarafından her ay otomatik hesaplanır ·
-                Metodoloji ve tüm kaynaklar raporun içinde şeffaftır. Yatırım tavsiyesi değildir.
-              </p>
+              <div className="text-center text-xs text-gray-600 space-y-1 max-w-3xl mx-auto">
+                <p>{data.stats.live} canlı veri kaynağı · ERPIDE Yazılım A.Ş. tarafından her ay otomatik hesaplanır · Metodoloji ve tüm kaynaklar şeffaftır.</p>
+                <p>
+                  Bu rapor bağımsız bir araştırma ve analiz ürünüdür; 5429 sayılı Türkiye İstatistik Kanunu kapsamında
+                  <b> resmî istatistik değildir</b> ve resmî istatistik yerine geçmez. Hesaplamalar TÜİK, TCMB, Eurostat,
+                  Dünya Bankası ve ENAG gibi kamuya açık kaynaklara dayanır; ilgili resmi veriler raporda ayrıca sunulur.
+                  Yatırım tavsiyesi değildir.
+                </p>
+              </div>
             </>
           )}
         </div>

@@ -128,17 +128,17 @@ export function buildInflationEmailHtml(run: RunData): string {
         ${run.profiles!.some((p) => p.group === "kriz") ? `
         ${row([`<b style="color:#dc2626;font-size:11px;text-transform:uppercase">⚠ En sert vurulan senaryolar</b>`, ""])}
         ${run.profiles!.filter((p) => p.group === "kriz").map((p) => row([
-          p.label,
+          `<b>${p.label}</b>${p.desc ? `<br/><span style="color:#94a3b8;font-size:11px">${p.desc}</span>` : ""}`,
           p.value != null ? `<b style="color:#b91c1c;font-size:15px">%${fmtNum(p.value)}</b>` : "—",
         ])).join("")}` : ""}
         ${row([`<b style="color:#64748b;font-size:11px;text-transform:uppercase">Hane</b>`, ""])}
         ${run.profiles!.filter((p) => (p.group ?? "hane") === "hane").map((p) => row([
-          p.label,
+          `<b>${p.label}</b>${p.desc ? `<br/><span style="color:#94a3b8;font-size:11px">${p.desc}</span>` : ""}`,
           p.value != null ? `<b style="color:#dc2626">%${fmtNum(p.value)}</b>` : "—",
         ])).join("")}
         ${row([`<b style="color:#64748b;font-size:11px;text-transform:uppercase">İş dünyası (maliyet enflasyonu)</b>`, ""])}
         ${run.profiles!.filter((p) => p.group === "is").map((p) => row([
-          p.label,
+          `<b>${p.label}</b>${p.desc ? `<br/><span style="color:#94a3b8;font-size:11px">${p.desc}</span>` : ""}`,
           p.value != null ? `<b style="color:#d97706">%${fmtNum(p.value)}</b>` : "—",
         ])).join("")}
       </table>` : ""}
