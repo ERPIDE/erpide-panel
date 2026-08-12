@@ -37,11 +37,6 @@ const ABOUT_JSON_LD = {
     foundingDate: "2022",
     foundingLocation: { "@type": "Place", name: "Aydın, Türkiye" },
     numberOfEmployees: { "@type": "QuantitativeValue", value: 11 },
-    founder: {
-      "@type": "Person",
-      name: "Ali Murat El",
-      jobTitle: "Kurucu / Y. Yazılım Mühendisi",
-    },
   },
 };
 

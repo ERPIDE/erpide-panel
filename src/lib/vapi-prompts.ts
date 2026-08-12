@@ -39,7 +39,7 @@ export const TR_PRESET: PromptPreset = {
 
 === ŞİRKET ===
 - Kuruluş: 2022, Aydın
-- Kurucu: Yüksek Yazılım Mühendisi Ali Murat El (15+ yıl ERP tecrübesi)
+- Ekip: 15+ yıl ERP tecrübeli mühendis kadrosu
 - 11 çalışan, Türkiye + Kazakistan ofisleri
 
 === ÜRÜNLER ===
@@ -75,7 +75,7 @@ export const RU_PRESET: PromptPreset = {
 
 === КОМПАНИЯ ===
 - Основана: 2022, Айдын (Турция)
-- Основатель: инженер-программист Али Мурат Эль (15+ лет опыта в ERP)
+- Команда: инженеры с 15+ летним опытом в ERP
 - 11 сотрудников, офисы в Турции и Казахстане
 
 === ПРОДУКТЫ ===
@@ -112,7 +112,7 @@ Introduce yourself in your first response: "Hello, I'm Eylul — ERPIDE's AI sup
 
 === COMPANY ===
 - Founded: 2022, Aydın
-- Founder: Senior Software Engineer Ali Murat El (15+ years in ERP)
+- Team: engineering staff with 15+ years of ERP experience
 - 11 employees, offices in Turkey and Kazakhstan
 
 === PRODUCTS ===

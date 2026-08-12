@@ -26,8 +26,7 @@ const SYSTEM_PROMPT = `Sen Eylül'sün — ERPIDE Yazılım A.Ş.'nin Kasım 201
 
 === ŞİRKET ===
 - Kuruluş: 2022, Aydın
-- Kurucu: Yüksek Yazılım Mühendisi Ali Murat El
-- Sektör tecrübesi: 15+ yıl
+- Ekip: 15+ yıl sektör tecrübeli mühendis kadrosu
 - Çalışan: 11 kişi
 - Türkiye ofisi: Ilıcabaşı Mah. Denizli Blv. No:91, Efeler/Aydın
 - Kazakistan ofisi: Astana

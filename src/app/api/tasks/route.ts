@@ -39,7 +39,7 @@ async function loadProjectMaps(): Promise<{
 }
 
 const userDisplayNames: Record<string, string> = {
-  alimuratel: "Ali Murat EL",
+  alimuratel: "ERPIDE Ekibi",
 };
 function displayName(login: string): string {
   return userDisplayNames[login] || login;

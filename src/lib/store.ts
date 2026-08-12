@@ -22,7 +22,7 @@ export interface CustomerUser {
 }
 
 export const initialAdmins: AdminUser[] = [
-  { id: "a1", name: "Ali Murat El", email: "admin@erpide.com", password: "erpide2024", role: "admin" },
+  { id: "a1", name: "ERPIDE Admin", email: "admin@erpide.com", password: "erpide2024", role: "admin" },
 ];
 
 export const initialCustomers: CustomerUser[] = [

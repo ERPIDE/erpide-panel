@@ -1,7 +1,7 @@
 # ERPIDE — Pazarlama & SEO Stratejisi (Master Plan)
 
 **Son güncelleme:** 2026-06-14
-**Sahip:** Ali Murat El (ERPIDE Yazılım A.Ş. kurucu)
+**Sahip:** ERPIDE Yazılım A.Ş.
 
 Bu dokümanın amacı: ERPIDE markasını ve 8 ürünü globalde ölçeklendirecek pazarlama + SEO + içerik stratejisinin **tek doğru kaynağı** olmak. Her ürünün hedef pazarı, kanalları, mesajları, KPI'ları burada toplanır. Yapılacaklar listesi sondaki "Aksiyon Kuyruğu"nda.
 
