@@ -6,9 +6,11 @@ import { LEGAL_UPDATED } from "@/lib/company-info";
 export default function LegalPageLayout({
   title,
   children,
+  updated = LEGAL_UPDATED,
 }: {
   title: string;
   children: React.ReactNode;
+  updated?: string;
 }) {
   return (
     <>
@@ -25,7 +27,7 @@ export default function LegalPageLayout({
             <span className="gradient-text">{title}</span>
           </h1>
           <p className="text-sm text-gray-500 mb-10">
-            Son güncelleme: {LEGAL_UPDATED}
+            Son güncelleme: {updated}
           </p>
           <article className="prose-legal text-gray-300 leading-relaxed space-y-6">
             {children}
