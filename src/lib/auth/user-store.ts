@@ -126,6 +126,17 @@ export interface OrderRecord {
   // If this order was created by an auto-renewal, the parent order id.
   renewedFromOrderId?: string;
 
+  /**
+   * Ödeme anında seçilen fatura adresinin ANLIK GÖRÜNTÜSÜ.
+   *
+   * Fatura bu kayıttan kesilir, kullanıcının güncel profilinden DEĞİL.
+   * Önceden seçilen adres `updateUser` ile profile kopyalanıyor ve fatura
+   * oradan okuyordu; kullanıcı sonradan adresini değiştirse ya da iki sipariş
+   * çakışsa, vergi belgesine YANLIŞ VKN yazılabilirdi. Belgenin dayanağı
+   * siparişin kendisinde donmuş olmalı.
+   */
+  billingSnapshot?: SavedAddress;
+
   // Cancellation — kullanıcı (veya admin) abonelği iptal ettiğinde set edilir.
   // status hala "PAID" kalır subscriptionExpiresAt'a kadar; cron renewal'i atlar.
   // Süre dolunca status="EXPIRED" olur, license inactive olur, FinansERPIDE cache
@@ -403,6 +414,7 @@ function rowToOrder(row: AnyRow): OrderRecord {
     lastRenewAttemptAt: iso(row.lastRenewAttemptAt),
     lastRenewError: (row.lastRenewError as string) || undefined,
     renewedFromOrderId: (row.renewedFromOrderId as string) || undefined,
+    billingSnapshot: (row.billingSnapshot as SavedAddress) || undefined,
     cancelledAt: iso(row.cancelledAt),
     cancelledBy: (row.cancelledBy as OrderRecord["cancelledBy"]) || undefined,
     cancellationReason: (row.cancellationReason as string) || undefined,
@@ -434,6 +446,7 @@ function orderToPrisma(rec: Partial<OrderRecord>): AnyRow {
   if (rec.lastRenewAttemptAt !== undefined) out.lastRenewAttemptAt = dateOrNull(rec.lastRenewAttemptAt);
   if (rec.lastRenewError !== undefined) out.lastRenewError = rec.lastRenewError || null;
   if (rec.renewedFromOrderId !== undefined) out.renewedFromOrderId = rec.renewedFromOrderId || null;
+  if (rec.billingSnapshot !== undefined) out.billingSnapshot = rec.billingSnapshot ?? null;
   if (rec.cancelledAt !== undefined) out.cancelledAt = dateOrNull(rec.cancelledAt);
   if (rec.cancelledBy !== undefined) out.cancelledBy = rec.cancelledBy || null;
   if (rec.cancellationReason !== undefined) out.cancellationReason = rec.cancellationReason || null;

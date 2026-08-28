@@ -70,21 +70,42 @@ export async function issueSubscriptionInvoice(
     };
   });
 
-  // Kurumsal alıcıda VKN + ünvan, bireysel alıcıda TCKN + ad soyad.
-  const taxNumber = (user.taxNumber || user.identityNumber || "").replace(/\D/g, "") || null;
-  const buyerName = user.companyName?.trim() || `${user.name} ${user.surname}`.trim();
+  // Fatura kimliği ÖNCE siparişin anlık görüntüsünden okunuyor.
+  //
+  // Önceden yalnızca `user.*` alanları kullanılıyordu; checkout seçilen adresi
+  // profile kopyaladığı için çoğu zaman doğru çalışıyordu ama kırılgandı:
+  // kullanıcı ödemeden sonra adresini değiştirse, iki sipariş çakışsa ya da
+  // fatura sonradan (yenileme cron'u, elle tekrar) kesilse vergi belgesine
+  // YANLIŞ VKN yazılabilirdi. Anlık görüntü siparişte donmuş durumda.
+  const snap = order.billingSnapshot;
+  const kurumsal = snap ? snap.type === "corporate" : !!user.companyName?.trim();
+
+  const taxNumber = (
+    snap
+      ? (kurumsal ? snap.taxNumber : snap.identityNumber) || ""
+      : user.taxNumber || user.identityNumber || ""
+  ).replace(/\D/g, "") || null;
+
+  const buyerName = snap
+    ? (kurumsal
+        ? (snap.companyName || "").trim()
+        : `${snap.firstName} ${snap.lastName}`.trim())
+    : (user.companyName?.trim() || `${user.name} ${user.surname}`.trim());
 
   const payload = {
     orderId: order.id,
     buyer: {
-      name: buyerName,
+      name: buyerName || `${user.name} ${user.surname}`.trim(),
       taxNumber,
-      taxOffice: null,
+      // Vergi dairesi yalnizca kurumsal alicida anlamli.
+      taxOffice: (kurumsal && snap?.taxOffice) || null,
       email: user.email,
-      phone: user.gsmNumber || null,
-      address: [user.address, user.district].filter(Boolean).join(" ") || null,
-      city: user.city || null,
-      country: "TR",
+      phone: snap?.phone || user.gsmNumber || null,
+      address: snap
+        ? [snap.fullAddress, snap.district].filter(Boolean).join(" ") || null
+        : [user.address, user.district].filter(Boolean).join(" ") || null,
+      city: snap?.city || user.city || null,
+      country: snap?.country === "Turkey" || !snap?.country ? "TR" : snap.country,
     },
     lines,
     currency: "TRY",

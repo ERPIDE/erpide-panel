@@ -97,6 +97,10 @@ export async function POST(req: Request) {
       items: orderItems,
       totalPrice,
       currency: orderCurrency,
+      // Fatura BU anlik goruntuden kesilir. Yukaridaki `updateUser` yalnizca
+      // eski cagiranlarin bozulmamasi icin duruyor; vergi belgesinin dayanagi
+      // artik siparisin kendisinde donmus durumda.
+      billingSnapshot: billingAddress,
       conversationId,
       status: "PENDING",
     });

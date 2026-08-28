@@ -88,6 +88,11 @@ model Order {
   lastRenewError        String?
   renewedFromOrderId    String?
 
+  /// Odeme anindaki fatura adresinin anlik goruntusu (SavedAddress).
+  /// Fatura BU kayittan kesilir, kullanicinin guncel profilinden degil —
+  /// profil sonradan degisirse vergi belgesi yanlis VKN tasimasin.
+  billingSnapshot       Json?
+
   cancelledAt             DateTime?
   cancelledBy             String?
   cancellationReason      String?
