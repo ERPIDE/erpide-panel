@@ -56,12 +56,14 @@ const SIRKET: SavedAddress = {
   firstName: "Ali", lastName: "Yılmaz", phone: "5551112233",
   companyName: "ÖRNEK YAZILIM A.Ş.", taxNumber: "1234567890", taxOffice: "Güzelhisar",
   country: "Turkey", city: "Aydın", district: "Efeler", fullAddress: "Test Mah. 1 Sk. No:1",
+  createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
 };
 const SAHIS: SavedAddress = {
   id: "a2", label: "Ev", type: "individual",
   firstName: "Ali", lastName: "Yılmaz", phone: "5551112233",
   identityNumber: "12345678901",
   country: "Turkey", city: "İzmir", district: "Konak", fullAddress: "Ev Mah. 2 Sk. No:2",
+  createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
 // Profilde ESKI bir kurumsal alis kalmis

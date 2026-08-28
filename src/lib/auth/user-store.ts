@@ -602,9 +602,24 @@ export async function updateUser(id: string, patch: Partial<UserRecord>): Promis
 export async function createOrder(input: Omit<OrderRecord, "id" | "createdAt">): Promise<OrderRecord> {
   if (HAS_DB) {
     const id = randomUUID();
-    const data = { id, ...orderToPrisma(input) };
-    const row = await getPrisma().order.create({ data: data as any });
-    return rowToOrder(row as unknown as AnyRow);
+    const data: AnyRow = { id, ...orderToPrisma(input) };
+    try {
+      const row = await getPrisma().order.create({ data: data as any });
+      return rowToOrder(row as unknown as AnyRow);
+    } catch (e: any) {
+      // P2022 = kolon veritabaninda yok. Kod, semaya eklenen bir alani
+      // migration'dan ONCE deploy edilmis olabilir; boyle bir sirada
+      // SIPARIS OLUSTURMA PATLAMAMALI — musteri odeme ekraninda kalir.
+      // Alani dusurup tekrar deniyoruz; kolon acilinca kendiliginden
+      // dogru yola donuyor.
+      const bilinmeyenKolon = e?.code === "P2022" ||
+        /column .* does not exist/i.test(String(e?.message ?? ""));
+      if (!bilinmeyenKolon || data.billingSnapshot === undefined) throw e;
+      console.warn("[createOrder] billingSnapshot kolonu yok — alansiz devam edildi (migration bekliyor)");
+      delete data.billingSnapshot;
+      const row = await getPrisma().order.create({ data: data as any });
+      return rowToOrder(row as unknown as AnyRow);
+    }
   }
   const s = await loadState(true);
   const id = randomUUID();
