@@ -108,8 +108,23 @@ export async function GET() {
     sbRows(key, "ops_events", "id,event,user_id,meta,created_at", "", 200),
   ]);
 
+  // ── Aktivasyon funnel'ı (witma docs/ANALITIK.md) — son 30 gün, adım başına cihaz sayısı ──
+  const d30ISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const FUNNEL_STEPS = ["welcome_start", "phone_submit", "otp_verified", "profile_done", "first_chat_open", "first_message", "first_value"];
+  const [funnelCounts, translateUsersWeek, firstValueHuman] = await Promise.all([
+    Promise.all(FUNNEL_STEPS.map((s) => sbCount(key, "ops_events", `event=eq.funnel&meta->>step=eq.${s}&created_at=gte.${d30ISO}`))),
+    sbRows(key, "ops_events", "user_id", `event=eq.translate&created_at=gte.${weekISO}`, 5000, ""),
+    sbCount(key, "ops_events", `event=eq.funnel&meta->>step=eq.first_value&meta->>via=eq.human&created_at=gte.${d30ISO}`),
+  ]);
+  const funnel = FUNNEL_STEPS.map((step, i) => ({ step, count: funnelCounts[i] }));
+  // North Star: son 7 günde en az 1 çeviri yapan TEKİL kullanıcı
+  const northStarWeek = new Set((translateUsersWeek as Array<{ user_id: string | null }>).map((r) => r.user_id).filter(Boolean)).size;
+
   return NextResponse.json({
     hasServiceKey,
+    funnel,            // [{step,count}] son 30 gün
+    firstValueHuman,   // first_value içinde gerçek insandan gelen (asistan demosu hariç)
+    northStarWeek,
     totalUsers,
     onlineNow,
     todayMsgs,   weekMsgs,   monthMsgs,

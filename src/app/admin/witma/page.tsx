@@ -7,8 +7,8 @@ import {
   TrendingUp, Languages, AlertCircle,
 } from "lucide-react";
 
-const CURRENT_OTA = "v51";
-const OTA_DATE = "2026-06-21";
+const CURRENT_OTA = "v852";
+const OTA_DATE = "2026-08-28";
 
 type Tab = "genel" | "kullanicilar" | "aktivite";
 type Period = "today" | "week" | "month";
@@ -22,8 +22,16 @@ type StatsResponse = {
   todayOpens: number | null;  weekOpens: number | null;  monthOpens: number | null;
   todayTranslates: number | null; monthTranslates: number | null;
   premiumUsers: number | null;
+  funnel?: { step: string; count: number | null }[];
+  firstValueHuman?: number | null;
+  northStarWeek?: number | null;
   profiles: any[];
   events: any[];
+};
+
+const FUNNEL_LABELS: Record<string, string> = {
+  welcome_start: "Karşılama", phone_submit: "Telefon", otp_verified: "OTP", profile_done: "Profil",
+  first_chat_open: "İlk sohbet", first_message: "İlk mesaj", first_value: "İlk çeviri (aha)",
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
@@ -222,6 +230,58 @@ export default function WitmaAdminPage() {
             <StatCard icon={Globe}         label={`${periodLabel} Açılış`}  value={opens   ?? null} color="text-cyan-400" />
             <StatCard icon={Languages}     label={`${periodLabel} Çeviri`}  value={translates ?? null} color="text-teal-400" />
           </div>
+
+          {/* Aktivasyon funnel'ı (son 30 gün) + North Star */}
+          {d?.funnel && (() => {
+            const f = d.funnel!;
+            const top = Math.max(1, ...f.map((x) => x.count ?? 0));
+            const pct = (i: number) => {
+              const prev = i === 0 ? null : f[i - 1].count;
+              const cur = f[i].count;
+              if (i === 0 || !prev || cur === null) return null;
+              return Math.round((cur / prev) * 100);
+            };
+            const done = f.find((x) => x.step === "profile_done")?.count ?? 0;
+            const aha = f.find((x) => x.step === "first_value")?.count ?? 0;
+            return (
+              <div className="p-5 rounded-xl bg-[#111118] border border-white/5 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wider flex items-center gap-1.5"><TrendingUp size={13} /> Aktivasyon Funnel'ı</div>
+                    <div className="text-xs text-gray-600 mt-0.5">son 30 gün · cihaz başına tek sefer · OTA ≥ v851</div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-500 uppercase">North Star (7 gün)</div>
+                      <div className="text-lg font-bold text-teal-400">{d.northStarWeek ?? "—"}</div>
+                      <div className="text-[10px] text-gray-600">çeviri yapan tekil kullanıcı</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-500 uppercase">Aktivasyon</div>
+                      <div className="text-lg font-bold text-green-400">{done ? `%${Math.round((aha / done) * 100)}` : "—"}</div>
+                      <div className="text-[10px] text-gray-600">profil → aha · insan: {d.firstValueHuman ?? "—"}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {f.map((x, i) => {
+                    const p = pct(i);
+                    const w = Math.max(2, Math.round(((x.count ?? 0) / top) * 100));
+                    return (
+                      <div key={x.step} className="flex items-center gap-3 text-xs">
+                        <div className="w-28 shrink-0 text-gray-400">{FUNNEL_LABELS[x.step] || x.step}</div>
+                        <div className="flex-1 h-5 bg-white/5 rounded overflow-hidden">
+                          <div className={`h-full rounded ${x.step === "first_value" ? "bg-teal-500/70" : "bg-cyan-500/40"}`} style={{ width: `${w}%` }} />
+                        </div>
+                        <div className="w-12 text-right text-white font-medium">{x.count ?? "—"}</div>
+                        <div className={`w-12 text-right ${p !== null && p < 50 ? "text-red-400" : "text-gray-500"}`}>{p === null ? "" : `${p}%`}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* OTA Info */}
           <div className="p-5 rounded-xl bg-[#111118] border border-white/5 flex items-center justify-between">
