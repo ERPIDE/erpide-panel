@@ -688,6 +688,43 @@ export async function updateOrder(id: string, patch: Partial<OrderRecord>): Prom
   return updated;
 }
 
+/**
+ * Kontör tüketimini KOŞULLU yazar — kaybolan güncelleme sorununa karşı.
+ *
+ * Eski akış: oku → hesapla → yaz. İki AI çağrısı aynı anda gelirse ikisi de
+ * `consumed = 5` okuyup ikisi de `6` yazıyordu; iki kontör harcanması
+ * gerekirken bir tanesi düşülüyordu. Fatura işleme paralel çalıştığı için
+ * (eşzamanlılık 6) bu teorik değil, sistematik bir kayıptı — müşteri
+ * bedavaya kullanır, maliyeti ERPIDE öderdi.
+ *
+ * Burada güncelleme yalnızca değer HÂLÂ beklenen sayıdaysa uygulanıyor.
+ * Değişmişse `false` döner ve çağıran yeniden okuyup dener.
+ *
+ * @returns yazıldıysa true, araya başka bir güncelleme girdiyse false
+ */
+export async function tuketimiKosulluYaz(
+  id: string,
+  beklenenMevcut: number,
+  yeniDeger: number,
+): Promise<boolean> {
+  if (HAS_DB) {
+    const sonuc = await getPrisma().order.updateMany({
+      where: { id, creditsConsumed: beklenenMevcut },
+      data: { creditsConsumed: yeniDeger },
+    });
+    return sonuc.count === 1;
+  }
+  // Dosya yedeginde tek surec var; yine de ayni kontrolu uyguluyoruz ki
+  // davranis iki modda ayni olsun.
+  const s = await loadState(true);
+  const mevcut = s.orders[id];
+  if (!mevcut) return false;
+  if ((mevcut.creditsConsumed ?? 0) !== beklenenMevcut) return false;
+  s.orders[id] = { ...mevcut, creditsConsumed: yeniDeger };
+  await saveState(s);
+  return true;
+}
+
 export async function findOrderById(id: string): Promise<OrderRecord | undefined> {
   if (HAS_DB) {
     const row = await getPrisma().order.findUnique({ where: { id } });

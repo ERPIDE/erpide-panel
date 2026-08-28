@@ -25,7 +25,7 @@ import { NextResponse } from "next/server";
 import {
   findUserByEmail,
   listOrdersByUserId,
-  updateOrder,
+  tuketimiKosulluYaz,
   type OrderRecord,
 } from "@/lib/auth/user-store";
 import { getSku } from "@/lib/products";
@@ -108,14 +108,29 @@ export async function POST(req: Request) {
   let consumedFromOrderId: string | null = null;
   let lastOrderRemaining = 0;
 
+  // Yazma KOSULLU: deger hala okudugumuz sayidaysa uygulanir. Iki AI cagrisi
+  // ayni anda gelirse ikisi de ayni `consumed`i okuyup ayni degeri yaziyordu;
+  // iki kontor yerine bir tanesi dusuluyordu. Fatura isleme paralel calistigi
+  // icin bu sistematik bir kayipti.
+  let cakismaVar = false;
   for (const c of candidates) {
     if (remainingToConsume <= 0) break;
     const fromThis = Math.min(c.remaining, remainingToConsume);
     const newConsumed = c.consumed + fromThis;
-    await updateOrder(c.order.id, { creditsConsumed: newConsumed });
+    const yazildi = await tuketimiKosulluYaz(c.order.id, c.consumed, newConsumed);
+    if (!yazildi) { cakismaVar = true; continue; }
     remainingToConsume -= fromThis;
     consumedFromOrderId = c.order.id;
     lastOrderRemaining = c.granted - newConsumed;
+  }
+
+  // Hic dusulemedi: araya baska istek girmis. Cagirana ACIK cevap veriyoruz
+  // ki yeniden denesin — "dustum" deyip dusmemekten iyidir.
+  if (remainingToConsume === amount) {
+    return NextResponse.json(
+      { error: cakismaVar ? "conflict" : "no_credits", remaining: 0 },
+      { status: cakismaVar ? 409 : 402 },
+    );
   }
 
   return NextResponse.json({
