@@ -33,11 +33,22 @@ function publicOrigin(req: Request): string {
 
 export async function GET(req: Request) {
   const origin = publicOrigin(req);
+  const url = new URL(req.url);
+
+  // Mobil akis: uygulama tarayiciyi acti ve PKCE challenge'ini tasidi.
+  // Ikisi de urun tarafina AYNEN gecirilmeli, yoksa urun bunun bir mobil
+  // giris oldugunu bilemez ve kullaniciyi web dashboard'una atar.
+  const mobil = url.searchParams.get("mobil") === "1";
+  const challenge = url.searchParams.get("challenge") || "";
 
   const session = await getSession();
   if (!session.userId || !session.email) {
-    const back = encodeURIComponent("/api/sso/finanserpide");
-    return NextResponse.redirect(`${origin}/giris?next=${back}`);
+    // Giris sonrasi BURAYA geri donmeli — mobil bayragi ve challenge
+    // kaybolursa kullanici giris yapar ama uygulamaya donemez.
+    const geriYol = mobil
+      ? `/api/sso/finanserpide?mobil=1&challenge=${encodeURIComponent(challenge)}`
+      : "/api/sso/finanserpide";
+    return NextResponse.redirect(`${origin}/giris?next=${encodeURIComponent(geriYol)}`);
   }
 
   if (!process.env.LICENSE_SERVICE_SECRET) {
@@ -62,7 +73,14 @@ export async function GET(req: Request) {
     city: user?.city || undefined,
   });
 
-  return NextResponse.redirect(`${PRODUCT_URL}/api/auth/sso?t=${encodeURIComponent(token)}`, {
+  const hedef = new URL(`${PRODUCT_URL}/api/auth/sso`);
+  hedef.searchParams.set("t", token);
+  if (mobil) {
+    hedef.searchParams.set("mobil", "1");
+    hedef.searchParams.set("challenge", challenge);
+  }
+
+  return NextResponse.redirect(hedef.toString(), {
     // Token tek kullanimlik ve 120 sn omurlu; ara katmanlar cache'lemesin.
     headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
   });
