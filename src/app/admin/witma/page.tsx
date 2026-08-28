@@ -25,6 +25,9 @@ type StatsResponse = {
   funnel?: { step: string; count: number | null }[];
   firstValueHuman?: number | null;
   northStarWeek?: number | null;
+  cohorts?: { week: string; users: number; d1Pct: number; d7Pct: number }[];
+  northStarSeries?: { week: string; users: number }[];
+  truncated?: boolean;
   profiles: any[];
   events: any[];
 };
@@ -282,6 +285,51 @@ export default function WitmaAdminPage() {
               </div>
             );
           })()}
+
+          {/* D1/D7 kohort + North Star haftalık seri */}
+          {d?.cohorts && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="p-5 rounded-xl bg-[#111118] border border-white/5">
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-3">D1 / D7 Retention (kayıt haftası kohortu)</div>
+                {d.cohorts.length === 0 ? (
+                  <div className="text-xs text-gray-600">Henüz kohort yok (profile_done ≥ v851 gerekir).</div>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead><tr className="text-gray-500"><th className="text-left font-medium pb-2">Hafta</th><th className="text-right font-medium pb-2">Kayıt</th><th className="text-right font-medium pb-2">D1</th><th className="text-right font-medium pb-2">D7</th></tr></thead>
+                    <tbody>
+                      {d.cohorts.map((c) => (
+                        <tr key={c.week} className="border-t border-white/5">
+                          <td className="py-1.5 text-gray-300">{c.week}</td>
+                          <td className="py-1.5 text-right text-white">{c.users}</td>
+                          <td className={`py-1.5 text-right ${c.d1Pct >= 40 ? "text-green-400" : c.d1Pct >= 20 ? "text-yellow-400" : "text-red-400"}`}>%{c.d1Pct}</td>
+                          <td className={`py-1.5 text-right ${c.d7Pct >= 20 ? "text-green-400" : c.d7Pct >= 10 ? "text-yellow-400" : "text-red-400"}`}>%{c.d7Pct}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                {d.truncated && <div className="text-[10px] text-yellow-500 mt-2">⚠ 5000 satır tavanı aşıldı — rakamlar eksik olabilir (SQL editor'daki tam sorguyu kullan).</div>}
+              </div>
+              <div className="p-5 rounded-xl bg-[#111118] border border-white/5">
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-3">North Star — haftalık çeviri yapan tekil kullanıcı</div>
+                {(() => {
+                  const s = [...(d.northStarSeries ?? [])].reverse();
+                  const top = Math.max(1, ...s.map((x) => x.users));
+                  return s.length === 0 ? <div className="text-xs text-gray-600">Veri yok.</div> : (
+                    <div className="flex items-end gap-1.5 h-28">
+                      {s.map((x) => (
+                        <div key={x.week} className="flex-1 flex flex-col items-center gap-1" title={`${x.week}: ${x.users}`}>
+                          <div className="text-[10px] text-gray-400">{x.users}</div>
+                          <div className="w-full bg-teal-500/60 rounded-t" style={{ height: `${Math.max(4, (x.users / top) * 80)}px` }} />
+                          <div className="text-[9px] text-gray-600">{x.week.slice(5)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* OTA Info */}
           <div className="p-5 rounded-xl bg-[#111118] border border-white/5 flex items-center justify-between">

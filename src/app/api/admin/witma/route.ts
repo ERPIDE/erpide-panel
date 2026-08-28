@@ -117,6 +117,38 @@ export async function GET() {
     sbCount(key, "ops_events", `event=eq.funnel&meta->>step=eq.first_value&meta->>via=eq.human&created_at=gte.${d30ISO}`),
   ]);
   const funnel = FUNNEL_STEPS.map((step, i) => ({ step, count: funnelCounts[i] }));
+
+  // ── D1/D7 kohort + haftalık North Star serisi (ANALITIK.md SQL'lerinin JS karşılığı; RPC yok) ──
+  // Not: satır tavanı 5000 — beta ölçeğinde yeterli; aşarsa `truncated:true` döner (sessiz kırpma yok).
+  type Row = { user_id: string | null; created_at: string };
+  const w9ISO = new Date(Date.now() - 9 * 7 * 24 * 60 * 60 * 1000).toISOString();
+  const w12ISO = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [regRows, actRows, nsRows] = await Promise.all([
+    sbRows(key, "ops_events", "user_id,created_at", `event=eq.funnel&meta->>step=eq.profile_done&created_at=gte.${w9ISO}`, 5000, "created_at.asc") as Promise<Row[]>,
+    sbRows(key, "ops_events", "user_id,created_at", `event=in.(user_open,msg_sent,translate)&created_at=gte.${w9ISO}`, 5000, "created_at.desc") as Promise<Row[]>,
+    sbRows(key, "ops_events", "user_id,created_at", `event=in.(translate,lingo_recv)&created_at=gte.${w12ISO}`, 5000, "created_at.desc") as Promise<Row[]>,
+  ]);
+  const day = (iso: string) => iso.slice(0, 10);
+  const weekOf = (iso: string) => { const d = new Date(iso); const m = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); m.setUTCDate(m.getUTCDate() - ((m.getUTCDay() + 6) % 7)); return m.toISOString().slice(0, 10); };
+  const addDays = (ymd: string, n: number) => { const d = new Date(ymd + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const d0: Record<string, string> = {};
+  for (const r of regRows) if (r.user_id && !d0[r.user_id]) d0[r.user_id] = day(r.created_at);
+  const actDays: Record<string, Set<string>> = {};
+  for (const r of actRows) { if (!r.user_id) continue; (actDays[r.user_id] ??= new Set()).add(day(r.created_at)); }
+  const cohortMap: Record<string, { users: number; d1: number; d7: number }> = {};
+  for (const [uid, d] of Object.entries(d0)) {
+    const c = (cohortMap[weekOf(d)] ??= { users: 0, d1: 0, d7: 0 });
+    c.users++;
+    const a = actDays[uid];
+    if (a?.has(addDays(d, 1))) c.d1++;
+    if (a?.has(addDays(d, 7))) c.d7++;
+  }
+  const cohorts = Object.entries(cohortMap).sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([week, c]) => ({ week, users: c.users, d1Pct: Math.round((100 * c.d1) / c.users), d7Pct: Math.round((100 * c.d7) / c.users) }));
+  const nsMap: Record<string, Set<string>> = {};
+  for (const r of nsRows) { if (!r.user_id) continue; (nsMap[weekOf(r.created_at)] ??= new Set()).add(r.user_id); }
+  const northStarSeries = Object.entries(nsMap).sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([week, s]) => ({ week, users: s.size }));
+  const truncated = regRows.length >= 5000 || actRows.length >= 5000 || nsRows.length >= 5000;
   // North Star: son 7 günde en az 1 çeviri yapan TEKİL kullanıcı
   const northStarWeek = new Set((translateUsersWeek as Array<{ user_id: string | null }>).map((r) => r.user_id).filter(Boolean)).size;
 
@@ -125,6 +157,9 @@ export async function GET() {
     funnel,            // [{step,count}] son 30 gün
     firstValueHuman,   // first_value içinde gerçek insandan gelen (asistan demosu hariç)
     northStarWeek,
+    cohorts,           // [{week,users,d1Pct,d7Pct}] son 9 hafta, kayıt haftasına göre
+    northStarSeries,   // [{week,users}] son 12 hafta, çeviri yapan tekil kullanıcı
+    truncated,
     totalUsers,
     onlineNow,
     todayMsgs,   weekMsgs,   monthMsgs,
