@@ -599,6 +599,34 @@ export async function updateUser(id: string, patch: Partial<UserRecord>): Promis
   return updated;
 }
 
+/**
+ * `Order.billingSnapshot` kolonunu bir kez açmayı dener.
+ *
+ * NEDEN KOD İÇİNDEN: üretim veritabanı bağlantısı geliştirme makinesinde
+ * yok (ortam dosyalarında sırlar maskeli). Kolon açılmadan snapshot
+ * yazılamıyor ve fatura eski davranışa düşüyor — yani düzeltme etkisiz
+ * kalıyor. Uygulamanın kendisi bağlantıya sahip; açması en az dolambaçlı yol.
+ *
+ * Güvenli olmasının sebepleri: `IF NOT EXISTS` ile idempotent, nullable
+ * JSONB (mevcut satırlar NULL kalır), DROP/tip değişimi yok, ve yalnızca
+ * kolon EKSİK olduğu anlaşıldığında — yani en fazla bir kez — çalışıyor.
+ */
+let kolonAcmaDenendi = false;
+async function billingSnapshotKolonunuAc(): Promise<boolean> {
+  if (kolonAcmaDenendi) return false;
+  kolonAcmaDenendi = true;
+  try {
+    await getPrisma().$executeRawUnsafe(
+      `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "billingSnapshot" JSONB`
+    );
+    console.warn("[migration] Order.billingSnapshot kolonu açıldı");
+    return true;
+  } catch (e) {
+    console.error("[migration] billingSnapshot kolonu açılamadı:", e);
+    return false;
+  }
+}
+
 export async function createOrder(input: Omit<OrderRecord, "id" | "createdAt">): Promise<OrderRecord> {
   if (HAS_DB) {
     const id = randomUUID();
@@ -615,7 +643,16 @@ export async function createOrder(input: Omit<OrderRecord, "id" | "createdAt">):
       const bilinmeyenKolon = e?.code === "P2022" ||
         /column .* does not exist/i.test(String(e?.message ?? ""));
       if (!bilinmeyenKolon || data.billingSnapshot === undefined) throw e;
-      console.warn("[createOrder] billingSnapshot kolonu yok — alansiz devam edildi (migration bekliyor)");
+
+      // Once kolonu acmayi dene; basarili olursa snapshot KAYBOLMAZ.
+      if (await billingSnapshotKolonunuAc()) {
+        const row = await getPrisma().order.create({ data: data as any });
+        return rowToOrder(row as unknown as AnyRow);
+      }
+
+      // Acilamadiysa siparis yine de olusmali — musteri odeme ekraninda
+      // kalmasin. Snapshot yazilmaz, fatura eski davranisa duser.
+      console.warn("[createOrder] billingSnapshot yazilamadi — alansiz devam edildi");
       delete data.billingSnapshot;
       const row = await getPrisma().order.create({ data: data as any });
       return rowToOrder(row as unknown as AnyRow);
