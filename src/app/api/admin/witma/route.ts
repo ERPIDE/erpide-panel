@@ -110,7 +110,7 @@ export async function GET() {
 
   // ── Aktivasyon funnel'ı (witma docs/ANALITIK.md) — son 30 gün, adım başına cihaz sayısı ──
   const d30ISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const FUNNEL_STEPS = ["welcome_start", "phone_submit", "otp_verified", "profile_done", "first_chat_open", "first_message", "first_value"];
+  const FUNNEL_STEPS = ["welcome_start", "phone_submit", "otp_verified", "profile_done", "first_chat_open", "first_message", "first_value", "invite_share"];
   const [funnelCounts, translateUsersWeek, firstValueHuman] = await Promise.all([
     Promise.all(FUNNEL_STEPS.map((s) => sbCount(key, "ops_events", `event=eq.funnel&meta->>step=eq.${s}&created_at=gte.${d30ISO}`))),
     sbRows(key, "ops_events", "user_id", `event=eq.translate&created_at=gte.${weekISO}`, 5000, ""),

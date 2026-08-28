@@ -31,7 +31,7 @@ type StatsResponse = {
 
 const FUNNEL_LABELS: Record<string, string> = {
   welcome_start: "Karşılama", phone_submit: "Telefon", otp_verified: "OTP", profile_done: "Profil",
-  first_chat_open: "İlk sohbet", first_message: "İlk mesaj", first_value: "İlk çeviri (aha)",
+  first_chat_open: "İlk sohbet", first_message: "İlk mesaj", first_value: "İlk çeviri (aha)", invite_share: "Davet paylaştı",
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
