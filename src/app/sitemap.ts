@@ -39,6 +39,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/sozlesmeler/cerez-politikasi", priority: 0.3, changeFrequency: "yearly" },
     { path: "/sozlesmeler/mesafeli-satis", priority: 0.3, changeFrequency: "yearly" },
     { path: "/sozlesmeler/on-bilgilendirme", priority: 0.3, changeFrequency: "yearly" },
+    // Play, hesap silme sayfasinin herkese acik olmasini sart kosuyor.
+    { path: "/hesap-silme", priority: 0.3, changeFrequency: "yearly" },
     { path: "/sozlesmeler/iade-iptal", priority: 0.3, changeFrequency: "yearly" },
     { path: "/sozlesmeler/cagri-kayit", priority: 0.3, changeFrequency: "yearly" },
   ];

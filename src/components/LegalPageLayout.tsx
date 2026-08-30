@@ -59,4 +59,7 @@ export const LEGAL_LINKS = [
   { href: "/sozlesmeler/on-bilgilendirme", label: "Ön Bilgilendirme Formu" },
   { href: "/sozlesmeler/iade-iptal", label: "İade ve İptal Politikası" },
   { href: "/sozlesmeler/cerez-politikasi", label: "Çerez Politikası" },
+  // Play, hesap silme sayfasinin herkese acik ve BULUNABILIR olmasini
+  // istiyor; sadece URL'yi console'a yazmak yetmiyor.
+  { href: "/hesap-silme", label: "Hesap ve Veri Silme" },
 ];
