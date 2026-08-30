@@ -8,7 +8,7 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/lib/pocket-bill-finder.test.ts",
+    "test": "tsx src/lib/pocket-bill-finder.test.ts && tsx src/lib/social/compose.test.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:import": "node scripts/import-blob-to-neon.mjs",

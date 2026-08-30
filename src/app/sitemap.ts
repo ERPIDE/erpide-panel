@@ -1,12 +1,16 @@
 import type { MetadataRoute } from "next";
 import { PRODUCTS } from "@/lib/products";
-import { getNewsSorted } from "@/lib/news";
+import { listPublished } from "@/lib/social/store";
 
 // Next.js native sitemap.xml generator. Build sırasında erpide.com/sitemap.xml
 // olarak yayınlanır. Statik public route'lar + dinamik ürün detayları + 4 dil
 // hreflang alternate'leri. Hidden ürünler (ai-kontor gibi) atlanır.
 const SITE_URL = "https://www.erpide.com";
 const LOCALES = ["tr", "en", "ru", "kk"] as const;
+
+// Gündem post'ları artık DB'den geliyor: panelden yayınlanan bir yazının
+// sitemap'e girmesi için deploy beklenmesin diye saatlik yeniden üretim.
+export const revalidate = 3600;
 
 function localizedAlternates(path: string): Record<string, string> {
   const entries: Record<string, string> = {};
@@ -16,7 +20,7 @@ function localizedAlternates(path: string): Record<string, string> {
   return entries;
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // Halka açık statik sayfalar — değişim sıklığına göre öncelik atanır.
@@ -63,14 +67,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Gündem post'ları — her post kendi detay sayfasıyla indexlenir, lastModified
-  // post tarihinden alınır (Google "Article" rich result'ta tarihi gösterir).
-  const newsEntries: MetadataRoute.Sitemap = getNewsSorted().map((post) => ({
-    url: `${SITE_URL}/gundem/${post.slug}`,
-    lastModified: new Date(post.date),
-    changeFrequency: "monthly",
-    priority: 0.65,
-    alternates: { languages: localizedAlternates(`/gundem/${post.slug}`) },
-  }));
+  // yayın tarihinden alınır (Google "Article" rich result'ta tarihi gösterir).
+  // İçerik DB'den gelir; slug'ı olmayan (yalnızca sosyal medyaya giden) postlar
+  // sitemap'e girmez.
+  const published = await listPublished();
+  const newsEntries: MetadataRoute.Sitemap = published
+    .filter((post) => !!post.slug)
+    .map((post) => ({
+      url: `${SITE_URL}/gundem/${post.slug}`,
+      lastModified: post.publishedAt ? new Date(post.publishedAt) : now,
+      changeFrequency: "monthly",
+      priority: 0.65,
+      alternates: { languages: localizedAlternates(`/gundem/${post.slug}`) },
+    }));
 
   return [...staticEntries, ...productEntries, ...newsEntries];
 }

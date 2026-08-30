@@ -1,24 +1,32 @@
 import type { Metadata } from "next";
-import { getNewsPost, getNewsSorted } from "@/lib/news";
+import { getPublishedBySlug } from "@/lib/social/store";
 
 const SITE_URL = "https://www.erpide.com";
 const LOCALES = ["tr", "en", "ru", "kk"] as const;
 
 type Params = { slug: string };
 
-export async function generateStaticParams() {
-  return getNewsSorted().map((p) => ({ slug: p.slug }));
+/**
+ * generateStaticParams bilinçli olarak yok: post'lar artık DB'den geliyor ve
+ * panelden yayınlanan bir post build beklemeden erişilebilir olmalı. Sayfalar
+ * ilk istekte render edilip revalidate süresince cache'lenir.
+ */
+
+/** Post görselinin mutlak adresi — göreli yollar OG etiketlerinde çalışmaz. */
+function absoluteImage(imageUrl: string | null): string {
+  if (!imageUrl) return `${SITE_URL}/logo-wide.png`;
+  return /^https?:\/\//i.test(imageUrl) ? imageUrl : `${SITE_URL}${imageUrl}`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getNewsPost(slug);
+  const post = await getPublishedBySlug(slug);
   if (!post) {
     return { title: "Bulunamadı", robots: { index: false, follow: false } };
   }
   const path = `/gundem/${post.slug}`;
   const url = `${SITE_URL}${path}`;
-  const ogImage = post.image ? `${SITE_URL}${post.image}` : `${SITE_URL}/logo-wide.png`;
+  const ogImage = absoluteImage(post.imageUrl);
   const languages: Record<string, string> = {};
   for (const loc of LOCALES) {
     languages[loc] = loc === "tr" ? url : `${url}?lang=${loc}`;
@@ -33,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       siteName: "ERPIDE",
       title: post.title,
       description: post.excerpt,
-      publishedTime: post.date,
+      publishedTime: post.publishedAt ?? undefined,
       images: [{ url: ogImage, alt: post.imageAlt }],
     },
     twitter: {
@@ -53,19 +61,20 @@ export default async function GundemPostLayout({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const post = getNewsPost(slug);
+  const post = await getPublishedBySlug(slug);
   if (!post) return <>{children}</>;
 
   const url = `${SITE_URL}/gundem/${post.slug}`;
-  const image = post.image ? `${SITE_URL}${post.image}` : `${SITE_URL}/logo-wide.png`;
+  const image = absoluteImage(post.imageUrl);
+  const published = post.publishedAt ?? undefined;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt,
-    datePublished: post.date,
-    dateModified: post.date,
+    datePublished: published,
+    dateModified: post.updatedAt,
     url,
     image,
     author: { "@type": "Organization", name: "ERPIDE", url: SITE_URL },

@@ -41,6 +41,7 @@ export const ALL_MODULES = [
   { key: "captcha",          label: "Captcha Panel" },
   { key: "dataengine",       label: "Data Engine" },
   { key: "enflasyon",        label: "Enflasyon" },
+  { key: "sosyal",           label: "Sosyal Medya" },
   { key: "sistem",           label: "Sistem" },
   { key: "profil",           label: "Profilim" },
 ] as const;

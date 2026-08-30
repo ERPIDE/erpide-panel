@@ -26,6 +26,10 @@
     {
       "path": "/api/cron/enflasyon-report",
       "schedule": "0 9 5 * *"
+    },
+    {
+      "path": "/api/cron/publish-scheduled",
+      "schedule": "*/15 * * * *"
     }
   ],
   "buildCommand": "prisma db push && next build"

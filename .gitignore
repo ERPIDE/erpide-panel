@@ -12,3 +12,8 @@ public/logo.png.bak
 
 # blob->R2 kurtarma icin cekilen prod env (secrets)
 .env.blob
+
+# env yedekleri — ".env*.local" kalibina uymadiklari icin acikta kaliyorlardi
+.env*yedek*
+.env*.bak
+.env*.backup

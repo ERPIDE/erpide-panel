@@ -393,3 +393,116 @@ model InflationRun {
 
   @@index([createdAt])
 }
+
+// ── Sosyal yayın modülü ───────────────────────────────────────────
+// Tek kaynaktan çok kanala yayın: erpide.com Gündem + Facebook Sayfası +
+// Instagram (Business) + LinkedIn şirket sayfası.
+//
+// Gündem post'ları eskiden lib/news.ts içinde kod olarak yaşıyordu; her yeni
+// post bir deploy demekti. Artık bu tablo tek gerçek kaynak — news.ts'teki
+// NEWS array'i yalnızca ilk kurulumda seed olarak okunur.
+
+model SocialPost {
+  id String @id @default(cuid())
+
+  /// product-launch | special-day | milestone — Gündem'deki filtre sekmeleri.
+  kind    String @default("milestone")
+  title   String
+  /// Kısa özet (~150 karakter). Gündem kartı + IG/FB caption'ının gövdesi.
+  excerpt String
+  /// Uzun gövde (Markdown-lite, paragraflar \n\n ile). Gündem + LinkedIn.
+  body    String @default("")
+  /// string[] — platform caption'larının sonuna eklenir (# olmadan saklanır).
+  hashtags Json?
+  /// CTA linki. Boşsa ve slug varsa Gündem post'unun kendi URL'i kullanılır.
+  linkUrl  String?
+
+  /// Görsel URL'i. Boşsa yayın anında /api/og/post/[slug] otomatik üretilir.
+  imageUrl        String?
+  imageAlt        String  @default("")
+  /// auto → OG görseli üret | upload → imageUrl'deki yüklenmiş görseli kullan
+  imageMode       String  @default("auto")
+  gradient        String?
+  decoration      String?
+  decorationSubtitle String?
+  imageBackground String?
+
+  /// Gündem'e özel alanlar. Hedeflerde "site" varsa slug zorunludur.
+  slug        String? @unique
+  badges      Json?
+  productSlug String?
+  /// Partial<Record<Locale, { title?, excerpt?, body? }>> — TR dışı diller.
+  i18n        Json?
+
+  /// draft | scheduled | publishing | published | partial | failed
+  status      String    @default("draft")
+  /// Gündem'de görünen tarih ve zamanlanmış yayın anı.
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  /// Platform[] — ["site","facebook","instagram","linkedin"]
+  targets     Json
+
+  /// manual | holiday-cron — otomatik taslakların kaynağı izlenebilsin.
+  source    String  @default("manual")
+  /// holiday-cron için tatil slug'ı (aynı tatile iki taslak üretilmesin).
+  sourceRef String?
+  createdBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publications SocialPublication[]
+
+  @@index([status, scheduledAt])
+  @@index([publishedAt])
+  @@index([source, sourceRef])
+}
+
+/// Bir post'un tek bir platformdaki yayın denemesi ve sonucu. Kısmi başarı
+/// normaldir: Instagram patlarken LinkedIn geçebilir; her satır kendi
+/// durumunu taşır, yeniden deneme yalnızca başarısız satırları tekrarlar.
+model SocialPublication {
+  id     String     @id @default(cuid())
+  postId String
+  post   SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  /// site | facebook | instagram | linkedin
+  platform String
+  /// pending | success | failed | skipped
+  status   String @default("pending")
+
+  externalId  String?
+  externalUrl String?
+  error       String?
+  attempts    Int      @default(0)
+  attemptedAt DateTime?
+  publishedAt DateTime?
+
+  @@unique([postId, platform])
+  @@index([status])
+}
+
+/// Platform başına tek satır — bağlantı durumu ve token'lar.
+/// accessToken/refreshToken AES-256-GCM ile şifreli saklanır (lib/social/crypto.ts,
+/// SOCIAL_TOKEN_KEY env'i). Panel token'ı asla düz metin döndürmez.
+model SocialAccount {
+  /// facebook | instagram | linkedin
+  platform String @id
+
+  /// Panelde gösterilen hesap adı ("ERPIDE Yazılım A.Ş.").
+  displayName String?
+  /// Page ID / IG User ID / LinkedIn organization URN.
+  externalId  String?
+
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+
+  connected     Boolean   @default(false)
+  lastCheckedAt DateTime?
+  lastError     String?
+  /// Platforma özel ek alanlar (ör. FB page list, IG username).
+  meta          Json?
+
+  updatedAt DateTime @updatedAt
+}

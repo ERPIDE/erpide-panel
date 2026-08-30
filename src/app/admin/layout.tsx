@@ -6,7 +6,7 @@ import {
   LayoutDashboard, ListTodo, FileText, Users, LogOut,
   Menu, ChevronRight, Loader2, Shield, Banknote, UserCircle,
   Headphones, Phone, Database, MessageSquare, Ticket, Smartphone, BarChart3, Monitor,
-  Building2, FolderKanban, TrendingUp
+  Building2, FolderKanban, TrendingUp, Share2
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { ToastProvider } from "@/components/Toast";
@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
   { href: "/admin/captcha",          label: "Captcha Panel",    icon: Shield,          permissionKey: "captcha" },
   { href: "/admin/dataengine",       label: "Data Engine",      icon: Database,        permissionKey: "dataengine" },
   { href: "/admin/enflasyon",        label: "Enflasyon",        icon: TrendingUp,      permissionKey: "enflasyon" },
+  { href: "/admin/sosyal",           label: "Sosyal Medya",     icon: Share2,          permissionKey: "sosyal" },
   { href: "/admin/sistem",           label: "Sistem",           icon: Monitor,         permissionKey: "sistem" },
   { href: "/admin/profil",           label: "Profilim",         icon: UserCircle,      permissionKey: "profil" },
 ];
