@@ -134,8 +134,13 @@ export async function ensureSeed(): Promise<void> {
   const prisma = getPrisma();
   const count = await prisma.socialPost.count();
   if (count === 0) {
-    await prisma.socialPost.createMany({
-      data: NEWS.map((p) => ({
+    // createMany KULLANMA: Prisma çok satırlı yazımı transaction'a sarıyor ve
+    // Neon HTTP adapter'ı transaction desteklemiyor ("Transactions are not
+    // supported in HTTP mode") — seed sessizce düşüyordu. Satırları tek tek
+    // yazıyoruz; upsert olması, iki lambda aynı anda seed etmeye kalkarsa
+    // slug çakışmasını da önler.
+    for (const p of NEWS) {
+      const data = {
         slug: p.slug,
         kind: p.type,
         title: p.title,
@@ -157,8 +162,14 @@ export async function ensureSeed(): Promise<void> {
         publishedAt: new Date(`${p.date}T09:00:00.000Z`),
         targets: ["site"],
         source: "seed",
-      })) as never,
-    });
+      };
+      await prisma.socialPost.upsert({
+        where: { slug: p.slug },
+        create: data as never,
+        // Zaten varsa dokunma — panelden yapılmış düzenlemeler ezilmesin.
+        update: {},
+      });
+    }
   }
   seedChecked = true;
 }
@@ -261,6 +272,9 @@ export async function getBySlugOrId(key: string): Promise<SocialPostView | null>
   const fromSeed = () => seedFallback().find((p) => p.slug === key || p.id === key) ?? null;
   if (!HAS_DB) return fromSeed();
   try {
+    // Görsel isteği, Gündem sayfasından önce gelebilir (sosyal platform görseli
+    // kendi çekiyor); seed'i burada da garantiliyoruz, yoksa 404 dönerdi.
+    await ensureSeed();
     const row = (await getPrisma().socialPost.findFirst({
       where: { OR: [{ slug: key }, { id: key }] },
     })) as unknown as PostRow | null;
