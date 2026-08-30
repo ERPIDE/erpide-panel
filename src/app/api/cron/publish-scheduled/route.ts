@@ -4,10 +4,16 @@
  * Panelde "Zamanla" seçilen post `scheduled` durumunda bekler; bu cron
  * scheduledAt'i geçmiş olanları alıp yayın motoruna verir.
  *
- * Sıklık: 15 dakikada bir (vercel.json). Bu, zamanlamanın çeyrek saatlik
- * hassasiyette olduğu anlamına gelir — "23 Nisan 09:00" için 09:00-09:15
- * arasında gider. Dakika hassasiyeti gerekseydi cron sıklığı artırılırdı;
- * sosyal paylaşımda buna gerek yok.
+ * Sıklık: günde bir, 06:00 UTC (Türkiye 09:00) — vercel.json.
+ *
+ * DİKKAT: Bu sıklık Vercel **Hobby planının** sınırıdır (günde bir koşu).
+ * Pratik sonucu: zamanlama gün hassasiyetindedir. "23 Nisan 14:00" için
+ * zamanlanan post, 24 Nisan 09:00 koşusunda gider — çünkü 23 Nisan 09:00'da
+ * henüz vakti gelmemiştir. Saat hassasiyetli zamanlama isteniyorsa plan Pro'ya
+ * çıkarılıp schedule "*\/15 * * * *" yapılmalı; kodda başka değişiklik gerekmez.
+ *
+ * Bu yüzden panelde saatli yayın için "Şimdi yayınla" önerilir; zamanlama,
+ * "o gün sabah çıksın" senaryosu için uygundur.
  *
  * Authorization: Vercel `Bearer ${CRON_SECRET}` gönderir.
  */

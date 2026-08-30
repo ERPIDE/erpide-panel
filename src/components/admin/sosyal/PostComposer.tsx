@@ -571,7 +571,10 @@ export default function PostComposer({
               <PlatformPreview post={previewPost} targets={form.targets} imagePreviewUrl={previewImage} />
 
               <div className="rounded-xl border border-white/10 p-4 space-y-3">
-                <Field label="Zamanlama" hint="Zamanlanan postlar 15 dakikalık kontrolde yayınlanır">
+                <Field
+                  label="Zamanlama"
+                  hint="Zamanlanmış postlar her sabah 09:00 kontrolünde yayınlanır (Vercel Hobby planı günde bir koşuya izin veriyor). Belirli bir saatte çıkması gerekiyorsa 'Şimdi yayınla' kullanın."
+                >
                   <div className="flex items-center gap-2">
                     <Calendar size={14} className="text-gray-500" />
                     <input
