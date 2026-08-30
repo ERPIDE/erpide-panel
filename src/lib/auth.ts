@@ -81,9 +81,20 @@ async function ensureAdminSeed(): Promise<void> {
   const prisma = getPrisma();
   const count = await prisma.admin.count();
   if (count === 0) {
-    await prisma.admin.createMany({
-      data: initialAdmins.map(({ permissions: _p, ...rest }) => rest),
-    });
+    // createMany KULLANILAMAZ: çok satırlı yazımı Prisma transaction'a sarıyor,
+    // Neon HTTP sürücüsü ise transaction desteklemiyor (bkz. lib/db.ts). Boş
+    // DB'de çalıştığı için bu yol bugüne dek tetiklenmedi, ama tetiklendiğinde
+    // bootstrap girişi sessizce başarısız olurdu.
+    for (const { permissions: _p, ...rest } of initialAdmins) {
+      try {
+        await prisma.admin.create({ data: rest });
+      } catch (e) {
+        // P2002 = başka bir instance aynı anda seed etmiş; seed idempotent.
+        if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") {
+          throw e;
+        }
+      }
+    }
   }
   adminSeedChecked = true;
 }
@@ -134,7 +145,16 @@ async function ensureCustomerSeed(): Promise<void> {
   const prisma = getPrisma();
   const count = await prisma.customer.count();
   if (count === 0) {
-    await prisma.customer.createMany({ data: initialCustomers });
+    // createMany yerine tek tek create — sebep için ensureAdminSeed'e bakın.
+    for (const c of initialCustomers) {
+      try {
+        await prisma.customer.create({ data: c });
+      } catch (e) {
+        if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") {
+          throw e;
+        }
+      }
+    }
   }
   customerSeedChecked = true;
 }

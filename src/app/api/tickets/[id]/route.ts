@@ -62,20 +62,25 @@ export async function POST(req: Request, { params }: { params: Promise<Params> }
   });
   const authorName = user ? `${user.name} ${user.surname}` : (session.name || "Kullanıcı");
 
-  const [msg] = await prisma.$transaction([
-    prisma.ticketMessage.create({
-      data: {
-        ticketId: id,
-        role: "user",
-        authorName,
-        content: body.content.trim(),
-      },
-    }),
-    prisma.ticket.update({
+  // $transaction KULLANILAMAZ: Neon HTTP sürücüsü transaction desteklemiyor
+  // ("Transactions are not supported in HTTP mode" — bkz. lib/db.ts).
+  const msg = await prisma.ticketMessage.create({
+    data: {
+      ticketId: id,
+      role: "user",
+      authorName,
+      content: body.content.trim(),
+    },
+  });
+
+  // Mesaj kaydedildikten sonraki durum güncellemesi best-effort: burada 500
+  // dönmek müşteriyi mesajı tekrar göndermeye iter ve talep mükerrer olur.
+  await prisma.ticket
+    .update({
       where: { id },
       data: { updatedAt: new Date(), status: "open" },
-    }),
-  ]);
+    })
+    .catch((e) => console.error(`[tickets] ${id} durumu güncellenemedi:`, e));
 
   return NextResponse.json(msg);
 }

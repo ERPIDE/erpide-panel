@@ -8,17 +8,24 @@
  *
  * ⚠ NO TRANSACTIONS. The Neon HTTP driver runs one statement per request, so
  * anything Prisma wraps in a transaction fails at runtime with
- * "Transactions are not supported in HTTP mode". That includes more than the
- * obvious `$transaction([...])`:
+ * "Transactions are not supported in HTTP mode":
  *
- *   - `createMany()` with multiple rows
- *   - `upsert()`
- *   - nested writes that touch more than one table
+ *   - `$transaction([...])` — always. Split it into separate awaits and decide
+ *     explicitly what happens if the second one fails.
+ *   - `createMany()` with multiple rows — loop over single `create()` calls
+ *     instead, catching P2002 if the write needs to be idempotent.
  *
- * Write these as single-statement calls instead: `findUnique` then `update`
- * or `create`, or a plain `create` with the P2002 unique-violation caught.
- * The failure is easy to miss — a caller with a try/catch fallback swallows it
- * and the write silently never happens (this bit the social seed once).
+ * `upsert()` is the subtle one. Prisma normally compiles it to a single native
+ * `INSERT ... ON CONFLICT`, which is fine here — that is why the inflation,
+ * pocket-sync and admin upserts work. But it falls back to a transaction when
+ * it cannot build that statement, notably with an EMPTY `update: {}` block.
+ * If you want "insert only if missing", do not write `update: {}` — use a
+ * plain `create()` and swallow P2002.
+ *
+ * The failure mode is nasty: a caller with a try/catch fallback swallows the
+ * error and the write silently never happens, while the page still renders
+ * from the fallback and looks healthy. That is exactly how the social seed
+ * shipped "green" once.
  */
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeonHttp } from "@prisma/adapter-neon";
