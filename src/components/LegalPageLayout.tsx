@@ -54,6 +54,7 @@ export const LEGAL_LINKS = [
   { href: "/sozlesmeler/kullanim-kosullari", label: "Kullanım Koşulları" },
   { href: "/sozlesmeler/gizlilik-politikasi", label: "Gizlilik Politikası" },
   { href: "/sozlesmeler/kvkk", label: "KVKK Aydınlatma Metni" },
+  { href: "/sozlesmeler/yapay-zeka", label: "Yapay Zekâ Aydınlatma Metni" },
   { href: "/sozlesmeler/cagri-kayit", label: "Çağrı Kayıt Aydınlatma" },
   { href: "/sozlesmeler/mesafeli-satis", label: "Mesafeli Satış Sözleşmesi" },
   { href: "/sozlesmeler/on-bilgilendirme", label: "Ön Bilgilendirme Formu" },

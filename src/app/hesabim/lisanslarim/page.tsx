@@ -100,6 +100,13 @@ export default async function LisanslarimPage() {
   const licenses: LicenseRow[] = [];
   // AI Kontör paketleri "lisans" değil "bakiye"; sayfa basinda tek ozet kartta
   // toplanir (AiKontorOverview), asagidaki lisans listesinde tekrar gosterilmez.
+  //
+  // NOT (2026-08-30): Kontor SKU'lari SATISTAN KALDIRILDI (iyzico kredi/jeton
+  // modeli istemiyor — bkz. products.ts icindeki kaldirma notu). Bu kart
+  // BILEREK duruyor: `aiKontorOrders.length > 0` kosuluna bagli oldugu icin
+  // yalnizca DAHA ONCE kontor satin almis birine gorunur. Karti silmek, elinde
+  // bakiye kalmis kullanicinin parasini odedigi hakki gormesini engellerdi.
+  // Yeni kullanicida bu dizi hep bos kalir ve kart hic cizilmez.
   const aiKontorOrders: Array<{
     orderId: string;
     createdAt: string;

@@ -399,7 +399,7 @@ export const PRODUCTS: Product[] = [
           "Üretim — BOM reçeteleri, üretim emri, maliyetlendirme",
           "İnsan Kaynakları — personel, devam takibi, izin",
           "Bordro — SGK kesintileri, otomatik personel ödemesi",
-          "Eylül AI asistanı (kontörle)",
+          "Eylül AI asistanı (aylık mesaj hakkı)",
           "Öncelikli destek",
         ],
         highlight: true,
@@ -415,7 +415,7 @@ export const PRODUCTS: Product[] = [
               "Manufacturing — BOM recipes, work orders, costing",
               "HR — employees, attendance, leave",
               "Payroll — social security deductions, automatic staff payments",
-              "Eylül AI assistant (credit-based)",
+              "Eylül AI assistant (monthly message allowance)",
               "Priority support",
             ],
           },
@@ -430,7 +430,7 @@ export const PRODUCTS: Product[] = [
               "Производство — спецификации, производственные заказы, себестоимость",
               "Кадры — сотрудники, учет времени, отпуска",
               "Зарплата — отчисления, автоматические выплаты",
-              "AI-ассистент Eylül (по кредитам)",
+              "AI-ассистент Eylül (месячный лимит сообщений)",
               "Приоритетная поддержка",
             ],
           },
@@ -445,7 +445,7 @@ export const PRODUCTS: Product[] = [
               "Өндіріс — спецификация, өндіріс тапсырысы, өзіндік құн",
               "Кадрлар — қызметкерлер, есеп, демалыс",
               "Жалақы — аударымдар, автоматты төлемдер",
-              "Eylül AI көмекшісі (несиемен)",
+              "Eylül AI көмекшісі (айлық хабарлама лимиті)",
               "Басым қолдау",
             ],
           },
@@ -838,25 +838,53 @@ export const PRODUCTS: Product[] = [
 
     i18n: {
       en: {
-        name: "AI Assistant Credits",
-        tagline: "Top-up message pack for FinansERPIDE's AI assistant",
-        description: "When your plan's AI message quota runs out, buy a credit pack to keep going. One-time purchase — credits roll over month-to-month until consumed.",
+        name: "Eylül AI Assistant",
+        tagline: "Monthly AI assistant plan for FinansERPIDE",
+        description: "Every FinansERPIDE account includes 10 free AI messages per month. Choose a monthly plan for more — plans renew each month and unused messages do not carry over.",
       },
       ru: {
-        name: "AI-кредиты ассистента",
-        tagline: "Дополнительный пакет сообщений для AI-ассистента FinansERPIDE",
-        description: "Когда ваш месячный лимит AI-сообщений заканчивается, купите пакет кредитов и продолжайте без перебоев. Разовая покупка — кредиты переходят на следующий месяц.",
+        name: "AI-ассистент Eylül",
+        tagline: "Месячный тариф AI-ассистента для FinansERPIDE",
+        description: "Каждый аккаунт FinansERPIDE включает 10 бесплатных AI-сообщений в месяц. Для большего объёма выберите месячный тариф — он продлевается ежемесячно, неиспользованные сообщения не переносятся.",
       },
       kk: {
-        name: "AI көмекшісі несиелері",
-        tagline: "FinansERPIDE AI көмекшісіне арналған қосымша хабарлама пакеті",
-        description: "Жоспардағы AI хабарлама лимиті бітсе, несие пакетін сатып алыңыз. Бір реттік сатып алу — несиелер келесі айға ауысады.",
+        name: "Eylül AI көмекшісі",
+        tagline: "FinansERPIDE үшін айлық AI көмекшісі жоспары",
+        description: "Әрбір FinansERPIDE тіркелгісінде айына 10 тегін AI хабарлама бар. Көбірек қажет болса, айлық жоспарды таңдаңыз. Жоспар ай сайын жаңарады; пайдаланылмаған хабарламалар келесі айға өтпейді.",
       },
     },
     // Her AI mesaji Claude API'de gercek dolar yakar; ucretsiz deneme verirsek
     // 3 gunde binlerce mesaj atilip bizi zarara sokabilirler. Sadece aktif
     // FinansERPIDE plani olan musteriler sepete ekleyebilir (aiKontorBlocked).
     noTrial: true,
+    /**
+     * YENI SATISA KAPALI — 2026-08-30.
+     *
+     * Eylul, ERPIDE'nin Anthropic anahtariyla calisan "managed" modelden,
+     * musterinin KENDI yapay zekasini bagladigi connector modeline geciyor
+     * (karar kaydi: erpide-finanserpide/docs/AI-HUKUKI-MIMARI.md).
+     *
+     * Managed modelde AI cagrisini ERPIDE yapiyor, yani musterinin fatura/cari/
+     * bordro verisini yurt disina fiilen AKTARAN taraf ERPIDE oluyor. Bu KVKK
+     * md.9 geregi standart sozlesme + imzadan itibaren 5 is gunu icinde Kurul'a
+     * bildirim zorunlulugu doguruyor. 1 Eylul 2024'ten beri surekli (arizi
+     * olmayan) aktarimlarda ACIK RIZA TEK BASINA GECERSIZ — yani onay kutusu
+     * bu yukumlulugu kaldirmiyor.
+     *
+     * Su an odeme yapan musteri YOK (yalniz ERPIDE'nin kendi verisi + Maendros
+     * pilotu), dolayisiyla gecisin maliyeti sifir. Ama bu sayfa aciktan
+     * satilabilir kaldigi surece tek bir satin alma bizi terk ettigimiz modele
+     * geri sokar ve iptal ettigimiz tum yukumlulukleri geri getirir.
+     *
+     * NOT: `category: "ai-credits"` zaten public CATEGORIES'ten cikarilmisti
+     * (bkz. satir 80), ama o yalnizca LISTE sayfasini gizliyordu. Bu bayrak
+     * olmadan dogrudan URL (/urunler/ai-kontor) calisiyor ve urun sitemap'e
+     * giriyordu. Kapali olmasi gereken sey satin alinabilirlikti.
+     *
+     * Backend (kota, havuz, kontor tuketimi) MEVCUT ic kullanim icin calisir
+     * durumda birakildi; kapatilan sey yalnizca yeni satis.
+     */
+    hiddenFromPublic: true,
     skus: [
       // ===== AYLIK AI PAKETLERI =====
       // Kontor (tek seferlik, devreden) modeli birakildi: musteri "kac kontorum
@@ -960,147 +988,31 @@ export const PRODUCTS: Product[] = [
         },
       },
 
-      {
-        id: "ai-kontor-500",
-        productId: "ai-kontor",
-        name: "500 Kontör",
-        description: "Küçük takviye — kısa süreli yoğun kullanım",
-        price: 1450,
-        currency: "TRY",
-        cycle: "monthly",
-        kind: "credit",
-        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
-        creditsGranted: 500,
-        features: [
-          "500 AI mesaj kontörü",
-          "Firma havuzuna anında tanımlanır",
-          "Plan limitinden ayrıdır — devreder",
-          "Mesaj başı ₺2,90",
-        ],
-        i18n: {
-          en: {
-            name: "500 Credits",
-            description: "Small top-up — short bursts of heavy use",
-            features: ["500 AI message credits", "Added to company pool instantly", "Separate from plan quota — rolls over", "$0.010 per message"],
-          },
-          ru: {
-            name: "500 кредитов",
-            description: "Небольшое пополнение — короткие пики использования",
-            features: ["500 AI-кредитов сообщений", "Сразу добавляются в пул компании", "Отдельно от квоты плана — переносятся", "$0.010 за сообщение"],
-          },
-          kk: {
-            name: "500 несие",
-            description: "Шағын толықтыру — қысқа мерзімді белсенді пайдалану",
-            features: ["500 AI хабарлама несиесі", "Компания пулына бірден қосылады", "Жоспар квотасынан бөлек — ауысады", "Хабарлама құны",],
-          },
-        },
-      },
-      {
-        id: "ai-kontor-1000",
-        productId: "ai-kontor",
-        name: "1.000 Kontör",
-        description: "Standart kullanım için",
-        price: 2800,
-        currency: "TRY",
-        cycle: "monthly",
-        kind: "credit",
-        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
-        creditsGranted: 1000,
-        features: [
-          "1.000 AI mesaj kontörü",
-          "Mesaj başı $0.010 (aynı oran)",
-          "Firma havuzuna anında tanımlanır",
-          "Plan limitinden ayrıdır — devreder",
-        ],
-        i18n: {
-          en: {
-            name: "1,000 Credits",
-            description: "For standard usage",
-            features: ["1,000 AI message credits", "$0.010 per message (same rate)", "Added to company pool instantly", "Separate from plan quota — rolls over"],
-          },
-          ru: {
-            name: "1 000 кредитов",
-            description: "Для стандартного использования",
-            features: ["1 000 AI-кредитов сообщений", "$0.010 за сообщение (тот же тариф)", "Сразу добавляются в пул компании", "Отдельно от квоты плана — переносятся"],
-          },
-          kk: {
-            name: "1 000 несие",
-            description: "Стандартты пайдалану үшін",
-            features: ["1 000 AI хабарлама несиесі", "$0.010 хабарлама (бірдей тариф)", "Компания пулына бірден қосылады", "Жоспар квотасынан бөлек — ауысады"],
-          },
-        },
-      },
-      {
-        id: "ai-kontor-2000",
-        productId: "ai-kontor",
-        name: "2.000 Kontör",
-        description: "Aylık yedek — orta yoğunluk",
-        price: 5500,
-        currency: "TRY",
-        cycle: "monthly",
-        kind: "credit",
-        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
-        creditsGranted: 2000,
-        features: [
-          "2.000 AI mesaj kontörü",
-          "Mesaj başı ₺2,90",
-          "Toplu fatura işleme için ideal",
-          "Plan limitinden ayrıdır — devreder",
-        ],
-        highlight: true,
-        i18n: {
-          en: {
-            name: "2,000 Credits",
-            description: "Monthly reserve — medium intensity",
-            features: ["2,000 AI message credits", "$0.010 per message", "Ideal for bulk invoice processing", "Separate from plan quota — rolls over"],
-          },
-          ru: {
-            name: "2 000 кредитов",
-            description: "Месячный резерв — средняя интенсивность",
-            features: ["2 000 AI-кредитов сообщений", "$0.010 за сообщение", "Идеально для массовой обработки счетов", "Отдельно от квоты плана — переносятся"],
-          },
-          kk: {
-            name: "2 000 несие",
-            description: "Айлық қор — орташа қарқындылық",
-            features: ["2 000 AI хабарлама несиесі", "Хабарлама құны", "Жаппай фактура өңдеуге ыңғайлы", "Жоспар квотасынан бөлек — ауысады"],
-          },
-        },
-      },
-      {
-        id: "ai-kontor-10000",
-        productId: "ai-kontor",
-        name: "10.000 Kontör",
-        description: "Yoğun kullanım — büyük takım",
-        price: 26000,
-        currency: "TRY",
-        cycle: "monthly",
-        kind: "credit",
-        legacy: true, // kontor modeli birakildi — aylik AI paketleri geldi
-        creditsGranted: 10000,
-        features: [
-          "10.000 AI mesaj kontörü",
-          "%20 indirimli paket (mesaj başı $0.008)",
-          "Toplu işleme için en uygun",
-          "Plan limitinden ayrıdır — devreder",
-        ],
-        i18n: {
-          en: {
-            name: "10,000 Credits",
-            description: "Heavy usage — large team",
-            features: ["10,000 AI message credits", "20% discounted pack ($0.008 per message)", "Best fit for bulk processing", "Separate from plan quota — rolls over"],
-          },
-          ru: {
-            name: "10 000 кредитов",
-            description: "Интенсивное использование — большая команда",
-            features: ["10 000 AI-кредитов сообщений", "Пакет со скидкой 20% ($0.008 за сообщение)", "Оптимально для массовой обработки", "Отдельно от квоты плана — переносятся"],
-          },
-          kk: {
-            name: "10 000 несие",
-            description: "Қарқынды пайдалану — үлкен команда",
-            features: ["10 000 AI хабарлама несиесі", "20% жеңілдікті пакет ($0.008 хабарлама)", "Жаппай өңдеуге ең қолайлы", "Жоспар квотасынан бөлек — ауысады"],
-          },
-        },
-      },
+
+      /**
+       * KONTOR PAKETLERI KALDIRILDI — 2026-08-30.
+       *
+       * Burada 4 adet kind:"credit" SKU vardi (500/1.000/2.000/10.000 kontor;
+       * ₺1.450 / ₺2.800 / ₺5.500 / ₺26.000). Tek seferlik alinip aydan aya
+       * DEVREDEN kontor modeliydi.
+       *
+       * Neden kaldirildi: iyzico uye isyeri surecinde "kredi/jeton/kontor
+       * modeli" satilmamasi istenmisti (bkz. satir ~80'deki not). Kategoriyi
+       * public listeden cikarmak yetmiyordu — mekanizmanin kendisi kredi
+       * modeliydi, adini degistirmek sorunu cozmezdi.
+       *
+       * Yerine ne var: yukaridaki kind:"ai-plan" AYLIK paketler (Junior 100 /
+       * Standart 300 / Plus 750 / Pro 2.000 mesaj). Her ay yenilenir,
+       * devretmez. Ayni ihtiyaci karsiliyor.
+       *
+       * Backend tarafi (api/internal/credits-consume, payments/callback,
+       * finanserpide-provision, user-store) BILEREK BIRAKILDI: kontor
+       * ureten SKU kalmadigi icin atil durumda ve odeme akisini sokup
+       * cikarmak sifir fayda icin yuksek riskti. Mevcut bakiyesi olan biri
+       * varsa harcamaya devam edebilir.
+       *
+       * Geri acilacaksa once iyzico onayi alinmali.
+       */
     ],
   },
   {

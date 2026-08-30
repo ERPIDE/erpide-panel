@@ -52,11 +52,22 @@ export default function Page() {
             kurulur. Entegrasyonu açmazsanız bankayla hiçbir veri alışverişi olmaz.
           </li>
           <li>
-            <strong>Anthropic (Claude)</strong> — <em>yalnızca</em> yapay zekâ asistanı
+            <strong>Anthropic PBC (Claude)</strong> — <em>yalnızca</em> yapay zekâ asistanı
             (&quot;Eylül&quot;) özelliğini kullandığınızda. Sorunuzu cevaplamak için gereken kayıtlar
             (örneğin ilgili fatura veya cari bilgileri) modele gönderilir. Bu veriler
             <strong> yurt dışında (ABD) işlenir</strong> ve model eğitiminde kullanılmaz. Asistanı hiç
-            kullanmazsanız bu aktarım gerçekleşmez.
+            kullanmazsanız bu aktarım gerçekleşmez. Ayrıntı için{" "}
+            <a href="/sozlesmeler/yapay-zeka" className="text-blue-400 hover:underline">
+              Yapay Zekâ Aydınlatma Metni
+            </a>.
+          </li>
+          <li>
+            <strong>Cloudflare</strong> — alan adı yönetimi (DNS) ve içerik dağıtım ağı için.
+          </li>
+          <li>
+            <strong>Apple (APNs) / Google (FCM)</strong> — mobil bildirimlerin cihazınıza
+            iletilmesi için. Bildirim gövdesinde iş verisi taşınmaz; ayrıntı uygulamanın
+            içinde gösterilir.
           </li>
           <li>
             <strong>Expo (EAS Update)</strong> — mobil uygulamanın güncellemelerini dağıtmak için.
@@ -65,6 +76,18 @@ export default function Page() {
           </li>
           <li>Yasal zorunluluk gereği yetkili kamu kurum ve kuruluşları.</li>
         </ul>
+        <p className="mt-4">
+          <strong>Muhasebe defter ve belgeleriniz Türkiye&apos;de kalır.</strong> Faturalarınız,
+          e-Arşiv belgeleriniz ve yüklediğiniz ekler Vergi Usul Kanunu&apos;nun muhafaza
+          yükümlülüğü gereği Türkiye&apos;deki sunucularımızda (PenDC Veri Merkezi) saklanır ve
+          yurt dışına taşınmaz. Yukarıdaki yurt dışı aktarımları, belgelerin saklanmasına
+          değil, yalnızca ilgili hizmetin o anki işleyişine ilişkindir.
+        </p>
+        <p className="mt-3">
+          ERPIDE <strong>e-Defter saklama hizmeti vermemektedir</strong>; e-Defter saklama
+          yükümlülüğünüz Gelir İdaresi Başkanlığı&apos;ndan izinli saklamacı kuruluşlar
+          aracılığıyla yerine getirilir.
+        </p>
       </section>
 
       <section>
