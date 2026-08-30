@@ -7,6 +7,7 @@
  * Seed'den sonra tek gerçek kaynak SocialPost tablosudur — panelden yazılan
  * post deploy beklemeden yayına girer.
  */
+import { Prisma } from "@prisma/client";
 import { getPrisma, HAS_DB } from "../db";
 import { NEWS } from "../news";
 import {
@@ -134,11 +135,12 @@ export async function ensureSeed(): Promise<void> {
   const prisma = getPrisma();
   const count = await prisma.socialPost.count();
   if (count === 0) {
-    // createMany KULLANMA: Prisma çok satırlı yazımı transaction'a sarıyor ve
-    // Neon HTTP adapter'ı transaction desteklemiyor ("Transactions are not
-    // supported in HTTP mode") — seed sessizce düşüyordu. Satırları tek tek
-    // yazıyoruz; upsert olması, iki lambda aynı anda seed etmeye kalkarsa
-    // slug çakışmasını da önler.
+    // DİKKAT — Neon HTTP adapter'ı transaction DESTEKLEMİYOR
+    // ("Transactions are not supported in HTTP mode"). Bu yüzden burada
+    // ne createMany ne de upsert kullanılabilir: Prisma ikisini de
+    // transaction'a sarıyor ve seed sessizce düşüyor.
+    // Tek satırlık create güvenli; çakışmayı (iki lambda aynı anda seed
+    // etmeye kalkarsa) P2002 yakalayarak yutuyoruz.
     for (const p of NEWS) {
       const data = {
         slug: p.slug,
@@ -163,12 +165,15 @@ export async function ensureSeed(): Promise<void> {
         targets: ["site"],
         source: "seed",
       };
-      await prisma.socialPost.upsert({
-        where: { slug: p.slug },
-        create: data as never,
-        // Zaten varsa dokunma — panelden yapılmış düzenlemeler ezilmesin.
-        update: {},
-      });
+      try {
+        await prisma.socialPost.create({ data: data as never });
+      } catch (e) {
+        // P2002 = unique constraint (slug). Başka bir instance önce yazmış;
+        // seed idempotent olduğu için sorun değil.
+        if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") {
+          throw e;
+        }
+      }
     }
   }
   seedChecked = true;

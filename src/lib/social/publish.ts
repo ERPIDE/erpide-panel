@@ -200,9 +200,33 @@ async function recordPublication(
 ): Promise<void> {
   const now = new Date();
   const prisma = getPrisma();
-  await prisma.socialPublication.upsert({
+
+  // upsert KULLANMA: Prisma onu transaction'a sarıyor, Neon HTTP adapter'ı
+  // transaction desteklemiyor ("Transactions are not supported in HTTP mode").
+  // Önce var mı diye bak, sonra tek satırlık update veya create yap.
+  const existing = (await prisma.socialPublication.findUnique({
     where: { postId_platform: { postId, platform } },
-    create: {
+    select: { id: true },
+  })) as { id: string } | null;
+
+  if (existing) {
+    await prisma.socialPublication.update({
+      where: { id: existing.id },
+      data: {
+        status: data.status,
+        externalId: data.externalId,
+        externalUrl: data.externalUrl,
+        error: data.error,
+        attempts: { increment: 1 },
+        attemptedAt: now,
+        ...(data.status === "success" ? { publishedAt: now } : {}),
+      } as never,
+    });
+    return;
+  }
+
+  await prisma.socialPublication.create({
+    data: {
       postId,
       platform,
       status: data.status,
@@ -212,15 +236,6 @@ async function recordPublication(
       attempts: 1,
       attemptedAt: now,
       publishedAt: data.status === "success" ? now : null,
-    } as never,
-    update: {
-      status: data.status,
-      externalId: data.externalId,
-      externalUrl: data.externalUrl,
-      error: data.error,
-      attempts: { increment: 1 },
-      attemptedAt: now,
-      ...(data.status === "success" ? { publishedAt: now } : {}),
     } as never,
   });
 }

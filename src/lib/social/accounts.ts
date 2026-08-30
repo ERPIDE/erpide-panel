@@ -109,23 +109,46 @@ export async function saveAccount(input: SaveAccountInput): Promise<void> {
   if (input.refreshToken) data.refreshToken = encryptToken(input.refreshToken);
   if (input.tokenExpiresAt !== undefined) data.tokenExpiresAt = input.tokenExpiresAt;
 
-  await getPrisma().socialAccount.upsert({
+  // upsert KULLANMA — Neon HTTP adapter'ı transaction desteklemiyor
+  // ("Transactions are not supported in HTTP mode") ve Prisma upsert'i
+  // transaction'a sarıyor. Var mı diye bakıp tek satırlık yazım yapıyoruz.
+  const prisma = getPrisma();
+  const existing = await prisma.socialAccount.findUnique({
     where: { platform: input.platform },
-    create: {
+    select: { platform: true },
+  });
+
+  if (existing) {
+    await prisma.socialAccount.update({
+      where: { platform: input.platform },
+      data: data as never,
+    });
+    return;
+  }
+
+  await prisma.socialAccount.create({
+    data: {
       platform: input.platform,
       connected: !!input.accessToken,
       ...data,
     } as never,
-    update: data as never,
   });
 }
 
 /** Bağlantıyı keser ve token'ları siler. */
 export async function disconnectAccount(platform: ExternalPlatform): Promise<void> {
-  await getPrisma().socialAccount.upsert({
+  // Kayıt yoksa yapacak bir şey yok; upsert'ten kaçınma sebebi için
+  // saveAccount'taki nota bakın (Neon HTTP transaction desteklemiyor).
+  const prisma = getPrisma();
+  const existing = await prisma.socialAccount.findUnique({
     where: { platform },
-    create: { platform, connected: false } as never,
-    update: {
+    select: { platform: true },
+  });
+  if (!existing) return;
+
+  await prisma.socialAccount.update({
+    where: { platform },
+    data: {
       connected: false,
       accessToken: null,
       refreshToken: null,
