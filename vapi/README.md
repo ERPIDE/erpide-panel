@@ -49,7 +49,29 @@ Push'tan önce `git diff vapi/` ile değişiklikleri gör. Snapshot dosyası pus
 `prompt.md`'yi editle → `npm run vapi:push`. Tek dosya, kolay.
 
 ### Voice değiştirme
-`config.json` → `voice.voiceId`. Azure voice listesi: https://speech.microsoft.com/portal/voicegallery
+`config.json` → `voice` bloğu. **Şu an ElevenLabs** (Vapi'nin kendi anahtarıyla —
+ayrı ElevenLabs hesabı yok, ücret Vapi faturasına dakika başı eklenir):
+
+```json
+"voice": { "provider": "11labs", "voiceId": "EXAVITQu4vr4xnSDxMaL",
+           "model": "eleven_turbo_v2_5", "language": "tr", ... }
+```
+
+`voiceId` = ElevenLabs premade sesleri. Denenebilecek kadın sesleri:
+`EXAVITQu4vr4xnSDxMaL` Sarah (mevcut, yumuşak/profesyonel) · `cgSgspJ2msm6clMCkdW9`
+Jessica (daha canlı) · `XrExE9yKIg1WjnnlVkGX` Matilda (sıcak) · `Xb7hH8MSUJpSbSDYk0k2`
+Alice (net/kurumsal) · `pFZP5JQG7iQjIQuC4Bku` Lily.
+
+**Bedava Azure'a geri dönmek için** bu bloğu şununla değiştirip `npm run vapi:push`:
+```json
+"voice": { "provider": "azure", "voiceId": "tr-TR-EmelNeural" }
+```
+Azure yerli Türkçe telaffuz yapar ama tonlaması düz/robotik; ElevenLabs doğal
+tonlar, karşılığında hafif aksan + dakika başı ücret. Azure listesi:
+https://speech.microsoft.com/portal/voicegallery
+
+**Transcriber keyword kuralı:** boşluklu terim YASAK (`"Data Engine:3"` → 400).
+Tek kelime yaz (`"DataEngine:3"`).
 
 ### Transcriber keyword ekleme
 `config.json` → `transcriber.keywords` array'ine `"WITMA:5"` gibi yeni terim ekle. Sayı = boost weight.

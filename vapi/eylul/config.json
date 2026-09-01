@@ -8,8 +8,15 @@
     "do svidaniya"
   ],
   "voice": {
-    "voiceId": "tr-TR-EmelNeural",
-    "provider": "azure"
+    "provider": "11labs",
+    "voiceId": "EXAVITQu4vr4xnSDxMaL",
+    "model": "eleven_turbo_v2_5",
+    "language": "tr",
+    "stability": 0.45,
+    "similarityBoost": 0.8,
+    "style": 0.15,
+    "useSpeakerBoost": true,
+    "optimizeStreamingLatency": 3
   },
   "transcriber": {
     "model": "nova-2",
@@ -23,7 +30,10 @@
       "TROIA:3",
       "MRP:3",
       "WITMA:3",
-      "PocketERPIDE:3"
+      "PocketERPIDE:3",
+      "DataEngine:3",
+      "entegrasyon:3",
+      "mutabakat:3"
     ],
     "language": "tr",
     "provider": "deepgram",
