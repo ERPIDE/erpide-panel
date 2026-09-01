@@ -1,6 +1,6 @@
 {
   "name": "ERPIDE Satis Destek",
-  "firstMessage": "Merhaba, ben Eylül — ERPIDE'nin AI destek asistanıyım. Sizinle nasıl konuşalım, isminiz nedir?",
+  "firstMessage": "Merhaba, ben Eylül — Örpayd'ın yapay zeka destek asistanıyım. Sizinle nasıl konuşalım, isminiz nedir?",
   "firstMessageMode": "assistant-speaks-first",
   "endCallPhrases": [
     "gorusmek uzere",
@@ -17,12 +17,13 @@
       "ERPIDE:5",
       "Örpayd:5",
       "FinansERPIDE:5",
-      "CaptchaERPIDE:5",
       "CANIAS:5",
       "Kanyas:5",
       "Drive:3",
       "TROIA:3",
-      "MRP:3"
+      "MRP:3",
+      "WITMA:3",
+      "PocketERPIDE:3"
     ],
     "language": "tr",
     "provider": "deepgram",

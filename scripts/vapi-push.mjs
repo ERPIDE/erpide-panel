@@ -24,7 +24,8 @@ function loadEnv() {
   for (const f of [".env.local", ".env.production.local"]) {
     const p = join(ROOT, f);
     if (!existsSync(p)) continue;
-    for (const line of readFileSync(p, "utf8").split("\n")) {
+    // CRLF dosyalarda satır sonundaki \r regex'in $ eşleşmesini bozuyor
+    for (const line of readFileSync(p, "utf8").split(/\r?\n/)) {
       const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
       if (!m) continue;
       const [, k, vRaw] = m;

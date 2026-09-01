@@ -43,9 +43,8 @@ export const TR_PRESET: PromptPreset = {
 - 11 çalışan, Türkiye + Kazakistan ofisleri
 
 === ÜRÜNLER ===
-1) FinansERPIDE — Multi-tenant ERP/finans SaaS, AI muhasebe asistanlı, $29-$149/ay
-2) CaptchaERPIDE — AI captcha çözücü REST API, $9.99-$89.99/ay + kontör paketleri
-3) CANIAS, 1C:ERP, 1C:Drive — kurumsal proje bazlı ERP'ler (teklif çıkarılır)
+1) FinansERPIDE — Türkiye mevzuatına uygun bulut ERP/finans SaaS, AI destekli. Planlar (KDV hariç/ay): Starter $29, Pro $59, Business $149, Enterprise özel fiyat. 14 gün ücretsiz deneme.
+2) CANIAS, 1C:ERP, 1C:Drive — kurumsal proje bazlı ERP'ler (teklif çıkarılır)
 
 === KURALLAR ===
 - Cevaplar KISA olsun — telefonda 2-4 cümle ideal
@@ -79,9 +78,8 @@ export const RU_PRESET: PromptPreset = {
 - 11 сотрудников, офисы в Турции и Казахстане
 
 === ПРОДУКТЫ ===
-1) FinansERPIDE — мульти-тенант ERP/финансовый SaaS с AI-помощником бухгалтера, $29-$149/месяц
-2) CaptchaERPIDE — AI решатель CAPTCHA REST API, $9.99-$89.99/месяц + пакеты кредитов
-3) CANIAS, 1C:ERP, 1C:Drive — корпоративные ERP-системы по проектам (предложение под запрос)
+1) FinansERPIDE — облачный ERP/финансовый SaaS с AI-поддержкой. Тарифы (без НДС/мес): Starter $29, Pro $59, Business $149, Enterprise — индивидуально. 14 дней бесплатно.
+2) CANIAS, 1C:ERP, 1C:Drive — корпоративные ERP-системы по проектам (предложение под запрос)
 
 === ПРАВИЛА ===
 - Используй обращение на Вы (формальное)
@@ -116,9 +114,8 @@ Introduce yourself in your first response: "Hello, I'm Eylul — ERPIDE's AI sup
 - 11 employees, offices in Turkey and Kazakhstan
 
 === PRODUCTS ===
-1) FinansERPIDE — Multi-tenant ERP/finance SaaS with AI accounting assistant, $29-$149/month
-2) CaptchaERPIDE — AI CAPTCHA solver REST API, $9.99-$89.99/month + credit packs
-3) CANIAS, 1C:ERP, 1C:Drive — enterprise project-based ERPs (custom quote)
+1) FinansERPIDE — cloud ERP/finance SaaS with AI support. Plans (excl. VAT/month): Starter $29, Pro $59, Business $149, Enterprise custom. 14-day free trial.
+2) CANIAS, 1C:ERP, 1C:Drive — enterprise project-based ERPs (custom quote)
 
 === RULES ===
 - Keep responses SHORT — 2-4 sentences ideal on the phone
@@ -150,9 +147,8 @@ Müşterinin dilini ilk cümlesinden algıla ve o dilde devam et:
 - Görev: Ürün/fiyat/demo bilgisi vermek + talep kayıt etmek
 
 === ÜRÜNLER ===
-1) FinansERPIDE — Multi-tenant ERP/finans SaaS, AI muhasebe asistanlı, $29-$149/ay
-2) CaptchaERPIDE — AI captcha çözücü REST API, $9.99-$89.99/ay + kontör paketleri
-3) CANIAS, 1C:ERP, 1C:Drive — kurumsal proje ERP (teklif bazlı)
+1) FinansERPIDE — Türkiye mevzuatına uygun bulut ERP/finans SaaS, AI destekli. Planlar (KDV hariç/ay): Starter $29, Pro $59, Business $149, Enterprise özel fiyat. 14 gün ücretsiz deneme.
+2) CANIAS, 1C:ERP, 1C:Drive — kurumsal proje ERP (teklif bazlı)
 
 === KURALLAR ===
 - Telefonda 2-4 cümle ideal, kısa tut

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { yillikIndirim, aylikEsi } from "@/lib/yillik-indirim";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles, ExternalLink, MessageCircle, Phone, Apple, Smartphone, LayoutGrid } from "lucide-react";
@@ -262,11 +263,25 @@ function ProductBlock({ product, visibleSkus, activeSkuByProduct, lastSkuByProdu
                             {formatPrice(sku.cycle === "yearly" ? Math.round(price / 12) : price, currency, { short: true })}
                           </span>
                           <span className="text-gray-400 ml-1 text-sm">{t("products.per_month")}</span>
-                          {sku.cycle === "yearly" && (
-                            <p className="text-[11px] text-gray-500 mt-1">
-                              yıllık {formatPrice(price, currency, { short: true })} peşin · aylık ödemeye göre %50 tasarruf
-                            </p>
-                          )}
+                          {sku.cycle === "yearly" && (() => {
+                            /**
+                             * ORAN FİYATTAN HESAPLANIYOR — eskiden SABİT
+                             * "%50 tasarruf" yazıyordu ve Kurumsal pakette
+                             * gerçek oran %42'ydi. Fiyat değişince metin
+                             * değişmediği için canlıda yanlış indirim
+                             * beyanı duruyordu.
+                             *
+                             * Eş bulunamazsa hiçbir iddia gösterilmiyor;
+                             * uydurulmuş bir orandan iyidir.
+                             */
+                            const ind = yillikIndirim(sku, aylikEsi(sku.id, product.skus));
+                            return (
+                              <p className="text-[11px] text-gray-500 mt-1">
+                                yıllık {formatPrice(price, currency, { short: true })} peşin
+                                {ind ? ` · aylık ödemeye göre %${ind.yuzde} tasarruf` : ""}
+                              </p>
+                            );
+                          })()}
                         </div>
                         <div className="space-y-2 mb-4">
                           {(() => {
